@@ -10,6 +10,7 @@ const sharp = require('sharp');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const C = require('./config');
 const S = require('./store');
+const { buildTextOverlay } = require('./text-renderer');
 
 function registerFont() {
     try {
@@ -29,6 +30,7 @@ function normalizePostCardInput(body = {}) {
         textoBaixo: hasPrincipal ? (body.texto_baixo ?? body.textobaixo ?? '') : (body.texto_rodape ?? body.textobaixo ?? '')
     };
 }
+
 function normalizeQueryCardInput(query = {}) {
     return {
         fundo: query.fundo ?? query.fundo_url ?? '',
@@ -38,7 +40,11 @@ function normalizeQueryCardInput(query = {}) {
         textoBaixo: query.textobaixo ?? query.texto_baixo ?? ''
     };
 }
-function cleanText(value, maxLength) { return String(value || '').replace(/\r/g, '').trim().slice(0, maxLength); }
+
+function cleanText(value, maxLength) {
+    return String(value || '').replace(/\r/g, '').trim().slice(0, maxLength);
+}
+
 function sanitizeCardParams(input) {
     return {
         textoCima: cleanText(input.textoCima, 160),
@@ -46,13 +52,22 @@ function sanitizeCardParams(input) {
         textoBaixo: cleanText(input.textoBaixo, 180)
     };
 }
-function chooseNeonColor() { return C.NEON_COLORS[crypto.randomInt(0, C.NEON_COLORS.length)]; }
-function clientError(message, statusCode = 400) { const error = new Error(message); error.statusCode = statusCode; return error; }
+
+function chooseNeonColor() {
+    return C.NEON_COLORS[crypto.randomInt(0, C.NEON_COLORS.length)];
+}
+
+function clientError(message, statusCode = 400) {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    return error;
+}
 
 async function createCardForAccount(account, input, files, source) {
     const fundoBuffer = await resolveImageBuffer(account, input.fundo, files?.fundo_file?.[0]);
     const avatarBuffer = await resolveImageBuffer(account, input.avatar, files?.avatar_file?.[0]);
     if (!fundoBuffer) throw clientError('Informe uma imagem de fundo por URL, upload ou arquivo.');
+
     const params = sanitizeCardParams(input);
     const neon = chooseNeonColor();
     const buffer = await generateCardImage({ fundoBuffer, avatarBuffer, neon, ...params });
@@ -62,25 +77,37 @@ async function createCardForAccount(account, input, files, source) {
 
     const generations = S.loadGenerations();
     const record = {
-        id, accountId: account.id, filename, source, neon, createdAt: new Date().toISOString(),
+        id,
+        accountId: account.id,
+        filename,
+        source,
+        neon,
+        createdAt: new Date().toISOString(),
         title: params.textoPrincipal.slice(0, 100) || params.textoCima.slice(0, 100) || 'Card sem título'
     };
     generations.push(record);
-    const ownerItems = generations.filter(g => g.accountId === account.id).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    const ownerItems = generations
+        .filter(g => g.accountId === account.id)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
     while (ownerItems.length > C.MAX_GENERATIONS_PER_ACCOUNT) {
         const old = ownerItems.shift();
         const index = generations.findIndex(g => g.id === old.id);
         if (index !== -1) generations.splice(index, 1);
         S.removeFileIfExists(path.join(C.GENERATED_DIR, old.filename));
     }
+
     S.saveGenerations(generations.slice(-5000));
     return { id, url: `/generated/${filename}`, filename, createdAt: record.createdAt, neon, buffer };
 }
 
 async function resolveImageBuffer(account, urlValue, fileObj) {
     if (fileObj?.buffer) return (await validateAndNormalizeUpload(fileObj.buffer, fileObj.mimetype)).buffer;
+
     const raw = String(urlValue || '').trim();
     if (!raw) return null;
+
     const localFilename = extractLocalUploadFilename(raw);
     if (localFilename) {
         const upload = S.loadUploads().find(u => u.filename === localFilename && u.accountId === account.id);
@@ -89,48 +116,90 @@ async function resolveImageBuffer(account, urlValue, fileObj) {
         if (!fs.existsSync(filepath)) throw clientError('O arquivo do upload não existe mais.');
         return fs.readFileSync(filepath);
     }
+
     return fetchRemoteImage(raw);
 }
 
 async function validateAndNormalizeUpload(buffer, declaredMime = '') {
     if (!Buffer.isBuffer(buffer) || !buffer.length) throw clientError('Arquivo de imagem vazio ou inválido.');
+
     const input = sharp(buffer, { failOn: 'error', limitInputPixels: 40_000_000, sequentialRead: true });
     const metadata = await input.metadata();
-    if (!new Set(['jpeg', 'png', 'webp', 'gif']).has(metadata.format)) throw clientError('Formato não suportado. Use JPG, PNG, WEBP ou GIF.');
-    if (!metadata.width || !metadata.height || metadata.width * metadata.height > 40_000_000) throw clientError('As dimensões da imagem são muito grandes.');
-    const normalized = await sharp(buffer, { failOn: 'error', limitInputPixels: 40_000_000 }).rotate().png({ compressionLevel: 8 }).toBuffer();
-    if (normalized.length > C.MAX_UPLOAD_MB * 1024 * 1024) throw clientError(`A imagem processada ultrapassa o limite de ${C.MAX_UPLOAD_MB}MB.`);
-    return { buffer: normalized, extension: 'png', mime: 'image/png', width: metadata.width, height: metadata.height, declaredMime };
+    if (!new Set(['jpeg', 'png', 'webp', 'gif']).has(metadata.format)) {
+        throw clientError('Formato não suportado. Use JPG, PNG, WEBP ou GIF.');
+    }
+    if (!metadata.width || !metadata.height || metadata.width * metadata.height > 40_000_000) {
+        throw clientError('As dimensões da imagem são muito grandes.');
+    }
+
+    const normalized = await sharp(buffer, { failOn: 'error', limitInputPixels: 40_000_000 })
+        .rotate()
+        .png({ compressionLevel: 8 })
+        .toBuffer();
+
+    if (normalized.length > C.MAX_UPLOAD_MB * 1024 * 1024) {
+        throw clientError(`A imagem processada ultrapassa o limite de ${C.MAX_UPLOAD_MB}MB.`);
+    }
+
+    return {
+        buffer: normalized,
+        extension: 'png',
+        mime: 'image/png',
+        width: metadata.width,
+        height: metadata.height,
+        declaredMime
+    };
 }
 
 async function fetchRemoteImage(urlValue) {
     let current;
-    try { current = new URL(urlValue); } catch { throw clientError('URL de imagem inválida.'); }
-    if (!['http:', 'https:'].includes(current.protocol)) throw clientError('Apenas URLs HTTP/HTTPS são permitidas.');
+    try {
+        current = new URL(urlValue);
+    } catch {
+        throw clientError('URL de imagem inválida.');
+    }
+
+    if (!['http:', 'https:'].includes(current.protocol)) {
+        throw clientError('Apenas URLs HTTP/HTTPS são permitidas.');
+    }
+
     for (let redirects = 0; redirects <= 3; redirects += 1) {
         await assertPublicHostname(current.hostname);
         const client = current.protocol === 'https:' ? https : http;
         const response = await axios.get(current.toString(), {
-            responseType: 'arraybuffer', timeout: 6000, maxRedirects: 0,
+            responseType: 'arraybuffer',
+            timeout: 6000,
+            maxRedirects: 0,
             validateStatus: status => (status >= 200 && status < 300) || (status >= 300 && status < 400),
             maxContentLength: C.MAX_REMOTE_IMAGE_MB * 1024 * 1024,
             maxBodyLength: C.MAX_REMOTE_IMAGE_MB * 1024 * 1024,
-            headers: { 'User-Agent': 'SkyNetApi/2.2' },
+            headers: { 'User-Agent': 'SkyNetApi/2.3' },
             httpAgent: current.protocol === 'http:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined,
             httpsAgent: current.protocol === 'https:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined
         });
+
         if (response.status >= 300 && response.status < 400) {
             if (!response.headers.location) throw clientError('Redirecionamento remoto inválido.');
             current = new URL(response.headers.location, current);
-            if (!['http:', 'https:'].includes(current.protocol)) throw clientError('Redirecionamento para protocolo não permitido.');
+            if (!['http:', 'https:'].includes(current.protocol)) {
+                throw clientError('Redirecionamento para protocolo não permitido.');
+            }
             continue;
         }
+
         const contentType = String(response.headers['content-type'] || '').toLowerCase();
-        if (contentType && !contentType.startsWith('image/')) throw clientError('A URL informada não retornou uma imagem.');
+        if (contentType && !contentType.startsWith('image/')) {
+            throw clientError('A URL informada não retornou uma imagem.');
+        }
+
         const buffer = Buffer.from(response.data);
-        if (buffer.length > C.MAX_REMOTE_IMAGE_MB * 1024 * 1024) throw clientError('Imagem remota muito grande.');
+        if (buffer.length > C.MAX_REMOTE_IMAGE_MB * 1024 * 1024) {
+            throw clientError('Imagem remota muito grande.');
+        }
+
         return (await validateAndNormalizeUpload(buffer, contentType)).buffer;
     }
+
     throw clientError('A URL excedeu o limite de redirecionamentos.');
 }
 
@@ -142,6 +211,7 @@ async function generateCardImage(params) {
         .resize(C.CARD_SIZE, C.CARD_SIZE, { fit: 'cover', position: 'attention' })
         .png()
         .toBuffer();
+
     ctx.drawImage(await loadImage(backgroundBuffer), 0, 0, C.CARD_SIZE, C.CARD_SIZE);
 
     const shade = ctx.createLinearGradient(0, 0, 0, C.CARD_SIZE);
@@ -154,16 +224,19 @@ async function generateCardImage(params) {
     drawNeonFrame(ctx, params.neon);
     if (params.avatarBuffer) await drawCircularAvatar(ctx, params.avatarBuffer, params.neon);
 
-    const fontFamily = fs.existsSync(C.FONT_PATH) ? '"SkyNet Sans"' : 'sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineJoin = 'round';
+    const baseBuffer = canvas.toBuffer('image/png');
+    const textOverlay = buildTextOverlay({
+        textoCima: params.textoCima,
+        textoPrincipal: params.textoPrincipal,
+        textoBaixo: params.textoBaixo,
+        neon: params.neon,
+        hasAvatar: Boolean(params.avatarBuffer)
+    });
 
-    if (params.textoCima) drawTextBlock(ctx, params.textoCima, 540, 130, 870, 52, 2, fontFamily, params.neon, 62, false);
-    if (params.textoPrincipal) drawTextBlock(ctx, params.textoPrincipal, 540, params.avatarBuffer ? 720 : 570, 900, 78, 4, fontFamily, params.neon, 92, true);
-    if (params.textoBaixo) drawTextBlock(ctx, params.textoBaixo, 540, 950, 870, 42, 2, fontFamily, params.neon, 50, false);
-
-    return canvas.toBuffer('image/png');
+    return sharp(baseBuffer)
+        .composite([{ input: textOverlay, top: 0, left: 0 }])
+        .png({ compressionLevel: 8 })
+        .toBuffer();
 }
 
 function drawNeonFrame(ctx, neon) {
@@ -215,75 +288,6 @@ async function drawCircularAvatar(ctx, buffer, neon) {
     ctx.restore();
 }
 
-function drawTextBlock(ctx, text, x, y, maxWidth, startSize, maxLines, family, neon, baseLineHeight, strong) {
-    const layout = fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family);
-    const lineHeight = Math.max(36, Math.round(baseLineHeight * (layout.size / startSize)));
-    const blockHeight = layout.lines.length * lineHeight + 34;
-    const panelWidth = Math.min(maxWidth + 56, 960);
-
-    ctx.save();
-    roundedRectPath(ctx, x - panelWidth / 2, y - blockHeight / 2, panelWidth, blockHeight, strong ? 24 : 18);
-    ctx.fillStyle = strong ? 'rgba(5,7,14,.72)' : 'rgba(5,7,14,.60)';
-    ctx.fill();
-    ctx.strokeStyle = neon;
-    ctx.globalAlpha = strong ? 0.55 : 0.38;
-    ctx.lineWidth = strong ? 3 : 2;
-    ctx.stroke();
-    ctx.restore();
-
-    const startY = y - ((layout.lines.length - 1) * lineHeight) / 2;
-    ctx.save();
-    ctx.font = `bold ${layout.size}px ${family}`;
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#05070e';
-    ctx.lineWidth = strong ? 10 : 7;
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-
-    for (let i = 0; i < layout.lines.length; i += 1) {
-        const ly = startY + i * lineHeight;
-        ctx.strokeText(layout.lines[i], x, ly, maxWidth);
-        ctx.fillText(layout.lines[i], x, ly, maxWidth);
-    }
-
-    ctx.shadowColor = neon;
-    ctx.shadowBlur = strong ? 18 : 12;
-    ctx.globalAlpha = 0.94;
-    for (let i = 0; i < layout.lines.length; i += 1) {
-        ctx.fillText(layout.lines[i], x, startY + i * lineHeight, maxWidth);
-    }
-    ctx.restore();
-}
-
-function fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family) {
-    for (let size = startSize; size >= 24; size -= 4) {
-        ctx.font = `bold ${size}px ${family}`;
-        const lines = wrapText(ctx, text, maxWidth);
-        if (lines.length <= maxLines && lines.every(line => ctx.measureText(line).width <= maxWidth)) return { lines, size };
-    }
-    ctx.font = `bold 24px ${family}`;
-    const lines = wrapText(ctx, text, maxWidth).slice(0, maxLines);
-    if (lines.length === maxLines && lines[maxLines - 1].length > 4) {
-        lines[maxLines - 1] = `${lines[maxLines - 1].slice(0, Math.max(1, lines[maxLines - 1].length - 3))}...`;
-    }
-    return { lines, size: 24 };
-}
-
-function wrapText(ctx, text, maxWidth) {
-    const lines = [];
-    for (const paragraph of String(text || '').replace(/\r/g, '').split('\n')) {
-        const words = paragraph.trim().split(/\s+/).filter(Boolean);
-        let line = '';
-        for (const word of words) {
-            const candidate = line ? `${line} ${word}` : word;
-            if (ctx.measureText(candidate).width <= maxWidth || !line) line = candidate;
-            else { lines.push(line); line = word; }
-        }
-        if (line) lines.push(line);
-    }
-    return lines;
-}
-
 function roundedRectPath(ctx, x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
     ctx.beginPath();
@@ -301,14 +305,19 @@ function roundedRectPath(ctx, x, y, width, height, radius) {
 
 function extractLocalUploadFilename(value) {
     try {
-        if (value.startsWith('/uploads/')) return path.basename(decodeURIComponent(value.slice('/uploads/'.length)));
+        if (value.startsWith('/uploads/')) {
+            return path.basename(decodeURIComponent(value.slice('/uploads/'.length)));
+        }
         if (/^https?:\/\//i.test(value)) {
             const parsed = new URL(value);
-            if (parsed.pathname.startsWith('/uploads/')) return path.basename(decodeURIComponent(parsed.pathname.slice('/uploads/'.length)));
+            if (parsed.pathname.startsWith('/uploads/')) {
+                return path.basename(decodeURIComponent(parsed.pathname.slice('/uploads/'.length)));
+            }
         }
     } catch {}
     return null;
 }
+
 function safeLookup(hostname, options, callback) {
     const opts = typeof options === 'object' ? options : {};
     dns.lookup(hostname, { ...opts, all: true, verbatim: true }, (error, addresses) => {
@@ -319,6 +328,7 @@ function safeLookup(hostname, options, callback) {
         callback(null, allowed[0].address, allowed[0].family);
     });
 }
+
 async function assertPublicHostname(hostname) {
     if (!hostname) throw clientError('Hostname inválido.');
     const stripped = hostname.replace(/^\[|\]$/g, '');
@@ -327,13 +337,18 @@ async function assertPublicHostname(hostname) {
         return;
     }
     const addresses = await dns.promises.lookup(stripped, { all: true, verbatim: true });
-    if (!addresses.length || addresses.some(item => isPrivateIp(item.address))) throw clientError('O endereço informado aponta para uma rede não permitida.');
+    if (!addresses.length || addresses.some(item => isPrivateIp(item.address))) {
+        throw clientError('O endereço informado aponta para uma rede não permitida.');
+    }
 }
+
 function isPrivateIp(address) {
     const value = String(address || '').toLowerCase();
     if (!value) return true;
     if (value.startsWith('::ffff:')) return isPrivateIp(value.slice(7));
-    if (net.isIPv6(value)) return value === '::' || value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe8') || value.startsWith('fe9') || value.startsWith('fea') || value.startsWith('feb');
+    if (net.isIPv6(value)) {
+        return value === '::' || value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe8') || value.startsWith('fe9') || value.startsWith('fea') || value.startsWith('feb');
+    }
     if (!net.isIPv4(value)) return true;
     const [a, b] = value.split('.').map(Number);
     if (a === 0 || a === 10 || a === 127 || a >= 224) return true;
