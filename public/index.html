@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="description" content="SkyNetApi - gerador de cards com painel, uploads e API keys">
+    <meta name="description" content="SkyNetApi - cards, ferramentas, perfis e recursos sociais">
     <title>SkyNetApi</title>
     <link rel="stylesheet" href="/app.css">
 </head>
@@ -12,14 +12,16 @@
     <nav class="topbar" aria-label="Navegação principal">
         <a class="brand" href="/">SkyNetApi</a>
         <a class="nav-link" href="/painel">Painel</a>
-        <a class="nav-link" href="/upload">Uploads</a>
+        <a class="nav-link" href="/painel/perfil">Perfil</a>
+        <a class="nav-link" href="/painel/amigos">Amigos</a>
+        <a class="nav-link" href="/painel/chat">Chat</a>
         <a class="nav-link" href="/admin">Admin</a>
     </nav>
 
     <header class="hero">
-        <div class="eyebrow">API de geração de cards</div>
+        <div class="eyebrow">Workspace e comunidade</div>
         <h1>SkyNetApi</h1>
-        <p>Gere cards, organize imagens, controle API keys e acompanhe o uso em uma interface única.</p>
+        <p>Crie cards, use ferramentas, personalize seu perfil e converse com seus amigos em uma única plataforma.</p>
     </header>
 
     <section class="stats" aria-label="Status do serviço">
@@ -28,21 +30,29 @@
         <div class="stat"><div class="value" id="uptimeValue">-</div><div class="label">Tempo online</div></div>
     </section>
 
-    <section class="grid three">
+    <section class="card podium-wrap" style="margin-top:18px">
+        <div class="podium-head">
+            <div><div class="eyebrow">Comunidade</div><h2 class="card-title" style="margin-bottom:0">Pódio de atividade</h2><p class="muted">Os três perfis participantes com maior atividade no SkyNetApi.</p></div>
+            <a class="button" href="/painel/perfil">Configurar meu perfil</a>
+        </div>
+        <div id="podiumRoot"><div class="muted">Carregando pódio...</div></div>
+    </section>
+
+    <section class="grid three" style="margin-top:18px">
         <article class="card">
-            <h2 class="card-title">Painel de conta</h2>
-            <p class="muted">Crie e gerencie chaves, gere cards sem sair do navegador e acompanhe o histórico.</p>
+            <h2 class="card-title">Workspace</h2>
+            <p class="muted">Gerencie API keys, cards, uploads e todas as ferramentas da sua conta.</p>
             <a class="button primary" href="/painel">Abrir painel</a>
         </article>
         <article class="card">
-            <h2 class="card-title">Uploads</h2>
-            <p class="muted">Envie suas imagens, filtre arquivos e copie links para usar no editor.</p>
-            <a class="button" href="/upload">Gerenciar uploads</a>
+            <h2 class="card-title">Perfil e amigos</h2>
+            <p class="muted">Personalize seu perfil, encontre contas e gerencie suas amizades e privacidade.</p>
+            <a class="button" href="/painel/amigos">Abrir amigos</a>
         </article>
         <article class="card">
-            <h2 class="card-title">Administração</h2>
-            <p class="muted">Ative contas, acompanhe uso e controle chaves por usuário.</p>
-            <a class="button" href="/admin">Abrir admin</a>
+            <h2 class="card-title">Chat e voz</h2>
+            <p class="muted">Mensagens privadas e chamadas de voz disponíveis somente entre amigos aceitos.</p>
+            <a class="button" href="/painel/chat">Abrir chat</a>
         </article>
     </section>
 
@@ -51,12 +61,14 @@
         <div class="endpoint"><span class="method post">POST</span>/generate-card <span class="text-faint">x-api-key</span></div>
         <div class="endpoint"><span class="method post">POST</span>/api/uploads <span class="text-faint">sessão</span></div>
         <div class="endpoint"><span class="method get">GET</span>/api/keys <span class="text-faint">sessão</span></div>
+        <div class="endpoint"><span class="method get">GET</span>/api/social/podium <span class="text-faint">público</span></div>
         <div class="endpoint"><span class="method get">GET</span>/health <span class="text-faint">público</span></div>
     </section>
 
     <footer>SkyNetApi</footer>
 </main>
 <script src="/common.js"></script>
+<script src="/podium.js"></script>
 <script>
 (async () => {
     try {
