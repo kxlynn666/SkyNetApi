@@ -1,6 +1,3 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
 const crypto = require('crypto');
 const dns = require('dns');
 const net = require('net');
@@ -17,6 +14,8 @@ const S = require('./store');
 const TIKWM_API = 'https://www.tikwm.com/api/';
 const MAX_MEDIA_BYTES = Math.max(10, Math.min(300, Number.parseInt(process.env.MAX_TIKTOK_MB || '150', 10) || 150)) * 1024 * 1024;
 const DOWNLOADS_PER_MINUTE = Math.max(1, Math.min(60, Number.parseInt(process.env.TIKTOK_RATE_LIMIT_PER_MINUTE || '12', 10) || 12));
+const MEDIA_TOKEN_TTL_MS = 30 * 60 * 1000;
+const mediaTokenSecret = crypto.randomBytes(32);
 const buckets = new Map();
 let tikwmQueue = Promise.resolve();
 let lastTikwmRequestAt = 0;
@@ -29,11 +28,11 @@ function registerTikTokRoutes(app) {
         },
         credentials: true,
         methods: ['GET', 'POST', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
+        allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization', 'Range']
     });
 
     app.options('/tiktok-info', apiCors);
-    app.get('/tiktok-info', apiCors, requireApiKey, downloadLimiter, async (req, res, next) => {
+    app.get('/tiktok-info', apiCors, requireApiKey, requestLimiter, async (req, res, next) => {
         try {
             const item = await getTikTokPreview(req.query?.url);
             res.setHeader('Cache-Control', 'no-store');
@@ -44,17 +43,18 @@ function registerTikTokRoutes(app) {
     });
 
     app.options('/download-tiktok', apiCors);
-    app.get('/download-tiktok', apiCors, requireApiKey, downloadLimiter, async (req, res, next) => {
+    app.get('/download-tiktok', apiCors, requireApiKey, requestLimiter, async (req, res, next) => {
         try {
-            await downloadToResponse(req.query?.url, req.query?.tipo ?? req.query?.type, res);
+            await streamTikTokByUrl(req.query?.url, req.query?.tipo ?? req.query?.type, req, res, true);
         } catch (error) {
             return next(error);
         }
     });
 
-    app.post('/painel/tiktok-info', express.json({ limit: '32kb' }), requireTrustedOrigin, requireSession, downloadLimiter, async (req, res, next) => {
+    app.post('/painel/tiktok-info', express.json({ limit: '32kb' }), requireTrustedOrigin, requireSession, requestLimiter, async (req, res, next) => {
         try {
             const item = await getTikTokPreview(req.body?.url);
+            addPanelMediaLinks(item);
             res.setHeader('Cache-Control', 'no-store');
             return res.json({ ok: true, item });
         } catch (error) {
@@ -62,9 +62,19 @@ function registerTikTokRoutes(app) {
         }
     });
 
-    app.get('/painel/tiktok-download', requireSession, downloadLimiter, async (req, res, next) => {
+    app.get('/painel/tiktok-media', requireSession, async (req, res, next) => {
         try {
-            await downloadToResponse(req.query?.url, req.query?.tipo ?? req.query?.type, res);
+            const media = parseMediaToken(req.query?.token);
+            const forceDownload = String(req.query?.download || '') === '1';
+            await proxyMediaToResponse(media.url, media.type, media.filename, req, res, forceDownload);
+        } catch (error) {
+            return next(error);
+        }
+    });
+
+    app.get('/painel/tiktok-download', requireSession, requestLimiter, async (req, res, next) => {
+        try {
+            await streamTikTokByUrl(req.query?.url, req.query?.tipo ?? req.query?.type, req, res, true);
         } catch (error) {
             return next(error);
         }
@@ -99,7 +109,29 @@ async function getTikTokPreview(rawUrl) {
     };
 }
 
-async function downloadToResponse(rawUrl, rawType, res) {
+function addPanelMediaLinks(item) {
+    if (item.videoUrl) {
+        const filename = buildFilenameFromPreview(item, 'mp4');
+        const token = createMediaToken(item.videoUrl, 'video', filename);
+        item.videoStreamUrl = `/painel/tiktok-media?token=${encodeURIComponent(token)}`;
+        item.videoDownloadUrl = `${item.videoStreamUrl}&download=1`;
+    } else {
+        item.videoStreamUrl = '';
+        item.videoDownloadUrl = '';
+    }
+
+    if (item.audioUrl) {
+        const filename = buildFilenameFromPreview(item, 'mp3');
+        const token = createMediaToken(item.audioUrl, 'audio', filename);
+        item.audioStreamUrl = `/painel/tiktok-media?token=${encodeURIComponent(token)}`;
+        item.audioDownloadUrl = `${item.audioStreamUrl}&download=1`;
+    } else {
+        item.audioStreamUrl = '';
+        item.audioDownloadUrl = '';
+    }
+}
+
+async function streamTikTokByUrl(rawUrl, rawType, req, res, forceDownload) {
     const url = normalizeTikTokUrl(rawUrl);
     const type = normalizeType(rawType);
     const info = await fetchTikWmInfo(url);
@@ -112,23 +144,33 @@ async function downloadToResponse(rawUrl, rawType, res) {
 
     const extension = type === 'audio' ? 'mp3' : 'mp4';
     const filename = buildFilename(info, extension);
-    const tempPath = path.join(os.tmpdir(), `skynet-${crypto.randomBytes(12).toString('hex')}.${extension}`);
+    await proxyMediaToResponse(mediaUrl, type, filename, req, res, forceDownload);
+}
 
-    try {
-        const media = await openPublicMediaStream(mediaUrl);
-        await saveStreamWithLimit(media.stream, tempPath, media.contentLength);
+async function proxyMediaToResponse(mediaUrl, type, filename, req, res, forceDownload) {
+    const media = await openPublicMediaStream(mediaUrl, req.headers.range);
 
-        res.setHeader('Cache-Control', 'no-store');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Download-Filename', filename);
-        res.type(type === 'audio' ? 'audio/mpeg' : 'video/mp4');
+    res.status(media.status === 206 ? 206 : 200);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Accept-Ranges', media.acceptRanges || 'bytes');
+    res.setHeader('Content-Type', media.contentType || (type === 'audio' ? 'audio/mpeg' : 'video/mp4'));
+    if (media.contentLength > 0) res.setHeader('Content-Length', String(media.contentLength));
+    if (media.contentRange) res.setHeader('Content-Range', media.contentRange);
+    res.setHeader('Content-Disposition', `${forceDownload ? 'attachment' : 'inline'}; filename="${filename}"`);
 
-        await new Promise((resolve, reject) => {
-            res.download(tempPath, filename, error => error ? reject(error) : resolve());
-        });
-    } finally {
-        fs.promises.unlink(tempPath).catch(() => {});
-    }
+    let total = 0;
+    const limiter = new Transform({
+        transform(chunk, encoding, callback) {
+            total += chunk.length;
+            if (total > MAX_MEDIA_BYTES) {
+                return callback(clientError(`A mídia ultrapassa o limite de ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)}MB.`, 413));
+            }
+            callback(null, chunk);
+        }
+    });
+
+    await pipeline(media.stream, limiter, res);
 }
 
 function normalizeTikTokUrl(value) {
@@ -209,7 +251,7 @@ function enqueueTikWm(task) {
     return run;
 }
 
-async function openPublicMediaStream(urlValue) {
+async function openPublicMediaStream(urlValue, rangeHeader = '') {
     let current;
     try { current = new URL(urlValue); }
     catch { throw clientError('O TikWM retornou uma URL de mídia inválida.', 502); }
@@ -221,6 +263,12 @@ async function openPublicMediaStream(urlValue) {
     for (let redirect = 0; redirect <= 3; redirect += 1) {
         await assertPublicHostname(current.hostname);
         const client = current.protocol === 'https:' ? https : http;
+        const headers = {
+            Referer: 'https://www.tikwm.com/',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/148 Safari/537.36'
+        };
+        if (rangeHeader) headers.Range = String(rangeHeader).slice(0, 200);
+
         let response;
         try {
             response = await axios.get(current.toString(), {
@@ -228,15 +276,12 @@ async function openPublicMediaStream(urlValue) {
                 timeout: 60000,
                 maxRedirects: 0,
                 validateStatus: status => (status >= 200 && status < 300) || (status >= 300 && status < 400),
-                headers: {
-                    Referer: 'https://www.tikwm.com/',
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/148 Safari/537.36'
-                },
+                headers,
                 httpAgent: current.protocol === 'http:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined,
                 httpsAgent: current.protocol === 'https:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined
             });
         } catch {
-            throw clientError('Não foi possível baixar a mídia retornada pelo TikWM.', 502);
+            throw clientError('Não foi possível carregar a mídia retornada pelo TikWM.', 502);
         }
 
         if (response.status >= 300 && response.status < 400) {
@@ -250,42 +295,73 @@ async function openPublicMediaStream(urlValue) {
         }
 
         const contentLength = Number.parseInt(response.headers['content-length'] || '0', 10) || 0;
-        if (contentLength > MAX_MEDIA_BYTES) {
+        if (contentLength > MAX_MEDIA_BYTES && response.status !== 206) {
             response.data?.destroy?.();
             throw clientError(`A mídia ultrapassa o limite de ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)}MB.`, 413);
         }
-        return { stream: response.data, contentLength };
+
+        return {
+            stream: response.data,
+            status: response.status,
+            contentLength,
+            contentType: String(response.headers['content-type'] || ''),
+            contentRange: String(response.headers['content-range'] || ''),
+            acceptRanges: String(response.headers['accept-ranges'] || '')
+        };
     }
 
     throw clientError('A mídia excedeu o limite de redirecionamentos.', 502);
 }
 
-async function saveStreamWithLimit(stream, target, declaredLength) {
-    if (declaredLength > MAX_MEDIA_BYTES) throw clientError('Arquivo muito grande.', 413);
+function createMediaToken(url, type, filename) {
+    const payload = Buffer.from(JSON.stringify({
+        url,
+        type,
+        filename,
+        exp: Date.now() + MEDIA_TOKEN_TTL_MS
+    })).toString('base64url');
+    const signature = crypto.createHmac('sha256', mediaTokenSecret).update(payload).digest('base64url');
+    return `${payload}.${signature}`;
+}
 
-    let total = 0;
-    const limiter = new Transform({
-        transform(chunk, encoding, callback) {
-            total += chunk.length;
-            if (total > MAX_MEDIA_BYTES) {
-                return callback(clientError(`A mídia ultrapassa o limite de ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)}MB.`, 413));
-            }
-            callback(null, chunk);
-        }
-    });
+function parseMediaToken(value) {
+    const token = String(value || '');
+    const separator = token.lastIndexOf('.');
+    if (separator <= 0) throw clientError('Link de prévia inválido ou expirado.', 400);
 
-    const writer = fs.createWriteStream(target, { mode: 0o600 });
-    try {
-        await pipeline(stream, limiter, writer);
-    } catch (error) {
-        fs.promises.unlink(target).catch(() => {});
-        throw error;
+    const payload = token.slice(0, separator);
+    const signature = token.slice(separator + 1);
+    const expected = crypto.createHmac('sha256', mediaTokenSecret).update(payload).digest('base64url');
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        throw clientError('Link de prévia inválido ou expirado.', 400);
     }
+
+    let parsed;
+    try { parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')); }
+    catch { throw clientError('Link de prévia inválido ou expirado.', 400); }
+
+    if (!parsed?.url || !parsed?.filename || Number(parsed.exp || 0) < Date.now()) {
+        throw clientError('Link de prévia inválido ou expirado.', 410);
+    }
+
+    return {
+        url: normalizeTikWmMediaUrl(parsed.url),
+        type: normalizeType(parsed.type),
+        filename: String(parsed.filename).replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 120) || 'tiktok.mp4'
+    };
 }
 
 function buildFilename(info, extension) {
     const user = String(info?.author?.unique_id || 'tiktok').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32) || 'tiktok';
     const id = String(info?.id || crypto.randomBytes(6).toString('hex')).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    return `tiktok-${user}-${id}.${extension}`;
+}
+
+function buildFilenameFromPreview(item, extension) {
+    const user = String(item?.author?.username || 'tiktok').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32) || 'tiktok';
+    const id = String(item?.id || crypto.randomBytes(6).toString('hex')).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
     return `tiktok-${user}-${id}.${extension}`;
 }
 
@@ -326,7 +402,7 @@ function requireTrustedOrigin(req, res, next) {
     return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
 }
 
-function downloadLimiter(req, res, next) {
+function requestLimiter(req, res, next) {
     const key = String(req.account?.id || req.ip || 'unknown');
     const now = Date.now();
     let bucket = buckets.get(key);
