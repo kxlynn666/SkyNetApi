@@ -1,0 +1,23 @@
+{
+  "name": "skynet-api",
+  "version": "2.0.0",
+  "private": true,
+  "description": "API de geração de cards com contas, API keys, uploads e painéis web.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "1.0.7",
+    "axios": "1.19.0",
+    "cors": "2.8.6",
+    "express": "4.22.2",
+    "multer": "2.2.0",
+    "sharp": "0.35.3"
+  }
+}
