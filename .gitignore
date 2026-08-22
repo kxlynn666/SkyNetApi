@@ -10,6 +10,7 @@ pnpm-debug.log*
 
 # Dados persistentes e arquivos gerados em runtime
 data/*.json
+data/.key-vault-secret
 public/uploads/*
 public/generated/*
 
