@@ -11,9 +11,33 @@ const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
+const { cleanupCommunityAccount } = require('./src/community-cleanup');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+    if (req.method !== 'DELETE') return next();
+    let accountId = null;
+    const adminMatch = req.path.match(/^\/api\/admin\/users\/([^/]+)\/full$/);
+    if (adminMatch) accountId = decodeURIComponent(adminMatch[1]);
+    if (req.path === '/api/social/account') {
+        try {
+            const token = parseCookies(req.headers.cookie || '').skynet_session || '';
+            const session = token ? S.getSession(token) : null;
+            accountId = session?.accountId || null;
+        } catch {}
+    }
+    if (accountId) {
+        res.on('finish', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+                try { cleanupCommunityAccount(accountId); }
+                catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
+            }
+        });
+    }
+    return next();
+});
 
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
