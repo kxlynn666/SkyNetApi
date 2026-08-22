@@ -7,7 +7,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check src/app.js && node --check src/cards.js && node --check src/store.js && node --check src/config.js"
+    "check": "node --check server.js && node --check src/app.js && node --check src/cards.js && node --check src/text-renderer.js && node --check src/store.js && node --check src/config.js && node --check src/tiktok.js && node --check src/roblox.js && node --check public/tiktok-panel.js && node --check public/youtube-panel.js && node --check public/roblox-panel.js"
   },
   "engines": {
     "node": ">=20.9.0"
