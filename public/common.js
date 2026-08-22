@@ -89,7 +89,8 @@ window.SkyNet = (() => {
     const scripts = [
         { src: '/tiktok-panel.js', marker: 'skynetTiktokPanel' },
         { src: '/youtube-panel.js', marker: 'skynetYoutubePanel' },
-        { src: '/roblox-panel.js', marker: 'skynetRobloxPanel' }
+        { src: '/roblox-panel.js', marker: 'skynetRobloxPanel' },
+        { src: '/media-panel.js', marker: 'skynetMediaPanel' }
     ];
 
     for (const item of scripts) {
