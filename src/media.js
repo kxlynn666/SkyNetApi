@@ -71,6 +71,7 @@ async function analyzeMedia(rawUrl, accountId) {
 
     const info = await runYtDlpJson(sourceUrl);
     if (!info || typeof info !== 'object') throw clientError('O yt-dlp não retornou informações para esse link.', 422);
+    if (looksLikeYouTubeInfo(info)) throw clientError('Conteúdo do YouTube não é aceito pelo Media Downloader.', 403);
     if (Array.isArray(info.entries) || ['playlist', 'multi_video'].includes(info._type)) {
         throw clientError('Playlists e coleções não são suportadas. Envie o link de uma mídia individual.', 400);
     }
@@ -131,6 +132,17 @@ async function analyzeMedia(rawUrl, accountId) {
     return item;
 }
 
+function looksLikeYouTubeInfo(info) {
+    const labels = [
+        info.extractor,
+        info.extractor_key,
+        info.webpage_url_domain,
+        info.webpage_url,
+        info.original_url
+    ].filter(Boolean).join(' ').toLowerCase();
+    return labels.includes('youtube') || labels.includes('youtu.be') || labels.includes('googlevideo');
+}
+
 function normalizeFormats(info) {
     if (Array.isArray(info.formats) && info.formats.length) return info.formats.filter(item => item && typeof item === 'object');
     return info.url ? [info] : [];
@@ -144,11 +156,19 @@ function hasAudio(format) {
     return Boolean(format && format.acodec && format.acodec !== 'none');
 }
 
+function isBlockedMediaHost(hostname) {
+    const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
+    return BLOCKED_HOST_SUFFIXES.some(domain => host === domain || host.endsWith(`.${domain}`));
+}
+
 function isHttpFormat(format) {
     if (!format?.url) return false;
     try {
         const parsed = new URL(format.url);
-        return ['http:', 'https:'].includes(parsed.protocol) && !String(format.protocol || '').includes('m3u8') && !String(format.protocol || '').includes('dash');
+        return ['http:', 'https:'].includes(parsed.protocol)
+            && !isBlockedMediaHost(parsed.hostname)
+            && !String(format.protocol || '').includes('m3u8')
+            && !String(format.protocol || '').includes('dash');
     } catch {
         return false;
     }
@@ -192,7 +212,7 @@ async function normalizeAndValidateSourceUrl(value) {
 
     const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
     if (!host) throw clientError('Hostname inválido.');
-    if (BLOCKED_HOST_SUFFIXES.some(domain => host === domain || host.endsWith(`.${domain}`))) {
+    if (isBlockedMediaHost(host)) {
         throw clientError('Links do YouTube não são aceitos pelo Media Downloader.', 403);
     }
     if (ADULT_HOST_FRAGMENTS.some(fragment => host.includes(fragment))) {
@@ -337,6 +357,7 @@ function summarizeYtDlpError(stderr) {
 async function proxyPreview(token, req, res) {
     let current = new URL(token.url);
     for (let redirects = 0; redirects <= 3; redirects += 1) {
+        if (isBlockedMediaHost(current.hostname)) throw clientError('Destino de mídia não permitido.', 403);
         await assertPublicHostname(current.hostname);
         const client = current.protocol === 'https:' ? https : http;
         const headers = { ...token.headers };
