@@ -12,8 +12,11 @@ const C = require('./config');
 const S = require('./store');
 
 function registerFont() {
-    try { if (fs.existsSync(C.FONT_PATH)) GlobalFonts.registerFromPath(C.FONT_PATH, 'SkyNet Sans'); }
-    catch (error) { console.warn(`Não foi possível registrar a fonte customizada: ${error.message}`); }
+    try {
+        if (fs.existsSync(C.FONT_PATH)) GlobalFonts.registerFromPath(C.FONT_PATH, 'SkyNet Sans');
+    } catch (error) {
+        console.warn(`Não foi possível registrar a fonte customizada: ${error.message}`);
+    }
 }
 
 function normalizePostCardInput(body = {}) {
@@ -112,7 +115,7 @@ async function fetchRemoteImage(urlValue) {
             validateStatus: status => (status >= 200 && status < 300) || (status >= 300 && status < 400),
             maxContentLength: C.MAX_REMOTE_IMAGE_MB * 1024 * 1024,
             maxBodyLength: C.MAX_REMOTE_IMAGE_MB * 1024 * 1024,
-            headers: { 'User-Agent': 'SkyNetApi/2.1' },
+            headers: { 'User-Agent': 'SkyNetApi/2.2' },
             httpAgent: current.protocol === 'http:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined,
             httpsAgent: current.protocol === 'https:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined
         });
@@ -134,26 +137,32 @@ async function fetchRemoteImage(urlValue) {
 async function generateCardImage(params) {
     const canvas = createCanvas(C.CARD_SIZE, C.CARD_SIZE);
     const ctx = canvas.getContext('2d');
+
     const backgroundBuffer = await sharp(params.fundoBuffer, { limitInputPixels: 40_000_000 })
-        .resize(C.CARD_SIZE, C.CARD_SIZE, { fit: 'cover', position: 'attention' }).png().toBuffer();
+        .resize(C.CARD_SIZE, C.CARD_SIZE, { fit: 'cover', position: 'attention' })
+        .png()
+        .toBuffer();
     ctx.drawImage(await loadImage(backgroundBuffer), 0, 0, C.CARD_SIZE, C.CARD_SIZE);
 
     const shade = ctx.createLinearGradient(0, 0, 0, C.CARD_SIZE);
-    shade.addColorStop(0, 'rgba(3,5,12,.42)');
-    shade.addColorStop(.45, 'rgba(3,5,12,.20)');
-    shade.addColorStop(1, 'rgba(3,5,12,.58)');
+    shade.addColorStop(0, 'rgba(3,5,12,.48)');
+    shade.addColorStop(.45, 'rgba(3,5,12,.22)');
+    shade.addColorStop(1, 'rgba(3,5,12,.62)');
     ctx.fillStyle = shade;
     ctx.fillRect(0, 0, C.CARD_SIZE, C.CARD_SIZE);
+
     drawNeonFrame(ctx, params.neon);
     if (params.avatarBuffer) await drawCircularAvatar(ctx, params.avatarBuffer, params.neon);
 
-    const fontFamily = fs.existsSync(C.FONT_PATH) ? 'SkyNet Sans' : 'Arial';
+    const fontFamily = fs.existsSync(C.FONT_PATH) ? '"SkyNet Sans"' : 'sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
-    if (params.textoCima) drawNeonTextBlock(ctx, params.textoCima, 540, 125, 880, 50, 2, fontFamily, params.neon, 58);
-    if (params.textoPrincipal) drawNeonTextBlock(ctx, params.textoPrincipal, 540, params.avatarBuffer ? 720 : 535, 900, 74, 4, fontFamily, params.neon, 92, true);
-    if (params.textoBaixo) drawNeonTextBlock(ctx, params.textoBaixo, 540, 950, 880, 38, 2, fontFamily, params.neon, 48);
+
+    if (params.textoCima) drawTextBlock(ctx, params.textoCima, 540, 130, 870, 52, 2, fontFamily, params.neon, 62, false);
+    if (params.textoPrincipal) drawTextBlock(ctx, params.textoPrincipal, 540, params.avatarBuffer ? 720 : 570, 900, 78, 4, fontFamily, params.neon, 92, true);
+    if (params.textoBaixo) drawTextBlock(ctx, params.textoBaixo, 540, 950, 870, 42, 2, fontFamily, params.neon, 50, false);
+
     return canvas.toBuffer('image/png');
 }
 
@@ -165,68 +174,101 @@ function drawNeonFrame(ctx, neon) {
     ctx.shadowColor = neon;
     ctx.shadowBlur = 28;
     ctx.stroke();
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8;
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
 }
+
 async function drawCircularAvatar(ctx, buffer, neon) {
-    const size = 270;
-    const y = 270;
-    const prepared = await sharp(buffer, { limitInputPixels: 40_000_000 }).resize(size, size, { fit: 'cover', position: 'attention' }).png().toBuffer();
+    const size = 260;
+    const y = 265;
+    const prepared = await sharp(buffer, { limitInputPixels: 40_000_000 })
+        .resize(size, size, { fit: 'cover', position: 'attention' })
+        .png()
+        .toBuffer();
     const avatar = await loadImage(prepared);
+
     ctx.save();
     ctx.shadowColor = neon;
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 34;
     ctx.strokeStyle = neon;
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 11;
     ctx.beginPath();
-    ctx.arc(540, y + size / 2, size / 2 + 9, 0, Math.PI * 2);
+    ctx.arc(540, y + size / 2, size / 2 + 10, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+
     ctx.save();
     ctx.beginPath();
     ctx.arc(540, y + size / 2, size / 2, 0, Math.PI * 2);
     ctx.clip();
     ctx.drawImage(avatar, (C.CARD_SIZE - size) / 2, y, size, size);
     ctx.restore();
+
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,.70)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,.88)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(540, y + size / 2, size / 2 - 2, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
 }
-function drawNeonTextBlock(ctx, text, x, y, maxWidth, startSize, maxLines, family, neon, lineHeight, strong = false) {
-    const layout = fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family, strong);
-    const actualLineHeight = Math.max(34, Math.round(lineHeight * (layout.size / startSize)));
-    const startY = y - (layout.lines.length * actualLineHeight) / 2 + actualLineHeight / 2;
+
+function drawTextBlock(ctx, text, x, y, maxWidth, startSize, maxLines, family, neon, baseLineHeight, strong) {
+    const layout = fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family);
+    const lineHeight = Math.max(36, Math.round(baseLineHeight * (layout.size / startSize)));
+    const blockHeight = layout.lines.length * lineHeight + 34;
+    const panelWidth = Math.min(maxWidth + 56, 960);
+
     ctx.save();
-    ctx.font = `${strong ? '800' : '700'} ${layout.size}px ${family}`;
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = 'rgba(0,0,0,.72)';
-    ctx.lineWidth = strong ? 8 : 6;
+    roundedRectPath(ctx, x - panelWidth / 2, y - blockHeight / 2, panelWidth, blockHeight, strong ? 24 : 18);
+    ctx.fillStyle = strong ? 'rgba(5,7,14,.72)' : 'rgba(5,7,14,.60)';
+    ctx.fill();
+    ctx.strokeStyle = neon;
+    ctx.globalAlpha = strong ? 0.55 : 0.38;
+    ctx.lineWidth = strong ? 3 : 2;
+    ctx.stroke();
+    ctx.restore();
+
+    const startY = y - ((layout.lines.length - 1) * lineHeight) / 2;
+    ctx.save();
+    ctx.font = `bold ${layout.size}px ${family}`;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#05070e';
+    ctx.lineWidth = strong ? 10 : 7;
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+
+    for (let i = 0; i < layout.lines.length; i += 1) {
+        const ly = startY + i * lineHeight;
+        ctx.strokeText(layout.lines[i], x, ly, maxWidth);
+        ctx.fillText(layout.lines[i], x, ly, maxWidth);
+    }
+
     ctx.shadowColor = neon;
-    ctx.shadowBlur = strong ? 24 : 18;
-    layout.lines.forEach((line, i) => {
-        const ly = startY + i * actualLineHeight;
-        ctx.strokeText(line, x, ly, maxWidth);
-        ctx.fillText(line, x, ly, maxWidth);
-    });
+    ctx.shadowBlur = strong ? 18 : 12;
+    ctx.globalAlpha = 0.94;
+    for (let i = 0; i < layout.lines.length; i += 1) {
+        ctx.fillText(layout.lines[i], x, startY + i * lineHeight, maxWidth);
+    }
     ctx.restore();
 }
-function fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family, strong) {
-    for (let size = startSize; size >= 26; size -= 4) {
-        ctx.font = `${strong ? '800' : '700'} ${size}px ${family}`;
+
+function fitWrappedText(ctx, text, maxWidth, startSize, maxLines, family) {
+    for (let size = startSize; size >= 24; size -= 4) {
+        ctx.font = `bold ${size}px ${family}`;
         const lines = wrapText(ctx, text, maxWidth);
         if (lines.length <= maxLines && lines.every(line => ctx.measureText(line).width <= maxWidth)) return { lines, size };
     }
-    ctx.font = `${strong ? '800' : '700'} 26px ${family}`;
+    ctx.font = `bold 24px ${family}`;
     const lines = wrapText(ctx, text, maxWidth).slice(0, maxLines);
-    if (lines.length === maxLines && lines[maxLines - 1].length > 3) lines[maxLines - 1] = `${lines[maxLines - 1].slice(0, -3)}...`;
-    return { lines, size: 26 };
+    if (lines.length === maxLines && lines[maxLines - 1].length > 4) {
+        lines[maxLines - 1] = `${lines[maxLines - 1].slice(0, Math.max(1, lines[maxLines - 1].length - 3))}...`;
+    }
+    return { lines, size: 24 };
 }
+
 function wrapText(ctx, text, maxWidth) {
     const lines = [];
     for (const paragraph of String(text || '').replace(/\r/g, '').split('\n')) {
@@ -241,14 +283,22 @@ function wrapText(ctx, text, maxWidth) {
     }
     return lines;
 }
+
 function roundedRectPath(ctx, x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
     ctx.beginPath();
-    ctx.moveTo(x + r, y); ctx.lineTo(x + width - r, y); ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-    ctx.lineTo(x + width, y + height - r); ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-    ctx.lineTo(x + r, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
 }
+
 function extractLocalUploadFilename(value) {
     try {
         if (value.startsWith('/uploads/')) return path.basename(decodeURIComponent(value.slice('/uploads/'.length)));
@@ -295,4 +345,11 @@ function isPrivateIp(address) {
     return false;
 }
 
-module.exports = { registerFont, normalizePostCardInput, normalizeQueryCardInput, createCardForAccount, validateAndNormalizeUpload, clientError };
+module.exports = {
+    registerFont,
+    normalizePostCardInput,
+    normalizeQueryCardInput,
+    createCardForAccount,
+    validateAndNormalizeUpload,
+    clientError
+};
