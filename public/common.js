@@ -81,3 +81,25 @@ window.SkyNet = (() => {
 
     return { api, escapeHtml, formatDate, formatSize, message, session, logout, copy, setTabs };
 })();
+
+(() => {
+    const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
+    if (cleanPath !== '/admin') return;
+    let loaded = false;
+    const load = () => {
+        if (loaded) return;
+        const app = document.getElementById('app');
+        if (!app || app.classList.contains('hidden')) return;
+        loaded = true;
+        const script = document.createElement('script');
+        script.src = '/admin-extended.js';
+        script.dataset.adminExtended = '1';
+        document.head.appendChild(script);
+    };
+    load();
+    const observer = new MutationObserver(() => {
+        load();
+        if (loaded) observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+})();
