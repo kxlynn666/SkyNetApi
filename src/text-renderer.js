@@ -77,15 +77,31 @@ function drawTextBlock(ctx, { text, centerY, maxWidth, startSize, maxLines, neon
     const layout = fitText(ctx, text, maxWidth, startSize, maxLines);
     if (!layout.lines.length) return;
 
-    const lineHeight = Math.round(layout.size * (strong ? 1.26 : 1.20));
-    const paddingY = strong ? 28 : 22;
-    const blockHeight = layout.lines.length * lineHeight + paddingY * 2;
-    const blockWidth = Math.min(960, maxWidth + (strong ? 76 : 62));
+    ctx.font = `bold ${layout.size}px "SkyNet Text"`;
+
+    const measuredWidth = Math.max(...layout.lines.map(line => ctx.measureText(line).width));
+    const horizontalPadding = strong ? 38 : 32;
+    const verticalPadding = strong ? 22 : 18;
+    const lineHeight = Math.round(layout.size * (strong ? 1.22 : 1.18));
+
+    // A caixa acompanha a largura real do maior trecho de texto,
+    // mantendo apenas uma margem visual confortável.
+    const minWidth = strong ? 220 : 160;
+    const blockWidth = Math.min(
+        maxWidth + horizontalPadding * 2,
+        Math.max(minWidth, Math.ceil(measuredWidth + horizontalPadding * 2))
+    );
+
+    // A altura usa a altura real aproximada da fonte + o espaçamento entre linhas,
+    // evitando sobras grandes acima e abaixo.
+    const textHeight = layout.size + Math.max(0, layout.lines.length - 1) * lineHeight;
+    const blockHeight = Math.ceil(textHeight + verticalPadding * 2);
+
     const x = (C.CARD_SIZE - blockWidth) / 2;
     const y = centerY - blockHeight / 2;
 
     ctx.save();
-    roundedRectPath(ctx, x, y, blockWidth, blockHeight, strong ? 24 : 18);
+    roundedRectPath(ctx, x, y, blockWidth, blockHeight, strong ? 22 : 17);
     ctx.fillStyle = strong ? 'rgba(5,7,14,0.78)' : 'rgba(5,7,14,0.66)';
     ctx.fill();
     ctx.strokeStyle = neon;
