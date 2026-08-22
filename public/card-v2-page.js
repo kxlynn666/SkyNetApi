@@ -55,12 +55,11 @@
             .card2-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
             .card2-form-grid .form-group{margin:0}
             .card2-span-2{grid-column:1/-1}
-            .card2-info-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
             .card2-accent-row{display:grid;grid-template-columns:1fr 80px;gap:10px;align-items:end}
             .card2-accent-row input[type=color]{height:42px}
             .card2-format-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025);color:var(--muted);font-size:13px;line-height:1.5}
             .card2-format-badge{flex:0 0 auto;padding:4px 8px;border-radius:8px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.24);font-weight:700;color:var(--text)}
-            @media(max-width:820px){.card2-form-grid,.card2-info-row{grid-template-columns:1fr}.card2-span-2{grid-column:auto}.card2-accent-row{grid-template-columns:1fr 70px}}
+            @media(max-width:820px){.card2-form-grid{grid-template-columns:1fr}.card2-span-2{grid-column:auto}.card2-accent-row{grid-template-columns:1fr 70px}}
         `;
         document.head.appendChild(style);
     }
@@ -72,7 +71,7 @@
         document.querySelectorAll('.workspace-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('href') === CARD2_PATH));
         document.getElementById('workspaceKicker').textContent = 'Criação';
         document.getElementById('workspaceTitle').textContent = 'Card 2.0';
-        document.getElementById('workspaceDescription').textContent = 'Crie um card de perfil ultrawide 21:9 com foto quadrada 1:1 e informações organizadas ao lado.';
+        document.getElementById('workspaceDescription').textContent = 'Crie um card de perfil ultrawide 21:9 com avatar 1:1, textos mais destacados e acabamento decorativo.';
         document.title = 'Card 2.0 - SkyNetApi';
 
         const root = document.getElementById('workspaceContent');
@@ -80,7 +79,7 @@
             <section class="workspace-page-grid">
                 <div class="workspace-card workspace-col-5">
                     <div class="workspace-card-header"><div><h2>Perfil visual</h2><p>Layout 21:9 de 1680 × 720, com avatar quadrado 1:1 sem deformação.</p></div></div>
-                    <div class="card2-format-note" style="margin-bottom:16px"><span class="card2-format-badge">1:1</span><span>A foto principal é recortada em um quadro de 600 × 600. O formato 21:9 usa o espaço extra para nome, identificador, bio e informações livres.</span></div>
+                    <div class="card2-format-note" style="margin-bottom:16px"><span class="card2-format-badge">1:1</span><span>A foto principal fica em 600 × 600. A parte direita prioriza nome, identificador, etiqueta e descrição; a área inferior é apenas decorativa.</span></div>
                     <div class="message" id="card2Message"></div>
                     <form id="card2Form" class="card2-form-grid">
                         <div class="form-group card2-span-2">
@@ -109,19 +108,7 @@
                         </div>
                         <div class="form-group card2-span-2">
                             <label for="card2Bio">Descrição curta</label>
-                            <textarea id="card2Bio" name="bio" maxlength="260" placeholder="Uma apresentação curta, projeto, área de atuação ou qualquer texto que combine com o perfil."></textarea>
-                        </div>
-                        <div class="form-group card2-span-2">
-                            <label>Informação 1</label>
-                            <div class="card2-info-row"><input name="stat1_label" maxlength="18" value="INFO 1" placeholder="RÓTULO"><input name="stat1_value" maxlength="28" placeholder="Valor"></div>
-                        </div>
-                        <div class="form-group card2-span-2">
-                            <label>Informação 2</label>
-                            <div class="card2-info-row"><input name="stat2_label" maxlength="18" value="INFO 2" placeholder="RÓTULO"><input name="stat2_value" maxlength="28" placeholder="Valor"></div>
-                        </div>
-                        <div class="form-group card2-span-2">
-                            <label>Informação 3</label>
-                            <div class="card2-info-row"><input name="stat3_label" maxlength="18" value="INFO 3" placeholder="RÓTULO"><input name="stat3_value" maxlength="28" placeholder="Valor"></div>
+                            <textarea id="card2Bio" name="bio" maxlength="300" placeholder="Uma apresentação curta, projeto, área de atuação ou qualquer texto que combine com o perfil."></textarea>
                         </div>
                         <div class="card2-span-2"><button class="button primary" id="card2Generate" type="submit">Gerar Card 2.0</button></div>
                     </form>
