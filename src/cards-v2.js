@@ -11,41 +11,47 @@ const C = require('./config');
 const S = require('./store');
 const Cards = require('./cards');
 
-const WIDTH = 1920;
-const HEIGHT = 1080;
+const WIDTH = 1500;
+const HEIGHT = 1000;
 let fontReady = false;
 
 function normalizePostCardV2Input(body = {}) {
     return {
         imagem: body.imagem_url ?? body.imagem ?? '',
-        gamertag: body.gamertag ?? body.nick ?? body.username ?? '',
-        nome: body.nome ?? body.display_name ?? '',
-        status: body.status ?? '',
+        gamertag: body.gamertag ?? body.identificador ?? body.nick ?? body.username ?? '',
+        nome: body.nome ?? body.titulo ?? body.display_name ?? '',
+        status: body.status ?? body.etiqueta ?? '',
         bio: body.bio ?? body.descricao ?? '',
-        stat1Label: body.stat1_label ?? 'RANK',
-        stat1Value: body.stat1_value ?? '-',
-        stat2Label: body.stat2_label ?? 'WINS',
-        stat2Value: body.stat2_value ?? '-',
-        stat3Label: body.stat3_label ?? 'LEVEL',
-        stat3Value: body.stat3_value ?? '-',
+        stat1Label: body.stat1_label ?? body.info1_label ?? 'INFO 1',
+        stat1Value: body.stat1_value ?? body.info1_value ?? '',
+        stat2Label: body.stat2_label ?? body.info2_label ?? 'INFO 2',
+        stat2Value: body.stat2_value ?? body.info2_value ?? '',
+        stat3Label: body.stat3_label ?? body.info3_label ?? 'INFO 3',
+        stat3Value: body.stat3_value ?? body.info3_value ?? '',
         accent: body.accent ?? '#a855f7'
     };
 }
 
 function cleanText(value, maxLength) {
-    return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+    return String(value || '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, maxLength);
 }
 
 function sanitizeInput(input) {
+    const gamertag = cleanText(input.gamertag, 38);
+    const nome = cleanText(input.nome, 60) || gamertag || 'Perfil';
     return {
-        gamertag: cleanText(input.gamertag, 38) || 'PLAYER',
-        nome: cleanText(input.nome, 60),
-        status: cleanText(input.status, 42) || 'ONLINE',
+        gamertag,
+        nome,
+        status: cleanText(input.status, 42),
         bio: cleanText(input.bio, 260),
-        stats: [
-            { label: cleanText(input.stat1Label, 18) || 'RANK', value: cleanText(input.stat1Value, 22) || '-' },
-            { label: cleanText(input.stat2Label, 18) || 'WINS', value: cleanText(input.stat2Value, 22) || '-' },
-            { label: cleanText(input.stat3Label, 18) || 'LEVEL', value: cleanText(input.stat3Value, 22) || '-' }
+        details: [
+            { label: cleanText(input.stat1Label, 18) || 'INFO 1', value: cleanText(input.stat1Value, 28) },
+            { label: cleanText(input.stat2Label, 18) || 'INFO 2', value: cleanText(input.stat2Value, 28) },
+            { label: cleanText(input.stat3Label, 18) || 'INFO 3', value: cleanText(input.stat3Value, 28) }
         ],
         accent: /^#[0-9a-f]{6}$/i.test(String(input.accent || '')) ? String(input.accent) : '#a855f7'
     };
@@ -69,7 +75,7 @@ async function createCardV2ForAccount(account, input, fileObj, source = 'panel-v
         source,
         neon: params.accent,
         createdAt: new Date().toISOString(),
-        title: `Card 2.0 · ${params.gamertag}`
+        title: `Card 2.0 · ${params.nome}`
     };
     generations.push(record);
 
@@ -113,228 +119,223 @@ async function renderCardV2(imageBuffer, params) {
 function ensureFont() {
     if (fontReady) return;
     if (!fs.existsSync(C.FONT_PATH)) throw Cards.clientError(`Fonte do Card 2.0 não encontrada em ${C.FONT_PATH}`, 500);
-    GlobalFonts.registerFromPath(C.FONT_PATH, 'SkyNet Gamer');
+    GlobalFonts.registerFromPath(C.FONT_PATH, 'SkyNet Profile');
     fontReady = true;
 }
 
 function drawBackground(ctx, accent) {
     const gradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-    gradient.addColorStop(0, '#05070d');
-    gradient.addColorStop(0.45, '#0a0d16');
-    gradient.addColorStop(1, '#120b20');
+    gradient.addColorStop(0, '#090b11');
+    gradient.addColorStop(0.55, '#0d1018');
+    gradient.addColorStop(1, '#12101a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+    const glow = ctx.createRadialGradient(1180, 180, 20, 1180, 180, 560);
+    glow.addColorStop(0, hexToRgba(accent, 0.13));
+    glow.addColorStop(1, hexToRgba(accent, 0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(650, 0, 850, 700);
+
     ctx.save();
-    ctx.globalAlpha = 0.12;
-    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.06;
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
-    for (let x = -HEIGHT; x < WIDTH + HEIGHT; x += 84) {
+    for (let y = 120; y < HEIGHT; y += 110) {
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x + HEIGHT, HEIGHT);
+        ctx.moveTo(720, y);
+        ctx.lineTo(WIDTH - 70, y);
         ctx.stroke();
     }
     ctx.restore();
-
-    const glow = ctx.createRadialGradient(1460, 280, 40, 1460, 280, 760);
-    glow.addColorStop(0, hexToRgba(accent, 0.22));
-    glow.addColorStop(1, hexToRgba(accent, 0));
-    ctx.fillStyle = glow;
-    ctx.fillRect(760, 0, 1160, HEIGHT);
 }
 
 async function drawProfileImage(ctx, buffer, accent) {
     const x = 70;
-    const y = 70;
-    const width = 720;
-    const height = 940;
+    const y = 190;
+    const size = 620;
     const prepared = await sharp(buffer, { limitInputPixels: 40_000_000 })
-        .resize(width, height, { fit: 'cover', position: 'attention' })
+        .resize(size, size, { fit: 'cover', position: 'attention' })
         .png()
         .toBuffer();
     const image = await loadImage(prepared);
 
     ctx.save();
+    roundedRectPath(ctx, x, y, size, size, 34);
+    ctx.fillStyle = '#0c0f16';
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(accent, 0.72);
+    ctx.lineWidth = 4;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 36;
-    roundedRectPath(ctx, x, y, width, height, 36);
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 5;
+    ctx.shadowBlur = 22;
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
-    roundedRectPath(ctx, x, y, width, height, 36);
+    roundedRectPath(ctx, x, y, size, size, 31);
     ctx.clip();
-    ctx.drawImage(image, x, y, width, height);
+    ctx.drawImage(image, x, y, size, size);
 
-    const shade = ctx.createLinearGradient(x, 0, x + width, 0);
-    shade.addColorStop(0, 'rgba(3,5,10,.04)');
-    shade.addColorStop(0.68, 'rgba(3,5,10,.12)');
-    shade.addColorStop(1, 'rgba(5,7,13,.78)');
+    const shade = ctx.createLinearGradient(x, y, x, y + size);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(0.72, 'rgba(0,0,0,.03)');
+    shade.addColorStop(1, 'rgba(0,0,0,.18)');
     ctx.fillStyle = shade;
-    ctx.fillRect(x, y, width, height);
-
-    const bottom = ctx.createLinearGradient(0, y + height * 0.55, 0, y + height);
-    bottom.addColorStop(0, 'rgba(0,0,0,0)');
-    bottom.addColorStop(1, 'rgba(0,0,0,.58)');
-    ctx.fillStyle = bottom;
-    ctx.fillRect(x, y, width, height);
+    ctx.fillRect(x, y, size, size);
     ctx.restore();
 
     ctx.save();
     ctx.fillStyle = accent;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 22;
-    roundedRectPath(ctx, 780, 180, 8, 720, 4);
+    roundedRectPath(ctx, x, y + size + 24, 160, 5, 3);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    roundedRectPath(ctx, x + 174, y + size + 24, 90, 5, 3);
     ctx.fill();
     ctx.restore();
 }
 
 function drawProfileData(ctx, params) {
-    const left = 900;
-    const right = 1840;
+    const left = 770;
+    const right = 1430;
     const contentWidth = right - left;
 
     ctx.save();
     ctx.fillStyle = params.accent;
-    ctx.font = 'bold 28px "SkyNet Gamer"';
+    ctx.font = 'bold 24px "SkyNet Profile"';
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText('PLAYER PROFILE', left, 145);
+    ctx.fillText('PERFIL', left, 145);
     ctx.restore();
 
-    const tagSize = fitFont(ctx, params.gamertag.toUpperCase(), contentWidth, 112, 58);
+    const titleSize = fitFont(ctx, params.nome, contentWidth, 82, 46);
     ctx.save();
-    ctx.font = `bold ${tagSize}px "SkyNet Gamer"`;
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = params.accent;
-    ctx.shadowBlur = 24;
-    ctx.fillText(params.gamertag.toUpperCase(), left, 285);
+    ctx.font = `bold ${titleSize}px "SkyNet Profile"`;
+    ctx.fillStyle = '#f7f8fb';
+    ctx.fillText(params.nome, left, 250);
     ctx.restore();
 
-    if (params.nome) {
+    if (params.gamertag && params.gamertag !== params.nome) {
         ctx.save();
-        ctx.font = 'bold 38px "SkyNet Gamer"';
-        ctx.fillStyle = 'rgba(232,235,245,.72)';
-        ctx.fillText(params.nome, left, 345);
+        ctx.font = 'bold 30px "SkyNet Profile"';
+        ctx.fillStyle = 'rgba(218,221,232,.62)';
+        const handle = params.gamertag.startsWith('@') ? params.gamertag : `@${params.gamertag}`;
+        ctx.fillText(handle, left, 304);
         ctx.restore();
     }
 
-    drawStatusPill(ctx, left, 390, params.status, params.accent);
+    if (params.status) drawTag(ctx, left, 345, params.status, params.accent);
 
-    drawSectionLabel(ctx, left, 510, 'ABOUT', params.accent);
-    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth - 20, 38, 4);
+    drawSectionLabel(ctx, left, 455, 'SOBRE', params.accent);
+    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth, 30, 5);
     ctx.save();
-    ctx.font = 'bold 38px "SkyNet Gamer"';
-    ctx.fillStyle = 'rgba(239,241,250,.88)';
+    ctx.font = 'bold 30px "SkyNet Profile"';
+    ctx.fillStyle = 'rgba(236,238,246,.84)';
     ctx.textBaseline = 'top';
-    bioLines.forEach((line, index) => ctx.fillText(line, left, 550 + index * 54));
+    bioLines.forEach((line, index) => ctx.fillText(line, left, 490 + index * 44));
     ctx.restore();
 
-    drawSectionLabel(ctx, left, 790, 'STATS', params.accent);
-    const gap = 22;
-    const statWidth = Math.floor((contentWidth - gap * 2) / 3);
-    params.stats.forEach((stat, index) => {
-        drawStatCard(ctx, left + index * (statWidth + gap), 825, statWidth, 155, stat, params.accent);
+    drawSectionLabel(ctx, left, 735, 'INFORMAÇÕES', params.accent);
+    const gap = 16;
+    const detailWidth = Math.floor((contentWidth - gap * 2) / 3);
+    params.details.forEach((detail, index) => {
+        drawDetailCard(ctx, left + index * (detailWidth + gap), 770, detailWidth, 145, detail, params.accent);
     });
 }
 
-function drawStatusPill(ctx, x, y, text, accent) {
-    ctx.font = 'bold 26px "SkyNet Gamer"';
-    const width = Math.min(460, Math.max(190, Math.ceil(ctx.measureText(text).width + 84)));
+function drawTag(ctx, x, y, text, accent) {
+    ctx.font = 'bold 22px "SkyNet Profile"';
+    const width = Math.min(420, Math.max(130, Math.ceil(ctx.measureText(text).width + 52)));
     ctx.save();
-    roundedRectPath(ctx, x, y, width, 64, 32);
-    ctx.fillStyle = hexToRgba(accent, 0.14);
+    roundedRectPath(ctx, x, y, width, 52, 26);
+    ctx.fillStyle = hexToRgba(accent, 0.12);
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(accent, 0.72);
+    ctx.strokeStyle = hexToRgba(accent, 0.52);
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x + 31, y + 32, 8, 0, Math.PI * 2);
-    ctx.fillStyle = accent;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 14;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#f5f5fb';
+    ctx.fillStyle = '#f1f2f7';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text.toUpperCase(), x + 55, y + 33);
+    ctx.fillText(text, x + 26, y + 27);
     ctx.restore();
 }
 
 function drawSectionLabel(ctx, x, y, text, accent) {
     ctx.save();
-    ctx.font = 'bold 24px "SkyNet Gamer"';
+    ctx.font = 'bold 20px "SkyNet Profile"';
     ctx.fillStyle = accent;
     ctx.fillText(text, x, y);
-    ctx.fillStyle = hexToRgba(accent, 0.45);
-    ctx.fillRect(x + 112, y - 10, 230, 2);
+    const labelWidth = ctx.measureText(text).width;
+    ctx.fillStyle = hexToRgba(accent, 0.34);
+    ctx.fillRect(x + labelWidth + 24, y - 8, Math.max(80, 260 - labelWidth), 2);
     ctx.restore();
 }
 
-function drawStatCard(ctx, x, y, width, height, stat, accent) {
+function drawDetailCard(ctx, x, y, width, height, detail, accent) {
     ctx.save();
-    roundedRectPath(ctx, x, y, width, height, 22);
-    ctx.fillStyle = 'rgba(14,17,28,.78)';
+    roundedRectPath(ctx, x, y, width, height, 20);
+    ctx.fillStyle = 'rgba(255,255,255,.035)';
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(accent, 0.36);
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,.09)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.font = 'bold 22px "SkyNet Gamer"';
-    ctx.fillStyle = 'rgba(210,214,230,.62)';
-    ctx.fillText(stat.label.toUpperCase(), x + 24, y + 44);
+    ctx.font = 'bold 17px "SkyNet Profile"';
+    ctx.fillStyle = hexToRgba(accent, 0.82);
+    ctx.fillText(detail.label.toUpperCase(), x + 20, y + 38);
 
-    const size = fitFont(ctx, stat.value, width - 48, 54, 30);
-    ctx.font = `bold ${size}px "SkyNet Gamer"`;
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 12;
-    ctx.fillText(stat.value, x + 24, y + 112);
+    const value = detail.value || '—';
+    const size = fitFont(ctx, value, width - 40, 34, 22);
+    ctx.font = `bold ${size}px "SkyNet Profile"`;
+    ctx.fillStyle = '#f6f7fa';
+    ctx.fillText(value, x + 20, y + 94);
     ctx.restore();
 }
 
 function fitFont(ctx, text, maxWidth, startSize, minSize) {
     for (let size = startSize; size >= minSize; size -= 2) {
-        ctx.font = `bold ${size}px "SkyNet Gamer"`;
+        ctx.font = `bold ${size}px "SkyNet Profile"`;
         if (ctx.measureText(text).width <= maxWidth) return size;
     }
     return minSize;
 }
 
 function wrapText(ctx, text, maxWidth, size, maxLines) {
-    ctx.font = `bold ${size}px "SkyNet Gamer"`;
+    ctx.font = `bold ${size}px "SkyNet Profile"`;
     const words = String(text || '').split(/\s+/).filter(Boolean);
     const lines = [];
     let line = '';
+    let consumed = 0;
+
     for (const word of words) {
         const next = line ? `${line} ${word}` : word;
         if (!line || ctx.measureText(next).width <= maxWidth) {
             line = next;
+            consumed += 1;
         } else {
             lines.push(line);
+            if (lines.length === maxLines) break;
             line = word;
-            if (lines.length === maxLines - 1) break;
+            consumed += 1;
         }
     }
     if (line && lines.length < maxLines) lines.push(line);
-    if (words.length && lines.length === maxLines) {
-        let last = lines[maxLines - 1];
+
+    if (consumed < words.length && lines.length) {
+        const index = Math.min(maxLines, lines.length) - 1;
+        let last = lines[index];
         while (last.length > 4 && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
-        lines[maxLines - 1] = `${last.replace(/[\s.,;:!?-]+$/g, '')}…`;
+        lines[index] = `${last.replace(/[\s.,;:!?-]+$/g, '')}…`;
     }
-    return lines;
+    return lines.slice(0, maxLines);
 }
 
 function drawOuterFrame(ctx, accent) {
     ctx.save();
-    roundedRectPath(ctx, 28, 28, WIDTH - 56, HEIGHT - 56, 38);
-    ctx.strokeStyle = hexToRgba(accent, 0.78);
-    ctx.lineWidth = 3;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 18;
+    roundedRectPath(ctx, 28, 28, WIDTH - 56, HEIGHT - 56, 34);
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = hexToRgba(accent, 0.24);
+    ctx.lineWidth = 1;
+    roundedRectPath(ctx, 36, 36, WIDTH - 72, HEIGHT - 72, 30);
     ctx.stroke();
     ctx.restore();
 }
