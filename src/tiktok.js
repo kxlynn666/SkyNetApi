@@ -6,6 +6,8 @@ const dns = require('dns');
 const net = require('net');
 const http = require('http');
 const https = require('https');
+const { Transform } = require('stream');
+const { pipeline } = require('stream/promises');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -52,9 +54,7 @@ async function downloadToResponse(rawUrl, rawType, res) {
     const url = normalizeTikTokUrl(rawUrl);
     const type = normalizeType(rawType);
     const info = await fetchTikWmInfo(url);
-    const mediaValue = type === 'audio'
-        ? info.music
-        : (info.hdplay || info.play);
+    const mediaValue = type === 'audio' ? info.music : (info.hdplay || info.play);
 
     if (!mediaValue || typeof mediaValue !== 'string') {
         throw clientError(type === 'audio' ? 'O TikWM não retornou áudio para esse TikTok.' : 'O TikWM não retornou vídeo para esse TikTok.', 404);
@@ -195,21 +195,22 @@ async function openPublicMediaStream(urlValue) {
 
 async function saveStreamWithLimit(stream, target, declaredLength) {
     if (declaredLength > MAX_MEDIA_BYTES) throw clientError('Arquivo muito grande.', 413);
-    const writer = fs.createWriteStream(target, { mode: 0o600 });
-    let total = 0;
 
-    try {
-        for await (const chunk of stream) {
+    let total = 0;
+    const limiter = new Transform({
+        transform(chunk, encoding, callback) {
             total += chunk.length;
             if (total > MAX_MEDIA_BYTES) {
-                stream.destroy?.();
-                throw clientError(`A mídia ultrapassa o limite de ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)}MB.`, 413);
+                return callback(clientError(`A mídia ultrapassa o limite de ${Math.round(MAX_MEDIA_BYTES / 1024 / 1024)}MB.`, 413));
             }
-            if (!writer.write(chunk)) await new Promise(resolve => writer.once('drain', resolve));
+            callback(null, chunk);
         }
-        await new Promise((resolve, reject) => writer.end(error => error ? reject(error) : resolve()));
+    });
+
+    const writer = fs.createWriteStream(target, { mode: 0o600 });
+    try {
+        await pipeline(stream, limiter, writer);
     } catch (error) {
-        writer.destroy();
         fs.promises.unlink(target).catch(() => {});
         throw error;
     }
