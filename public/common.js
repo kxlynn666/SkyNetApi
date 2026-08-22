@@ -85,9 +85,17 @@ window.SkyNet = (() => {
 (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
     if (cleanPath !== '/painel') return;
-    if (document.querySelector('script[data-skynet-tiktok-panel]')) return;
-    const script = document.createElement('script');
-    script.src = '/tiktok-panel.js';
-    script.dataset.skynetTiktokPanel = '1';
-    document.head.appendChild(script);
+
+    const scripts = [
+        { src: '/tiktok-panel.js', marker: 'skynetTiktokPanel' },
+        { src: '/youtube-panel.js', marker: 'skynetYoutubePanel' }
+    ];
+
+    for (const item of scripts) {
+        if (document.querySelector(`script[data-${item.marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
+        const script = document.createElement('script');
+        script.src = item.src;
+        script.dataset[item.marker] = '1';
+        document.head.appendChild(script);
+    }
 })();
