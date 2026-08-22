@@ -1,4 +1,3 @@
-const path = require('path');
 const express = require('express');
 const { createApp } = require('./src/app');
 const C = require('./src/config');
@@ -10,7 +9,7 @@ if (C.TRUST_PROXY) app.set('trust proxy', 1);
 registerTikTokRoutes(app);
 
 app.get('/tiktok', (req, res) => {
-    res.sendFile(path.join(C.PUBLIC_DIR, 'tiktok.html'));
+    res.redirect(302, '/painel');
 });
 
 app.use(createApp());
