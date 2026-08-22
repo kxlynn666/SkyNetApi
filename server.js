@@ -1,4 +1,5 @@
 const path = require('path');
+const http = require('http');
 const express = require('express');
 const { createApp } = require('./src/app');
 const C = require('./src/config');
@@ -6,6 +7,7 @@ const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
+const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
@@ -14,10 +16,14 @@ registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
 registerCardV2Routes(app);
+registerSocialRoutes(app);
 
 const workspaceRoutes = [
     '/painel',
     '/painel/conta',
+    '/painel/perfil',
+    '/painel/amigos',
+    '/painel/chat',
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
@@ -34,6 +40,7 @@ for (const route of workspaceRoutes) {
 }
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
+app.get('/u/:username', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'public-profile.html')));
 app.get('/painel/youtube', (req, res) => res.redirect(302, '/painel/card2'));
 
 app.get('/painel.html', (req, res) => res.redirect(302, '/painel'));
@@ -54,6 +61,9 @@ app.use((error, req, res, next) => {
     });
 });
 
-app.listen(C.PORT, () => {
+const server = http.createServer(app);
+attachSocialSocket(server);
+
+server.listen(C.PORT, () => {
     console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
 });
