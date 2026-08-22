@@ -28,8 +28,19 @@ function registerTikTokRoutes(app) {
             return callback(null, false);
         },
         credentials: true,
-        methods: ['GET', 'OPTIONS'],
+        methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
+    });
+
+    app.options('/tiktok-info', apiCors);
+    app.get('/tiktok-info', apiCors, requireApiKey, downloadLimiter, async (req, res, next) => {
+        try {
+            const item = await getTikTokPreview(req.query?.url);
+            res.setHeader('Cache-Control', 'no-store');
+            return res.json({ ok: true, item });
+        } catch (error) {
+            return next(error);
+        }
     });
 
     app.options('/download-tiktok', apiCors);
@@ -37,17 +48,55 @@ function registerTikTokRoutes(app) {
         try {
             await downloadToResponse(req.query?.url, req.query?.tipo ?? req.query?.type, res);
         } catch (error) {
-            next(error);
+            return next(error);
         }
     });
 
-    app.post('/painel/tiktok-download', express.json({ limit: '32kb' }), requireTrustedOrigin, requireSession, downloadLimiter, async (req, res, next) => {
+    app.post('/painel/tiktok-info', express.json({ limit: '32kb' }), requireTrustedOrigin, requireSession, downloadLimiter, async (req, res, next) => {
         try {
-            await downloadToResponse(req.body?.url, req.body?.tipo ?? req.body?.type, res);
+            const item = await getTikTokPreview(req.body?.url);
+            res.setHeader('Cache-Control', 'no-store');
+            return res.json({ ok: true, item });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     });
+
+    app.get('/painel/tiktok-download', requireSession, downloadLimiter, async (req, res, next) => {
+        try {
+            await downloadToResponse(req.query?.url, req.query?.tipo ?? req.query?.type, res);
+        } catch (error) {
+            return next(error);
+        }
+    });
+}
+
+async function getTikTokPreview(rawUrl) {
+    const url = normalizeTikTokUrl(rawUrl);
+    const info = await fetchTikWmInfo(url);
+    const videoUrl = normalizeTikWmMediaUrl(info.hdplay || info.play);
+    const audioUrl = normalizeTikWmMediaUrl(info.music);
+    const cover = normalizeTikWmMediaUrl(info.cover || info.origin_cover);
+
+    if (!videoUrl && !audioUrl) {
+        throw clientError('O TikWM não retornou vídeo ou áudio para esse TikTok.', 404);
+    }
+
+    return {
+        id: String(info.id || ''),
+        originalUrl: url,
+        title: String(info.title || '').trim().slice(0, 500),
+        duration: Number(info.duration || 0) || 0,
+        cover,
+        author: {
+            username: String(info?.author?.unique_id || info?.author?.nickname || '').trim().slice(0, 80),
+            nickname: String(info?.author?.nickname || '').trim().slice(0, 120)
+        },
+        videoUrl,
+        audioUrl,
+        hasVideo: Boolean(videoUrl),
+        hasAudio: Boolean(audioUrl)
+    };
 }
 
 async function downloadToResponse(rawUrl, rawType, res) {
@@ -55,12 +104,12 @@ async function downloadToResponse(rawUrl, rawType, res) {
     const type = normalizeType(rawType);
     const info = await fetchTikWmInfo(url);
     const mediaValue = type === 'audio' ? info.music : (info.hdplay || info.play);
+    const mediaUrl = normalizeTikWmMediaUrl(mediaValue);
 
-    if (!mediaValue || typeof mediaValue !== 'string') {
+    if (!mediaUrl) {
         throw clientError(type === 'audio' ? 'O TikWM não retornou áudio para esse TikTok.' : 'O TikWM não retornou vídeo para esse TikTok.', 404);
     }
 
-    const mediaUrl = new URL(mediaValue, 'https://www.tikwm.com').toString();
     const extension = type === 'audio' ? 'mp3' : 'mp4';
     const filename = buildFilename(info, extension);
     const tempPath = path.join(os.tmpdir(), `skynet-${crypto.randomBytes(12).toString('hex')}.${extension}`);
@@ -90,7 +139,10 @@ function normalizeTikTokUrl(value) {
     try { parsed = new URL(raw); }
     catch { throw clientError('Link do TikTok inválido.'); }
 
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw clientError('O link do TikTok deve usar HTTP ou HTTPS.');
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        throw clientError('O link do TikTok deve usar HTTP ou HTTPS.');
+    }
+
     const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
     const allowed = host === 'tiktok.com' || host.endsWith('.tiktok.com');
     if (!allowed) throw clientError('Use um link público do TikTok.');
@@ -98,6 +150,17 @@ function normalizeTikTokUrl(value) {
     parsed.username = '';
     parsed.password = '';
     return parsed.toString();
+}
+
+function normalizeTikWmMediaUrl(value) {
+    if (!value || typeof value !== 'string') return '';
+    try {
+        const parsed = new URL(value, 'https://www.tikwm.com');
+        if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+        return parsed.toString();
+    } catch {
+        return '';
+    }
 }
 
 function normalizeType(value) {
@@ -118,8 +181,8 @@ async function fetchTikWmInfo(url) {
                 maxBodyLength: 2 * 1024 * 1024,
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json, text/plain, */*',
-                    'Referer': 'https://www.tikwm.com/',
+                    Accept: 'application/json, text/plain, */*',
+                    Referer: 'https://www.tikwm.com/',
                     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/148 Safari/537.36'
                 }
             });
@@ -151,7 +214,9 @@ async function openPublicMediaStream(urlValue) {
     try { current = new URL(urlValue); }
     catch { throw clientError('O TikWM retornou uma URL de mídia inválida.', 502); }
 
-    if (!['http:', 'https:'].includes(current.protocol)) throw clientError('O TikWM retornou um protocolo de mídia inválido.', 502);
+    if (!['http:', 'https:'].includes(current.protocol)) {
+        throw clientError('O TikWM retornou um protocolo de mídia inválido.', 502);
+    }
 
     for (let redirect = 0; redirect <= 3; redirect += 1) {
         await assertPublicHostname(current.hostname);
@@ -164,7 +229,7 @@ async function openPublicMediaStream(urlValue) {
                 maxRedirects: 0,
                 validateStatus: status => (status >= 200 && status < 300) || (status >= 300 && status < 400),
                 headers: {
-                    'Referer': 'https://www.tikwm.com/',
+                    Referer: 'https://www.tikwm.com/',
                     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/148 Safari/537.36'
                 },
                 httpAgent: current.protocol === 'http:' ? new client.Agent({ keepAlive: false, lookup: safeLookup }) : undefined,
@@ -178,7 +243,9 @@ async function openPublicMediaStream(urlValue) {
             response.data?.destroy?.();
             if (!response.headers.location) throw clientError('Redirecionamento de mídia inválido.', 502);
             current = new URL(response.headers.location, current);
-            if (!['http:', 'https:'].includes(current.protocol)) throw clientError('Redirecionamento de mídia não permitido.', 502);
+            if (!['http:', 'https:'].includes(current.protocol)) {
+                throw clientError('Redirecionamento de mídia não permitido.', 502);
+            }
             continue;
         }
 
@@ -231,8 +298,10 @@ function requireApiKey(req, res, next) {
         if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou ausente.' });
         req.account = auth.account;
         req.apiKeyRecord = auth.record;
-        next();
-    } catch (error) { next(error); }
+        return next();
+    } catch (error) {
+        return next(error);
+    }
 }
 
 function requireSession(req, res, next) {
@@ -243,8 +312,10 @@ function requireSession(req, res, next) {
         const account = S.loadAccounts().find(item => item.id === session.accountId && item.active);
         if (!account) return res.status(401).json({ ok: false, error: 'Conta inativa ou removida.' });
         req.account = account;
-        next();
-    } catch (error) { next(error); }
+        return next();
+    } catch (error) {
+        return next(error);
+    }
 }
 
 function requireTrustedOrigin(req, res, next) {
@@ -266,9 +337,9 @@ function downloadLimiter(req, res, next) {
     bucket.count += 1;
     if (bucket.count > DOWNLOADS_PER_MINUTE) {
         res.setHeader('Retry-After', String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
-        return res.status(429).json({ ok: false, error: 'Muitos downloads. Aguarde um pouco e tente novamente.' });
+        return res.status(429).json({ ok: false, error: 'Muitas consultas/downloads. Aguarde um pouco e tente novamente.' });
     }
-    next();
+    return next();
 }
 
 function parseCookies(header) {
@@ -304,14 +375,18 @@ async function assertPublicHostname(hostname) {
         return;
     }
     const addresses = await dns.promises.lookup(stripped, { all: true, verbatim: true });
-    if (!addresses.length || addresses.some(item => isPrivateIp(item.address))) throw clientError('Destino de mídia não permitido.', 502);
+    if (!addresses.length || addresses.some(item => isPrivateIp(item.address))) {
+        throw clientError('Destino de mídia não permitido.', 502);
+    }
 }
 
 function isPrivateIp(address) {
     const value = String(address || '').toLowerCase();
     if (!value) return true;
     if (value.startsWith('::ffff:')) return isPrivateIp(value.slice(7));
-    if (net.isIPv6(value)) return value === '::' || value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe8') || value.startsWith('fe9') || value.startsWith('fea') || value.startsWith('feb');
+    if (net.isIPv6(value)) {
+        return value === '::' || value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe8') || value.startsWith('fe9') || value.startsWith('fea') || value.startsWith('feb');
+    }
     if (!net.isIPv4(value)) return true;
     const [a, b] = value.split('.').map(Number);
     if (a === 0 || a === 10 || a === 127 || a >= 224) return true;
