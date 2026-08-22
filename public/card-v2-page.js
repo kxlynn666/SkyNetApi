@@ -26,7 +26,7 @@
     }
 
     function icon() {
-        return '<span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 15h8M8 11h5M17 9v4M15 11h4"/></svg></span>';
+        return '<span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="6" y="7" width="6" height="6" rx="1"/><path d="M14 8h4M14 11h4M6 16h12"/></svg></span>';
     }
 
     function patchNavigation() {
@@ -50,15 +50,17 @@
         const style = document.createElement('style');
         style.id = 'cardV2WorkspaceStyles';
         style.textContent = `
-            .card2-preview{aspect-ratio:16/9;min-height:0;width:100%;border:1px dashed var(--border);border-radius:16px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-faint)}
-            .card2-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#05070d}
+            .card2-preview{aspect-ratio:3/2;min-height:0;width:100%;border:1px dashed var(--border);border-radius:16px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-faint)}
+            .card2-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#090b11}
             .card2-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
             .card2-form-grid .form-group{margin:0}
             .card2-span-2{grid-column:1/-1}
-            .card2-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+            .card2-info-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
             .card2-accent-row{display:grid;grid-template-columns:1fr 80px;gap:10px;align-items:end}
             .card2-accent-row input[type=color]{height:42px}
-            @media(max-width:820px){.card2-form-grid,.card2-stat-row{grid-template-columns:1fr}.card2-span-2{grid-column:auto}.card2-accent-row{grid-template-columns:1fr 70px}}
+            .card2-format-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025);color:var(--muted);font-size:13px;line-height:1.5}
+            .card2-format-badge{flex:0 0 auto;padding:4px 8px;border-radius:8px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.24);font-weight:700;color:var(--text)}
+            @media(max-width:820px){.card2-form-grid,.card2-info-row{grid-template-columns:1fr}.card2-span-2{grid-column:auto}.card2-accent-row{grid-template-columns:1fr 70px}}
         `;
         document.head.appendChild(style);
     }
@@ -70,18 +72,19 @@
         document.querySelectorAll('.workspace-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('href') === CARD2_PATH));
         document.getElementById('workspaceKicker').textContent = 'Criação';
         document.getElementById('workspaceTitle').textContent = 'Card 2.0';
-        document.getElementById('workspaceDescription').textContent = 'Crie um perfil gamer 16:9 com imagem em destaque à esquerda e informações do jogador à direita.';
+        document.getElementById('workspaceDescription').textContent = 'Crie um card de perfil moderno com foto quadrada 1:1 e informações organizadas ao lado.';
         document.title = 'Card 2.0 - SkyNetApi';
 
         const root = document.getElementById('workspaceContent');
         root.innerHTML = `
             <section class="workspace-page-grid">
                 <div class="workspace-card workspace-col-5">
-                    <div class="workspace-card-header"><div><h2>Perfil gamer</h2><p>Saída Full HD 1920 × 1080. O Card Studio original não é alterado.</p></div></div>
+                    <div class="workspace-card-header"><div><h2>Perfil visual</h2><p>Layout 3:2 de 1500 × 1000, pensado para avatar quadrado sem deformação.</p></div></div>
+                    <div class="card2-format-note" style="margin-bottom:16px"><span class="card2-format-badge">1:1</span><span>A imagem principal é recortada em um quadro quadrado. O restante do card é usado para nome, identificador, bio e informações livres.</span></div>
                     <div class="message" id="card2Message"></div>
                     <form id="card2Form" class="card2-form-grid">
                         <div class="form-group card2-span-2">
-                            <label for="card2ImageUrl">Imagem principal por URL</label>
+                            <label for="card2ImageUrl">Foto / avatar por URL</label>
                             <input id="card2ImageUrl" name="imagem_url" placeholder="https://... ou /uploads/...">
                         </div>
                         <div class="form-group card2-span-2">
@@ -89,42 +92,42 @@
                             <input id="card2ImageFile" name="imagem_file" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
                         </div>
                         <div class="form-group">
-                            <label for="card2Gamertag">Gamertag</label>
-                            <input id="card2Gamertag" name="gamertag" maxlength="38" placeholder="NIGHTFALL" required>
+                            <label for="card2Name">Nome principal</label>
+                            <input id="card2Name" name="nome" maxlength="60" placeholder="João Augusto" required>
                         </div>
                         <div class="form-group">
-                            <label for="card2Name">Nome / subtítulo</label>
-                            <input id="card2Name" name="nome" maxlength="60" placeholder="João Augusto">
+                            <label for="card2Gamertag">Identificador / @</label>
+                            <input id="card2Gamertag" name="gamertag" maxlength="38" placeholder="joaoaugusto">
                         </div>
                         <div class="form-group">
-                            <label for="card2Status">Status</label>
-                            <input id="card2Status" name="status" maxlength="42" value="ONLINE" placeholder="ONLINE">
+                            <label for="card2Status">Etiqueta opcional</label>
+                            <input id="card2Status" name="status" maxlength="42" placeholder="Designer, Criador, Disponível...">
                         </div>
                         <div class="form-group card2-accent-row">
                             <div><label for="card2AccentText">Cor de destaque</label><input id="card2AccentText" value="#a855f7" pattern="#[0-9A-Fa-f]{6}" maxlength="7"></div>
                             <div><label for="card2Accent">Cor</label><input id="card2Accent" name="accent" type="color" value="#a855f7"></div>
                         </div>
                         <div class="form-group card2-span-2">
-                            <label for="card2Bio">Bio curta</label>
-                            <textarea id="card2Bio" name="bio" maxlength="260" placeholder="Main de..., competitivo, jogador desde..."></textarea>
+                            <label for="card2Bio">Descrição curta</label>
+                            <textarea id="card2Bio" name="bio" maxlength="260" placeholder="Uma apresentação curta, projeto, área de atuação ou qualquer texto que combine com o perfil."></textarea>
                         </div>
                         <div class="form-group card2-span-2">
-                            <label>Estatística 1</label>
-                            <div class="card2-stat-row"><input name="stat1_label" maxlength="18" value="RANK"><input name="stat1_value" maxlength="22" placeholder="DIAMOND"></div>
+                            <label>Informação 1</label>
+                            <div class="card2-info-row"><input name="stat1_label" maxlength="18" value="INFO 1" placeholder="RÓTULO"><input name="stat1_value" maxlength="28" placeholder="Valor"></div>
                         </div>
                         <div class="form-group card2-span-2">
-                            <label>Estatística 2</label>
-                            <div class="card2-stat-row"><input name="stat2_label" maxlength="18" value="WINS"><input name="stat2_value" maxlength="22" placeholder="128"></div>
+                            <label>Informação 2</label>
+                            <div class="card2-info-row"><input name="stat2_label" maxlength="18" value="INFO 2" placeholder="RÓTULO"><input name="stat2_value" maxlength="28" placeholder="Valor"></div>
                         </div>
                         <div class="form-group card2-span-2">
-                            <label>Estatística 3</label>
-                            <div class="card2-stat-row"><input name="stat3_label" maxlength="18" value="LEVEL"><input name="stat3_value" maxlength="22" placeholder="87"></div>
+                            <label>Informação 3</label>
+                            <div class="card2-info-row"><input name="stat3_label" maxlength="18" value="INFO 3" placeholder="RÓTULO"><input name="stat3_value" maxlength="28" placeholder="Valor"></div>
                         </div>
                         <div class="card2-span-2"><button class="button primary" id="card2Generate" type="submit">Gerar Card 2.0</button></div>
                     </form>
                 </div>
                 <div class="workspace-card workspace-col-7">
-                    <div class="workspace-card-header"><div><h2>Pré-visualização 16:9</h2><p>A imagem gerada pelo servidor aparecerá aqui.</p></div></div>
+                    <div class="workspace-card-header"><div><h2>Pré-visualização 3:2</h2><p>A foto permanece quadrada dentro do layout final.</p></div></div>
                     <div class="card2-preview" id="card2Preview"><span>O Card 2.0 aparecerá aqui.</span></div>
                     <div class="workspace-tool-actions">
                         <a class="button primary hidden" id="card2Download" download="card-v2.png">Baixar</a>
@@ -155,7 +158,7 @@
             event.preventDefault();
             const file = document.getElementById('card2ImageFile');
             const imageUrl = document.getElementById('card2ImageUrl').value.trim();
-            if (!file.files.length && !imageUrl) return S.message(message, 'Informe a imagem principal.', 'error');
+            if (!file.files.length && !imageUrl) return S.message(message, 'Informe a foto ou avatar.', 'error');
 
             const button = document.getElementById('card2Generate');
             const body = new FormData(form);
