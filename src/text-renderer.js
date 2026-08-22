@@ -1,28 +1,33 @@
-function escapeXml(value) {
-    return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
+const fs = require('fs');
+const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+const C = require('./config');
+
+let fontReady = false;
+
+function ensureFont() {
+    if (fontReady) return;
+    if (!fs.existsSync(C.FONT_PATH)) {
+        throw new Error(`Fonte do card não encontrada em ${C.FONT_PATH}`);
+    }
+    const registered = GlobalFonts.registerFromPath(C.FONT_PATH, 'SkyNet Text');
+    if (registered === false) {
+        throw new Error('Não foi possível registrar a fonte do card.');
+    }
+    fontReady = true;
 }
 
-function wrapByApproxWidth(text, maxWidth, fontSize) {
-    const maxChars = Math.max(8, Math.floor(maxWidth / (fontSize * 0.56)));
+function wrapText(ctx, text, maxWidth) {
     const lines = [];
     for (const paragraph of String(text || '').replace(/\r/g, '').split('\n')) {
         const words = paragraph.trim().split(/\s+/).filter(Boolean);
         if (!words.length) continue;
         let line = '';
         for (const word of words) {
-            if (word.length > maxChars && !line) {
-                for (let i = 0; i < word.length; i += maxChars) lines.push(word.slice(i, i + maxChars));
-                continue;
-            }
             const candidate = line ? `${line} ${word}` : word;
-            if (candidate.length <= maxChars) line = candidate;
-            else {
-                if (line) lines.push(line);
+            if (!line || ctx.measureText(candidate).width <= maxWidth) {
+                line = candidate;
+            } else {
+                lines.push(line);
                 line = word;
             }
         }
@@ -31,68 +36,121 @@ function wrapByApproxWidth(text, maxWidth, fontSize) {
     return lines;
 }
 
-function fitText(text, maxWidth, startSize, maxLines) {
+function fitText(ctx, text, maxWidth, startSize, maxLines) {
     for (let size = startSize; size >= 26; size -= 4) {
-        const lines = wrapByApproxWidth(text, maxWidth, size);
-        if (lines.length <= maxLines) return { size, lines };
+        ctx.font = `bold ${size}px "SkyNet Text"`;
+        const lines = wrapText(ctx, text, maxWidth);
+        if (lines.length <= maxLines && lines.every(line => ctx.measureText(line).width <= maxWidth)) {
+            return { size, lines };
+        }
     }
+
     const size = 26;
-    const lines = wrapByApproxWidth(text, maxWidth, size).slice(0, maxLines);
+    ctx.font = `bold ${size}px "SkyNet Text"`;
+    const lines = wrapText(ctx, text, maxWidth).slice(0, maxLines);
     if (lines.length === maxLines) {
-        const last = lines[maxLines - 1];
-        if (last.length > 4) lines[maxLines - 1] = `${last.slice(0, -3)}...`;
+        let last = lines[maxLines - 1];
+        while (last.length > 4 && ctx.measureText(`${last}...`).width > maxWidth) last = last.slice(0, -1);
+        lines[maxLines - 1] = `${last.replace(/[.\s]+$/g, '')}...`;
     }
     return { size, lines };
 }
 
-function textBlockSvg({ text, centerY, maxWidth, startSize, maxLines, neon, strong = false }) {
-    if (!String(text || '').trim()) return '';
-    const { size, lines } = fitText(text, maxWidth, startSize, maxLines);
-    if (!lines.length) return '';
+function roundedRectPath(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
 
-    const lineHeight = Math.round(size * (strong ? 1.22 : 1.18));
-    const paddingY = strong ? 26 : 20;
-    const blockHeight = lines.length * lineHeight + paddingY * 2;
-    const blockWidth = Math.min(960, maxWidth + (strong ? 72 : 58));
-    const x = (1080 - blockWidth) / 2;
+function drawTextBlock(ctx, { text, centerY, maxWidth, startSize, maxLines, neon, strong = false }) {
+    if (!String(text || '').trim()) return;
+
+    const layout = fitText(ctx, text, maxWidth, startSize, maxLines);
+    if (!layout.lines.length) return;
+
+    const lineHeight = Math.round(layout.size * (strong ? 1.26 : 1.20));
+    const paddingY = strong ? 28 : 22;
+    const blockHeight = layout.lines.length * lineHeight + paddingY * 2;
+    const blockWidth = Math.min(960, maxWidth + (strong ? 76 : 62));
+    const x = (C.CARD_SIZE - blockWidth) / 2;
     const y = centerY - blockHeight / 2;
-    const firstBaseline = centerY - ((lines.length - 1) * lineHeight) / 2 + Math.round(size * 0.34);
 
-    const tspans = lines.map((line, index) =>
-        `<text x="540" y="${firstBaseline + index * lineHeight}" text-anchor="middle" dominant-baseline="middle" ` +
-        `font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="${size}" font-weight="700" ` +
-        `fill="#ffffff" stroke="#05070e" stroke-width="${strong ? 10 : 7}" stroke-linejoin="round" paint-order="stroke fill" ` +
-        `filter="url(#glow)">${escapeXml(line)}</text>`
-    ).join('');
+    ctx.save();
+    roundedRectPath(ctx, x, y, blockWidth, blockHeight, strong ? 24 : 18);
+    ctx.fillStyle = strong ? 'rgba(5,7,14,0.78)' : 'rgba(5,7,14,0.66)';
+    ctx.fill();
+    ctx.strokeStyle = neon;
+    ctx.globalAlpha = strong ? 0.62 : 0.46;
+    ctx.lineWidth = strong ? 3 : 2;
+    ctx.stroke();
+    ctx.restore();
 
-    return `
-      <rect x="${x}" y="${y}" width="${blockWidth}" height="${blockHeight}" rx="${strong ? 24 : 18}"
-            fill="${strong ? 'rgba(5,7,14,0.76)' : 'rgba(5,7,14,0.64)'}" stroke="${neon}" stroke-opacity="${strong ? 0.58 : 0.42}" stroke-width="${strong ? 3 : 2}"/>
-      ${tspans}`;
+    const startY = centerY - ((layout.lines.length - 1) * lineHeight) / 2;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.font = `bold ${layout.size}px "SkyNet Text"`;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#03050a';
+    ctx.lineWidth = strong ? 11 : 8;
+    ctx.shadowColor = neon;
+    ctx.shadowBlur = strong ? 26 : 18;
+
+    for (let i = 0; i < layout.lines.length; i += 1) {
+        const lineY = startY + i * lineHeight;
+        ctx.strokeText(layout.lines[i], 540, lineY, maxWidth);
+        ctx.fillText(layout.lines[i], 540, lineY, maxWidth);
+    }
+    ctx.restore();
 }
 
 function buildTextOverlay({ textoCima, textoPrincipal, textoBaixo, neon, hasAvatar }) {
-    const top = textBlockSvg({ text: textoCima, centerY: 132, maxWidth: 870, startSize: 52, maxLines: 2, neon });
-    const principal = textBlockSvg({ text: textoPrincipal, centerY: hasAvatar ? 720 : 570, maxWidth: 900, startSize: 78, maxLines: 4, neon, strong: true });
-    const bottom = textBlockSvg({ text: textoBaixo, centerY: 948, maxWidth: 870, startSize: 42, maxLines: 2, neon });
+    ensureFont();
 
-    return Buffer.from(`
-<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feFlood flood-color="${neon}" flood-opacity="0.85" result="color"/>
-      <feComposite in="color" in2="blur" operator="in" result="glowColor"/>
-      <feMerge>
-        <feMergeNode in="glowColor"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  ${top}
-  ${principal}
-  ${bottom}
-</svg>`);
+    const canvas = createCanvas(C.CARD_SIZE, C.CARD_SIZE);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, C.CARD_SIZE, C.CARD_SIZE);
+
+    drawTextBlock(ctx, {
+        text: textoCima,
+        centerY: 132,
+        maxWidth: 870,
+        startSize: 52,
+        maxLines: 2,
+        neon
+    });
+
+    drawTextBlock(ctx, {
+        text: textoPrincipal,
+        centerY: hasAvatar ? 720 : 570,
+        maxWidth: 900,
+        startSize: 78,
+        maxLines: 4,
+        neon,
+        strong: true
+    });
+
+    drawTextBlock(ctx, {
+        text: textoBaixo,
+        centerY: 948,
+        maxWidth: 870,
+        startSize: 42,
+        maxLines: 2,
+        neon
+    });
+
+    return canvas.toBuffer('image/png');
 }
 
 module.exports = { buildTextOverlay };
