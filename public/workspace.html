@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>SkyNetApi Workspace</title>
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body class="workspace-body">
+    <div class="workspace-loading" id="workspaceLoading">
+        <div class="workspace-loading-mark">S</div>
+        <div>Carregando workspace...</div>
+    </div>
+    <div class="workspace-shell hidden" id="workspaceShell">
+        <aside class="workspace-sidebar" id="workspaceSidebar"></aside>
+        <div class="workspace-main">
+            <header class="workspace-topbar">
+                <button class="workspace-menu-button" id="workspaceMenuButton" type="button" aria-label="Abrir menu">Menu</button>
+                <div class="workspace-heading">
+                    <div class="workspace-kicker" id="workspaceKicker"></div>
+                    <h1 id="workspaceTitle"></h1>
+                    <p id="workspaceDescription"></p>
+                </div>
+                <div class="workspace-user-chip" id="workspaceUserChip"></div>
+            </header>
+            <main class="workspace-content" id="workspaceContent"></main>
+        </div>
+    </div>
+    <div class="workspace-sidebar-backdrop hidden" id="workspaceSidebarBackdrop"></div>
+    <script src="/common.js"></script>
+    <script src="/dashboard.js"></script>
+</body>
+</html>
