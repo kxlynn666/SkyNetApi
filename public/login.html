@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Entrar - SkyNetApi</title>
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body class="workspace-login-body">
+    <main class="workspace-login-shell">
+        <section class="workspace-login-brand">
+            <a class="workspace-logo" href="/"><span>S</span><strong>SkyNetApi</strong></a>
+            <div class="workspace-login-copy">
+                <div class="workspace-kicker">Workspace privado</div>
+                <h1>Uma central para suas ferramentas.</h1>
+                <p>Cards, downloads, consultas, uploads e gerenciamento da API em uma interface única e organizada.</p>
+            </div>
+        </section>
+        <section class="workspace-login-card">
+            <div class="workspace-kicker">Acesso</div>
+            <h2 id="loginTitle">Entrar na sua conta</h2>
+            <p class="muted" id="loginSubtitle">Use suas credenciais do SkyNetApi.</p>
+            <div class="message" id="loginMessage"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Usuário</label>
+                    <input id="loginUsername" autocomplete="username" minlength="3" maxlength="30" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Senha</label>
+                    <input id="loginPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+                </div>
+                <button class="button primary workspace-login-submit" id="loginSubmit" type="submit">Entrar</button>
+            </form>
+            <p class="workspace-login-switch"><span id="loginSwitchText">Ainda não tem conta?</span> <button id="loginSwitch" type="button">Criar conta</button></p>
+        </section>
+    </main>
+    <script src="/common.js"></script>
+    <script>
+    (() => {
+        const S = window.SkyNet;
+        const form = document.getElementById('loginForm');
+        const message = document.getElementById('loginMessage');
+        const button = document.getElementById('loginSubmit');
+        const password = document.getElementById('loginPassword');
+        let mode = 'login';
+
+        function safeNext() {
+            const next = new URLSearchParams(location.search).get('next') || '/painel';
+            return next.startsWith('/painel') && !next.startsWith('//') ? next : '/painel';
+        }
+
+        function applyMode() {
+            const register = mode === 'register';
+            document.getElementById('loginTitle').textContent = register ? 'Criar sua conta' : 'Entrar na sua conta';
+            document.getElementById('loginSubtitle').textContent = register ? 'Crie uma conta para acessar o workspace.' : 'Use suas credenciais do SkyNetApi.';
+            button.textContent = register ? 'Criar conta' : 'Entrar';
+            document.getElementById('loginSwitchText').textContent = register ? 'Já tem uma conta?' : 'Ainda não tem conta?';
+            document.getElementById('loginSwitch').textContent = register ? 'Entrar' : 'Criar conta';
+            password.autocomplete = register ? 'new-password' : 'current-password';
+            S.message(message, '');
+        }
+
+        document.getElementById('loginSwitch').addEventListener('click', () => {
+            mode = mode === 'login' ? 'register' : 'login';
+            applyMode();
+        });
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const secret = password.value;
+            button.disabled = true;
+            try {
+                if (mode === 'register') {
+                    const data = await S.api('/api/auth/register', { method: 'POST', body: { username, password: secret } });
+                    S.message(message, data.message, data.active ? 'success' : 'warning');
+                    if (data.active) mode = 'login';
+                    applyMode();
+                    return;
+                }
+                await S.api('/api/auth/login', { method: 'POST', body: { username, password: secret } });
+                location.replace(safeNext());
+            } catch (error) {
+                S.message(message, error.message, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        S.session().then(user => { if (user) location.replace(safeNext()); }).catch(() => {});
+    })();
+    </script>
+</body>
+</html>
