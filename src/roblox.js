@@ -1,4 +1,7 @@
+const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
+const C = require('./config');
 const S = require('./store');
 
 const USERS_API = 'https://users.roblox.com';
@@ -8,7 +11,18 @@ const REQUESTS_PER_MINUTE = Math.max(1, Math.min(120, Number.parseInt(process.en
 const buckets = new Map();
 
 function registerRobloxRoutes(app) {
-    app.get('/roblox-user', requireApiKey, lookupLimiter, async (req, res, next) => {
+    const apiCors = cors({
+        origin(origin, callback) {
+            if (!origin || C.CORS_ORIGINS.has(origin)) return callback(null, true);
+            return callback(null, false);
+        },
+        credentials: true,
+        methods: ['GET', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
+    });
+
+    app.options('/roblox-user', apiCors);
+    app.get('/roblox-user', apiCors, requireApiKey, lookupLimiter, async (req, res, next) => {
         try {
             const player = await lookupPlayer(req.query?.username ?? req.query?.user ?? req.query?.id);
             res.setHeader('Cache-Control', 'no-store');
@@ -18,15 +32,22 @@ function registerRobloxRoutes(app) {
         }
     });
 
-    app.post('/painel/roblox-user', requireTrustedOrigin, requireSession, lookupLimiter, async (req, res, next) => {
-        try {
-            const player = await lookupPlayer(req.body?.username ?? req.body?.user ?? req.body?.id);
-            res.setHeader('Cache-Control', 'no-store');
-            return res.json({ ok: true, player });
-        } catch (error) {
-            return next(error);
+    app.post(
+        '/painel/roblox-user',
+        express.json({ limit: '16kb' }),
+        requireTrustedOrigin,
+        requireSession,
+        lookupLimiter,
+        async (req, res, next) => {
+            try {
+                const player = await lookupPlayer(req.body?.username ?? req.body?.user ?? req.body?.id);
+                res.setHeader('Cache-Control', 'no-store');
+                return res.json({ ok: true, player });
+            } catch (error) {
+                return next(error);
+            }
         }
-    });
+    );
 }
 
 async function lookupPlayer(value) {
@@ -38,8 +59,9 @@ async function lookupPlayer(value) {
     if (!basic?.id) throw clientError('Jogador não encontrado.', 404);
 
     const userId = Number(basic.id);
-    const [detailsResult, thumbnailResult, wearingResult] = await Promise.allSettled([
-        robloxGet(`${USERS_API}/v1/users/${userId}`),
+    const details = await robloxGet(`${USERS_API}/v1/users/${userId}`);
+
+    const [thumbnailResult, wearingResult] = await Promise.allSettled([
         robloxGet(`${THUMBNAILS_API}/v1/users/avatar`, {
             userIds: String(userId),
             size: '720x720',
@@ -49,7 +71,6 @@ async function lookupPlayer(value) {
         robloxGet(`${AVATAR_API}/v1/users/${userId}/currently-wearing`)
     ]);
 
-    const details = detailsResult.status === 'fulfilled' ? detailsResult.value : {};
     const thumbnailData = thumbnailResult.status === 'fulfilled' ? thumbnailResult.value?.data?.[0] : null;
     const wearing = wearingResult.status === 'fulfilled' && Array.isArray(wearingResult.value?.assetIds)
         ? wearingResult.value.assetIds.filter(id => Number.isSafeInteger(Number(id))).map(Number).slice(0, 200)
@@ -74,7 +95,7 @@ async function lookupPlayer(value) {
 
 function normalizeLookup(value) {
     const raw = String(value || '').trim();
-    if (!raw || raw.length > 200) throw clientError('Informe um username ou ID do Roblox.');
+    if (!raw || raw.length > 200) throw clientError('Informe um username, ID ou link de perfil do Roblox.');
 
     if (/^https?:\/\//i.test(raw)) {
         let parsed;
@@ -95,44 +116,26 @@ function normalizeLookup(value) {
 }
 
 async function getUserByUsername(username) {
-    let response;
     try {
-        response = await axios.post(`${USERS_API}/v1/usernames/users`, {
+        const response = await axios.post(`${USERS_API}/v1/usernames/users`, {
             usernames: [username],
             excludeBannedUsers: false
-        }, {
-            timeout: 10000,
-            maxContentLength: 256 * 1024,
-            maxBodyLength: 256 * 1024,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'User-Agent': 'SkyNetApi/RobloxLookup'
-            }
-        });
+        }, requestOptions('POST'));
+        return Array.isArray(response.data?.data) ? response.data.data[0] : null;
     } catch (error) {
         throw upstreamError(error);
     }
-    return Array.isArray(response.data?.data) ? response.data.data[0] : null;
 }
 
 async function getUserById(id) {
     const numericId = Number(id);
     if (!Number.isSafeInteger(numericId) || numericId <= 0) throw clientError('ID do Roblox inválido.');
+
     try {
         const response = await axios.post(`${USERS_API}/v1/users`, {
             userIds: [numericId],
             excludeBannedUsers: false
-        }, {
-            timeout: 10000,
-            maxContentLength: 256 * 1024,
-            maxBodyLength: 256 * 1024,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'User-Agent': 'SkyNetApi/RobloxLookup'
-            }
-        });
+        }, requestOptions('POST'));
         return Array.isArray(response.data?.data) ? response.data.data[0] : null;
     } catch (error) {
         throw upstreamError(error);
@@ -142,18 +145,26 @@ async function getUserById(id) {
 async function robloxGet(url, params = undefined) {
     try {
         const response = await axios.get(url, {
-            params,
-            timeout: 10000,
-            maxContentLength: 1024 * 1024,
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'SkyNetApi/RobloxLookup'
-            }
+            ...requestOptions('GET'),
+            params
         });
         return response.data;
     } catch (error) {
         throw upstreamError(error);
     }
+}
+
+function requestOptions(method) {
+    return {
+        timeout: 10000,
+        maxContentLength: 1024 * 1024,
+        maxBodyLength: 1024 * 1024,
+        headers: {
+            'Accept': 'application/json',
+            ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+            'User-Agent': 'SkyNetApi/RobloxLookup'
+        }
+    };
 }
 
 function upstreamError(error) {
@@ -196,7 +207,7 @@ function requireTrustedOrigin(req, res, next) {
     const origin = req.get('origin');
     if (!origin) return next();
     const ownOrigin = `${req.protocol}://${req.get('host')}`;
-    if (origin === ownOrigin) return next();
+    if (origin === ownOrigin || C.CORS_ORIGINS.has(origin)) return next();
     return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
 }
 
