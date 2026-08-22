@@ -29,6 +29,7 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const DATA_DIR = path.join(ROOT, 'data');
 const UPLOADS_DIR = path.join(PUBLIC_DIR, 'uploads');
 const GENERATED_DIR = path.join(PUBLIC_DIR, 'generated');
+const BUNDLED_FONT_PATH = path.join(ROOT, 'node_modules', 'dejavu-fonts-ttf', 'ttf', 'DejaVuSans-Bold.ttf');
 
 module.exports = {
     ROOT,
@@ -41,7 +42,7 @@ module.exports = {
     SESSIONS_FILE: path.join(DATA_DIR, 'sessions.json'),
     UPLOADS_FILE: path.join(DATA_DIR, 'uploads.json'),
     GENERATIONS_FILE: path.join(DATA_DIR, 'generations.json'),
-    FONT_PATH: process.env.FONT_PATH || path.join(ROOT, 'fonts', 'DejaVuSans-Bold.ttf'),
+    FONT_PATH: process.env.FONT_PATH || BUNDLED_FONT_PATH,
     PORT: toInt(process.env.PORT, 3000, 1, 65535),
     IS_PRODUCTION: process.env.NODE_ENV === 'production',
     TRUST_PROXY: ['1', 'true', 'yes'].includes(String(process.env.TRUST_PROXY || '').toLowerCase()),
