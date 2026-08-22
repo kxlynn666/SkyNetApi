@@ -319,13 +319,20 @@ function extractLocalUploadFilename(value) {
 }
 
 function safeLookup(hostname, options, callback) {
-    const opts = typeof options === 'object' ? options : {};
+    const opts = typeof options === 'object' && options !== null ? options : {};
     dns.lookup(hostname, { ...opts, all: true, verbatim: true }, (error, addresses) => {
         if (error) return callback(error);
+
         const list = Array.isArray(addresses) ? addresses : [addresses];
         const allowed = list.filter(item => item?.address && !isPrivateIp(item.address));
         if (!allowed.length) return callback(new Error('Destino de rede não permitido'));
-        callback(null, allowed[0].address, allowed[0].family);
+
+        // Node 20+ pode chamar o lookup do Agent com options.all=true.
+        // Nesse caso o callback precisa receber uma lista de { address, family }.
+        if (opts.all) return callback(null, allowed);
+
+        const selected = allowed[0];
+        return callback(null, selected.address, selected.family);
     });
 }
 
