@@ -10,6 +10,7 @@ const { registerMediaRoutes } = require('./src/media');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
+const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
@@ -19,6 +20,7 @@ registerRobloxRoutes(app);
 registerMediaRoutes(app);
 registerCardV2Routes(app);
 registerXpAdminRoutes(app);
+registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
     try {
@@ -68,6 +70,7 @@ const workspaceRoutes = [
     '/painel/perfil',
     '/painel/amigos',
     '/painel/chat',
+    '/painel/grupos',
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
@@ -118,6 +121,8 @@ io.use((socket, next) => {
     } catch {}
     return next(new Error('Origem não permitida'));
 });
+
+attachCommunitySocket(io);
 
 server.listen(C.PORT, () => {
     console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
