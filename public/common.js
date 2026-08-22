@@ -86,10 +86,12 @@ window.SkyNet = (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
 
     if (cleanPath.startsWith('/u/')) {
-        const script = document.createElement('script');
-        script.src = '/community-v2.js';
-        script.dataset.communityPublic = '1';
-        document.head.appendChild(script);
+        for (const [src, marker] of [['/community-v2.js', 'communityPublic'], ['/profile-style-v2.js', 'profileStyleV2']]) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.dataset[marker] = '1';
+            document.head.appendChild(script);
+        }
     }
 
     if (cleanPath !== '/admin') return;
