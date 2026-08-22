@@ -3,6 +3,7 @@ const http = require('http');
 const express = require('express');
 const { createApp } = require('./src/app');
 const C = require('./src/config');
+const S = require('./src/store');
 const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
@@ -16,6 +17,24 @@ registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
 registerCardV2Routes(app);
+
+app.delete('/api/social/account', (req, res, next) => {
+    try {
+        const token = parseCookies(req.headers.cookie || '').skynet_session || '';
+        const session = token ? S.getSession(token) : null;
+        const account = session ? S.loadAccounts().find(item => item.id === session.accountId && item.active) : null;
+        if (account?.isAdmin) {
+            const activeAdmins = S.loadAccounts().filter(item => item.active && item.isAdmin);
+            if (activeAdmins.length <= 1) {
+                return res.status(400).json({ ok: false, error: 'É necessário manter ao menos um administrador ativo.' });
+            }
+        }
+        return next();
+    } catch (error) {
+        return next(error);
+    }
+});
+
 registerSocialRoutes(app);
 
 const workspaceRoutes = [
@@ -62,8 +81,32 @@ app.use((error, req, res, next) => {
 });
 
 const server = http.createServer(app);
-attachSocialSocket(server);
+const io = attachSocialSocket(server);
+
+io.use((socket, next) => {
+    const origin = String(socket.handshake.headers.origin || '').trim();
+    if (!origin) return next();
+    try {
+        const parsed = new URL(origin);
+        const requestHost = String(socket.handshake.headers.host || '').trim();
+        if (parsed.host === requestHost || C.CORS_ORIGINS.has(origin)) return next();
+    } catch {}
+    return next(new Error('Origem não permitida'));
+});
 
 server.listen(C.PORT, () => {
     console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
 });
+
+function parseCookies(header) {
+    const out = {};
+    for (const part of String(header || '').split(';')) {
+        const index = part.indexOf('=');
+        if (index < 0) continue;
+        const key = part.slice(0, index).trim();
+        const value = part.slice(index + 1).trim();
+        try { out[key] = decodeURIComponent(value); }
+        catch { out[key] = value; }
+    }
+    return out;
+}
