@@ -1,7 +1,30 @@
+const path = require('path');
+const express = require('express');
 const { createApp } = require('./src/app');
-const { PORT } = require('./src/config');
+const C = require('./src/config');
+const { registerTikTokRoutes } = require('./src/tiktok');
 
-const app = createApp();
-app.listen(PORT, () => {
-    console.log(`SkyNetApi rodando em http://localhost:${PORT}`);
+const app = express();
+if (C.TRUST_PROXY) app.set('trust proxy', 1);
+
+registerTikTokRoutes(app);
+
+app.get('/tiktok', (req, res) => {
+    res.sendFile(path.join(C.PUBLIC_DIR, 'tiktok.html'));
+});
+
+app.use(createApp());
+
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    const status = Number(error.statusCode || error.status || 500);
+    if (status >= 500) console.error('Erro no downloader TikTok:', error);
+    return res.status(status).json({
+        ok: false,
+        error: status >= 500 && C.IS_PRODUCTION ? 'Erro interno do servidor.' : (error.message || 'Erro interno do servidor.')
+    });
+});
+
+app.listen(C.PORT, () => {
+    console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
 });
