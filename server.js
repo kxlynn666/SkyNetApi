@@ -35,6 +35,29 @@ app.delete('/api/social/account', (req, res, next) => {
     }
 });
 
+app.use((req, res, next) => {
+    const publicProfile = req.method === 'GET' && req.path.startsWith('/api/social/profile/');
+    const podium = req.method === 'GET' && req.path === '/api/social/podium';
+    const search = req.method === 'GET' && req.path === '/api/social/users';
+    if (!publicProfile && !podium && !search) return next();
+
+    const originalJson = res.json.bind(res);
+    res.json = payload => {
+        if (publicProfile && payload?.profile) {
+            payload = { ...payload, profile: { ...payload.profile, online: false } };
+        } else if (podium && Array.isArray(payload?.podium)) {
+            payload = { ...payload, podium: payload.podium.map(item => ({ ...item, online: false })) };
+        } else if (search && Array.isArray(payload?.users)) {
+            payload = {
+                ...payload,
+                users: payload.users.map(item => item.relationship?.type === 'friend' ? item : { ...item, online: false })
+            };
+        }
+        return originalJson(payload);
+    };
+    return next();
+});
+
 registerSocialRoutes(app);
 
 const workspaceRoutes = [
