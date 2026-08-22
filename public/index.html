@@ -15,6 +15,7 @@
         <a class="nav-link" href="/painel/perfil">Perfil</a>
         <a class="nav-link" href="/painel/amigos">Amigos</a>
         <a class="nav-link" href="/painel/chat">Chat</a>
+        <a class="nav-link" href="/painel/grupos">Grupos</a>
         <a class="nav-link" href="/admin">Admin</a>
     </nav>
 
@@ -32,7 +33,7 @@
 
     <section class="card podium-wrap" style="margin-top:18px">
         <div class="podium-head">
-            <div><div class="eyebrow">Comunidade</div><h2 class="card-title" style="margin-bottom:0">Pódio de atividade</h2><p class="muted">Os três perfis participantes com maior atividade no SkyNetApi.</p></div>
+            <div><div class="eyebrow">Comunidade</div><h2 class="card-title" style="margin-bottom:0">Pódio e placar</h2><p class="muted">Os perfis com mais XP aparecem no pódio e no ranking geral.</p></div>
             <a class="button" href="/painel/perfil">Configurar meu perfil</a>
         </div>
         <div id="podiumRoot"><div class="muted">Carregando pódio...</div></div>
@@ -50,9 +51,9 @@
             <a class="button" href="/painel/amigos">Abrir amigos</a>
         </article>
         <article class="card">
-            <h2 class="card-title">Chat e voz</h2>
-            <p class="muted">Mensagens privadas e chamadas de voz disponíveis somente entre amigos aceitos.</p>
-            <a class="button" href="/painel/chat">Abrir chat</a>
+            <h2 class="card-title">Chat, grupos e voz</h2>
+            <p class="muted">Mensagens privadas, grupos e chamadas de voz com controles individuais de áudio.</p>
+            <a class="button" href="/painel/grupos">Abrir grupos</a>
         </article>
     </section>
 
@@ -61,7 +62,7 @@
         <div class="endpoint"><span class="method post">POST</span>/generate-card <span class="text-faint">x-api-key</span></div>
         <div class="endpoint"><span class="method post">POST</span>/api/uploads <span class="text-faint">sessão</span></div>
         <div class="endpoint"><span class="method get">GET</span>/api/keys <span class="text-faint">sessão</span></div>
-        <div class="endpoint"><span class="method get">GET</span>/api/social/podium <span class="text-faint">público</span></div>
+        <div class="endpoint"><span class="method get">GET</span>/api/community/leaderboard <span class="text-faint">público</span></div>
         <div class="endpoint"><span class="method get">GET</span>/health <span class="text-faint">público</span></div>
     </section>
 
