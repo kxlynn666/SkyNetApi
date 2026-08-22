@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Painel - SkyNetApi</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay">
+    <section class="auth-card">
+        <div class="eyebrow" style="text-align:center">Acesso à conta</div>
+        <h2 id="authTitle">Entrar no painel</h2>
+        <div class="message" id="authMessage"></div>
+        <form id="authForm">
+            <div class="form-group">
+                <label for="authUsername">Usuário</label>
+                <input id="authUsername" name="username" autocomplete="username" minlength="3" maxlength="30" required>
+            </div>
+            <div class="form-group">
+                <label for="authPassword">Senha</label>
+                <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+            </div>
+            <button class="button primary" id="authSubmit" type="submit" style="width:100%">Entrar</button>
+        </form>
+        <p class="auth-switch"><span id="authSwitchText">Não tem conta?</span> <a href="#" id="authSwitch">Criar conta</a></p>
+    </section>
+</div>
+
+<main class="page hidden" id="app">
+    <nav class="topbar">
+        <a class="brand" href="/">SkyNetApi</a>
+        <span class="muted" id="who"></span>
+        <a class="nav-link" href="/upload">Uploads</a>
+        <a class="nav-link hidden" id="adminLink" href="/admin">Admin</a>
+        <button class="button" id="logoutButton" type="button">Sair</button>
+    </nav>
+
+    <header style="margin-bottom:24px">
+        <div class="eyebrow">Painel da conta</div>
+        <h1 style="font-size:30px;margin-bottom:8px">Controle da sua API</h1>
+        <p class="muted" style="margin:0">Chaves, geração, histórico e informações da conta no mesmo lugar.</p>
+    </header>
+
+    <section class="stats">
+        <div class="stat"><div class="value" id="statKeys">0</div><div class="label">API keys</div></div>
+        <div class="stat"><div class="value" id="statRequests">0</div><div class="label">Requisições</div></div>
+        <div class="stat"><div class="value" id="statUploads">0</div><div class="label">Uploads</div></div>
+        <div class="stat"><div class="value" id="statGenerations">0</div><div class="label">Cards gerados</div></div>
+    </section>
+
+    <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="account" type="button">Conta</button>
+        <button class="tab" data-tab="keys" type="button">API Keys</button>
+        <button class="tab" data-tab="editor" type="button">Editor de Cards</button>
+        <button class="tab" data-tab="history" type="button">Histórico</button>
+        <button class="tab" data-tab="docs" type="button">Rotas de API</button>
+    </div>
+
+    <section class="tab-panel active" id="account">
+        <div class="card">
+            <h2 class="card-title">Informações da conta</h2>
+            <div class="grid two">
+                <div><div class="hint">Usuário</div><div id="accountUsername" style="margin-top:5px;font-weight:600"></div></div>
+                <div><div class="hint">Status</div><div id="accountStatus" style="margin-top:5px"></div></div>
+                <div><div class="hint">Criada em</div><div id="accountCreated" style="margin-top:5px"></div></div>
+                <div><div class="hint">Último login</div><div id="accountLastLogin" style="margin-top:5px"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="tab-panel" id="keys">
+        <div class="card">
+            <h2 class="card-title">Gerenciar API keys</h2>
+            <div class="message" id="keysMessage"></div>
+            <div class="toolbar">
+                <input id="keyName" maxlength="50" placeholder="Nome da nova chave" aria-label="Nome da nova chave">
+                <button class="button primary" id="createKeyButton" type="button">Criar chave</button>
+            </div>
+            <p class="hint">A chave completa aparece apenas uma vez, no momento da criação.</p>
+            <div class="list" id="keysList"><div class="empty">Carregando...</div></div>
+        </div>
+    </section>
+
+    <section class="tab-panel" id="editor">
+        <div class="grid two">
+            <div class="card">
+                <h2 class="card-title">Configurações</h2>
+                <div class="message" id="editorMessage"></div>
+                <form id="editorForm">
+                    <div class="form-group"><label for="backgroundUrl">Fundo por URL ou link de upload</label><input id="backgroundUrl" name="fundo_url" placeholder="https://... ou /uploads/..."></div>
+                    <div class="form-group"><label for="backgroundFile">Ou envie o fundo</label><input id="backgroundFile" name="fundo_file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div>
+                    <div class="form-group"><label for="avatarUrl">Avatar por URL ou link de upload</label><input id="avatarUrl" name="avatar_url" placeholder="https://... ou /uploads/..."></div>
+                    <div class="form-group"><label for="avatarFile">Ou envie o avatar</label><input id="avatarFile" name="avatar_file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div>
+                    <div class="form-group"><label for="textoTopo">Texto do topo</label><input id="textoTopo" name="texto_topo" maxlength="180"></div>
+                    <div class="form-group"><label for="textoExtra">Texto extra</label><input id="textoExtra" name="texto_extra" maxlength="220"></div>
+                    <div class="form-group"><label for="textoBaixo">Texto principal</label><textarea id="textoBaixo" name="texto_baixo" maxlength="600"></textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="fontSizeTop">Tamanho do topo</label><input id="fontSizeTop" name="fontSizeTop" type="number" value="28" min="10" max="120"></div>
+                        <div class="form-group"><label for="fontSizeBottom">Tamanho principal</label><input id="fontSizeBottom" name="fontSizeBottom" type="number" value="48" min="10" max="120"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="textColorTop">Cor do topo</label><input id="textColorTop" name="textColorTop" type="color" value="#ffffff"></div>
+                        <div class="form-group"><label for="textColorBottom">Cor principal</label><input id="textColorBottom" name="textColorBottom" type="color" value="#ff00ff"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="textColorExtra">Cor extra</label><input id="textColorExtra" name="textColorExtra" type="color" value="#a78bfa"></div>
+                        <div class="form-group"><label for="glowColor">Cor do brilho</label><input id="glowColor" name="glowColor" type="color" value="#ff00ff"></div>
+                    </div>
+                    <div class="form-group"><label for="darkness">Escuridão do fundo: <span id="darknessValue">40</span>%</label><input id="darkness" name="darkness" type="range" min="0" max="100" value="40"></div>
+                    <button class="button primary" id="generateButton" type="submit">Gerar card</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2 class="card-title">Pré-visualização</h2>
+                <div class="preview" id="preview"><span id="previewText">O card gerado aparecerá aqui.</span></div>
+                <div class="actions" style="margin-top:12px">
+                    <a class="button hidden" id="downloadButton" download="card.png">Baixar</a>
+                    <button class="button hidden" id="copyCardButton" type="button">Copiar link</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="tab-panel" id="history">
+        <div class="card">
+            <div class="toolbar">
+                <h2 class="card-title" style="margin:0 auto 0 0">Histórico de cards</h2>
+                <button class="button small" id="refreshHistory" type="button">Atualizar</button>
+            </div>
+            <div class="list" id="historyList"><div class="empty">Carregando...</div></div>
+        </div>
+    </section>
+
+    <section class="tab-panel" id="docs">
+        <div class="card">
+            <h2 class="card-title">Rotas principais</h2>
+            <div class="endpoint"><span class="method post">POST</span>/generate-card<br><span class="text-faint">Autenticação: header x-api-key. Envie FormData.</span></div>
+            <div class="endpoint"><span class="method get">GET</span>/generate-card<br><span class="text-faint">Mostra os campos aceitos pela rota de geração.</span></div>
+            <div class="endpoint"><span class="method get">GET</span>/api/keys<br><span class="text-faint">Lista as chaves da conta autenticada.</span></div>
+            <div class="endpoint"><span class="method post">POST</span>/api/uploads<br><span class="text-faint">Upload autenticado de imagem.</span></div>
+            <div class="endpoint"><span class="method get">GET</span>/health<br><span class="text-faint">Status do serviço.</span></div>
+        </div>
+    </section>
+</main>
+<script src="/common.js"></script>
+<script>
+const S = SkyNet;
+let currentUser = null;
+let authMode = 'login';
+let currentCardUrl = '';
+
+const authOverlay = document.getElementById('authOverlay');
+const app = document.getElementById('app');
+const authForm = document.getElementById('authForm');
+const authMessage = document.getElementById('authMessage');
+
+function setAuthMode(mode) {
+    authMode = mode;
+    const register = mode === 'register';
+    document.getElementById('authTitle').textContent = register ? 'Criar conta' : 'Entrar no painel';
+    document.getElementById('authSubmit').textContent = register ? 'Criar conta' : 'Entrar';
+    document.getElementById('authSwitchText').textContent = register ? 'Já tem conta?' : 'Não tem conta?';
+    document.getElementById('authSwitch').textContent = register ? 'Entrar' : 'Criar conta';
+    document.getElementById('authPassword').autocomplete = register ? 'new-password' : 'current-password';
+    S.message(authMessage, '');
+}
+
+document.getElementById('authSwitch').addEventListener('click', event => {
+    event.preventDefault();
+    setAuthMode(authMode === 'login' ? 'register' : 'login');
+});
+
+authForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('authSubmit');
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value;
+    button.disabled = true;
+    try {
+        if (authMode === 'register') {
+            const data = await S.api('/api/auth/register', { method: 'POST', body: { username, password } });
+            S.message(authMessage, data.message, data.active ? 'success' : 'warning');
+            if (data.active) setAuthMode('login');
+            return;
+        }
+        const data = await S.api('/api/auth/login', { method: 'POST', body: { username, password } });
+        currentUser = data.account;
+        showApp();
+        await loadEverything();
+    } catch (error) {
+        S.message(authMessage, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
+
+function showApp() {
+    authOverlay.classList.add('hidden');
+    app.classList.remove('hidden');
+    document.getElementById('who').textContent = currentUser.username;
+    document.getElementById('adminLink').classList.toggle('hidden', !currentUser.isAdmin);
+    document.getElementById('accountUsername').textContent = currentUser.username;
+    document.getElementById('accountStatus').innerHTML = currentUser.active ? '<span class="badge active">Ativa</span>' : '<span class="badge inactive">Inativa</span>';
+    document.getElementById('accountCreated').textContent = S.formatDate(currentUser.createdAt);
+    document.getElementById('accountLastLogin').textContent = S.formatDate(currentUser.lastLoginAt);
+}
+
+async function loadEverything() {
+    const [keys, uploads, generations] = await Promise.all([loadKeys(), loadUploadsCount(), loadHistory()]);
+    document.getElementById('statKeys').textContent = keys.length;
+    document.getElementById('statRequests').textContent = keys.reduce((sum, key) => sum + Number(key.requestCount || 0), 0);
+    document.getElementById('statUploads').textContent = uploads;
+    document.getElementById('statGenerations').textContent = generations.length;
+}
+
+async function loadKeys() {
+    const data = await S.api('/api/keys');
+    renderKeys(data.keys || []);
+    return data.keys || [];
+}
+
+function renderKeys(keys) {
+    const root = document.getElementById('keysList');
+    if (!keys.length) {
+        root.innerHTML = '<div class="empty">Nenhuma chave criada.</div>';
+        return;
+    }
+    root.innerHTML = keys.map(key => `
+        <div class="list-item" data-id="${S.escapeHtml(key.id)}">
+            <div class="grow">
+                <div class="title">${S.escapeHtml(key.name)}</div>
+                <div class="meta mono">${S.escapeHtml(key.preview)} · ${key.requestCount || 0} requisições · último uso: ${S.escapeHtml(S.formatDate(key.lastUsedAt))}</div>
+            </div>
+            <span class="badge ${key.active ? 'active' : 'inactive'}">${key.active ? 'Ativa' : 'Revogada'}</span>
+            <button class="button small" data-action="rename" type="button">Renomear</button>
+            <button class="button small" data-action="toggle" data-active="${key.active}" type="button">${key.active ? 'Revogar' : 'Reativar'}</button>
+            <button class="button small danger" data-action="delete" type="button">Excluir</button>
+        </div>`).join('');
+
+    root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => handleKeyAction(button)));
+}
+
+async function handleKeyAction(button) {
+    const row = button.closest('[data-id]');
+    const id = row.dataset.id;
+    const action = button.dataset.action;
+    try {
+        if (action === 'delete') {
+            if (!confirm('Excluir esta chave permanentemente?')) return;
+            await S.api(`/api/keys/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        } else if (action === 'toggle') {
+            await S.api(`/api/keys/${encodeURIComponent(id)}`, { method: 'PATCH', body: { active: button.dataset.active !== 'true' } });
+        } else if (action === 'rename') {
+            const current = row.querySelector('.title').textContent;
+            const name = prompt('Novo nome da chave:', current);
+            if (!name) return;
+            await S.api(`/api/keys/${encodeURIComponent(id)}`, { method: 'PATCH', body: { name } });
+        }
+        await loadEverything();
+        S.message(document.getElementById('keysMessage'), 'Alteração salva.', 'success');
+    } catch (error) {
+        S.message(document.getElementById('keysMessage'), error.message, 'error');
+    }
+}
+
+document.getElementById('createKeyButton').addEventListener('click', async () => {
+    const input = document.getElementById('keyName');
+    const name = input.value.trim();
+    if (!name) return S.message(document.getElementById('keysMessage'), 'Digite um nome para a chave.', 'error');
+    try {
+        const data = await S.api('/api/keys', { method: 'POST', body: { name } });
+        input.value = '';
+        S.message(document.getElementById('keysMessage'), `Chave criada: ${data.apiKey}`, 'success');
+        await loadEverything();
+    } catch (error) {
+        S.message(document.getElementById('keysMessage'), error.message, 'error');
+    }
+});
+
+async function loadUploadsCount() {
+    try {
+        const data = await S.api('/api/uploads');
+        return (data.uploads || []).length;
+    } catch { return 0; }
+}
+
+async function loadHistory() {
+    const data = await S.api('/api/generations');
+    const items = data.generations || [];
+    const root = document.getElementById('historyList');
+    if (!items.length) root.innerHTML = '<div class="empty">Nenhum card gerado ainda.</div>';
+    else root.innerHTML = items.map(item => `
+        <div class="list-item" data-id="${S.escapeHtml(item.id)}">
+            <div class="grow"><div class="title">${S.escapeHtml(item.title)}</div><div class="meta">${S.escapeHtml(S.formatDate(item.createdAt))} · ${S.escapeHtml(item.source)}</div></div>
+            <a class="button small" href="${S.escapeHtml(item.url)}" target="_blank" rel="noopener">Abrir</a>
+            <button class="button small" data-copy="${S.escapeHtml(item.url)}" type="button">Copiar link</button>
+            <button class="button small danger" data-delete="${S.escapeHtml(item.id)}" type="button">Excluir</button>
+        </div>`).join('');
+    root.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+        await S.copy(location.origin + button.dataset.copy);
+        button.textContent = 'Copiado';
+        setTimeout(() => button.textContent = 'Copiar link', 1200);
+    }));
+    root.querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', async () => {
+        if (!confirm('Excluir este card do histórico e do servidor?')) return;
+        await S.api(`/api/generations/${encodeURIComponent(button.dataset.delete)}`, { method: 'DELETE' });
+        await loadEverything();
+    }));
+    return items;
+}
+
+document.getElementById('refreshHistory').addEventListener('click', loadEverything);
+document.getElementById('darkness').addEventListener('input', event => document.getElementById('darknessValue').textContent = event.target.value);
+
+document.getElementById('editorForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('generateButton');
+    const message = document.getElementById('editorMessage');
+    button.disabled = true;
+    S.message(message, '');
+    try {
+        const form = new FormData(event.currentTarget);
+        const data = await S.api('/painel/gerar', { method: 'POST', body: form });
+        currentCardUrl = data.url;
+        const preview = document.getElementById('preview');
+        preview.innerHTML = `<img src="${S.escapeHtml(data.url)}" alt="Card gerado">`;
+        const download = document.getElementById('downloadButton');
+        download.href = data.url;
+        download.classList.remove('hidden');
+        document.getElementById('copyCardButton').classList.remove('hidden');
+        S.message(message, 'Card gerado com sucesso.', 'success');
+        await loadEverything();
+    } catch (error) {
+        S.message(message, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
+
+document.getElementById('copyCardButton').addEventListener('click', async () => {
+    if (!currentCardUrl) return;
+    await S.copy(location.origin + currentCardUrl);
+    S.message(document.getElementById('editorMessage'), 'Link copiado.', 'success');
+});
+
+document.getElementById('logoutButton').addEventListener('click', S.logout);
+S.setTabs();
+
+(async () => {
+    try {
+        currentUser = await S.session();
+        if (!currentUser) return;
+        showApp();
+        await loadEverything();
+    } catch (error) {
+        S.message(authMessage, error.message, 'error');
+    }
+})();
+</script>
+</body>
+</html>

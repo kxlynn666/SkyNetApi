@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin - SkyNetApi</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay">
+    <section class="auth-card">
+        <div class="eyebrow" style="text-align:center">Painel restrito</div>
+        <h2>Login de administrador</h2>
+        <div class="message" id="authMessage"></div>
+        <form id="authForm">
+            <div class="form-group"><label for="username">Usuário</label><input id="username" autocomplete="username" required></div>
+            <div class="form-group"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required></div>
+            <button class="button primary" id="loginButton" style="width:100%" type="submit">Entrar</button>
+        </form>
+    </section>
+</div>
+
+<main class="page hidden" id="app">
+    <nav class="topbar">
+        <a class="brand" href="/">SkyNetApi</a>
+        <span class="muted" id="who"></span>
+        <a class="nav-link" href="/painel">Painel</a>
+        <a class="nav-link" href="/upload">Uploads</a>
+        <button class="button" id="logoutButton" type="button">Sair</button>
+    </nav>
+
+    <header style="margin-bottom:24px">
+        <div class="eyebrow">Administração</div>
+        <h1 style="font-size:30px;margin-bottom:8px">Contas e API Keys</h1>
+        <p class="muted" style="margin:0">Ative usuários, acompanhe uso e revogue chaves sem expor segredos.</p>
+    </header>
+
+    <section class="stats" id="stats"></section>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="accounts" type="button">Contas</button>
+        <button class="tab" data-tab="adminKeys" type="button">API Keys</button>
+    </div>
+
+    <section class="tab-panel active" id="accounts">
+        <div class="card">
+            <div class="toolbar">
+                <h2 class="card-title" style="margin:0 auto 0 0">Contas registradas</h2>
+                <input type="search" id="accountSearch" placeholder="Buscar usuário" aria-label="Buscar usuário">
+                <select id="accountFilter" style="max-width:170px"><option value="all">Todas</option><option value="pending">Pendentes</option><option value="active">Ativas</option><option value="admin">Admins</option></select>
+                <button class="button small" id="refreshAccounts" type="button">Atualizar</button>
+            </div>
+            <div class="message" id="accountsMessage"></div>
+            <div id="accountsWrap"><div class="empty">Carregando...</div></div>
+        </div>
+    </section>
+
+    <section class="tab-panel" id="adminKeys">
+        <div class="card">
+            <div class="toolbar">
+                <h2 class="card-title" style="margin:0 auto 0 0">Todas as API keys</h2>
+                <input type="search" id="keySearch" placeholder="Buscar por chave ou dono" aria-label="Buscar chaves">
+                <button class="button small" id="refreshKeys" type="button">Atualizar</button>
+            </div>
+            <div class="message" id="keysMessage"></div>
+            <div id="keysWrap"><div class="empty">Carregando...</div></div>
+        </div>
+    </section>
+</main>
+<script src="/common.js"></script>
+<script>
+const S = SkyNet;
+let currentUser = null;
+let accounts = [];
+let keys = [];
+const overlay = document.getElementById('authOverlay');
+const app = document.getElementById('app');
+const authMessage = document.getElementById('authMessage');
+
+function showAdmin() {
+    overlay.classList.add('hidden');
+    app.classList.remove('hidden');
+    document.getElementById('who').textContent = `Admin: ${currentUser.username}`;
+}
+
+async function loadAll() {
+    await Promise.all([loadStats(), loadAccounts(), loadKeys()]);
+}
+
+async function loadStats() {
+    const data = await S.api('/api/admin/stats');
+    const stats = data.stats;
+    document.getElementById('stats').innerHTML = [
+        ['Contas', stats.accounts],
+        ['Pendentes', stats.pendingAccounts],
+        ['Chaves ativas', stats.activeApiKeys],
+        ['Requisições', stats.requests],
+        ['Uploads', stats.uploads],
+        ['Cards', stats.generations]
+    ].map(([label, value]) => `<div class="stat"><div class="value">${S.escapeHtml(value)}</div><div class="label">${S.escapeHtml(label)}</div></div>`).join('');
+}
+
+async function loadAccounts() {
+    const data = await S.api('/api/admin/accounts');
+    accounts = data.accounts || [];
+    renderAccounts();
+}
+
+function renderAccounts() {
+    const term = document.getElementById('accountSearch').value.trim().toLowerCase();
+    const filter = document.getElementById('accountFilter').value;
+    const shown = accounts.filter(account => {
+        if (!account.username.toLowerCase().includes(term)) return false;
+        if (filter === 'pending') return !account.active;
+        if (filter === 'active') return account.active;
+        if (filter === 'admin') return account.isAdmin;
+        return true;
+    });
+    const root = document.getElementById('accountsWrap');
+    if (!shown.length) return root.innerHTML = '<div class="empty">Nenhuma conta encontrada.</div>';
+    const rows = shown.map(account => `
+        <tr data-id="${S.escapeHtml(account.id)}">
+            <td><strong>${S.escapeHtml(account.username)}</strong><div class="text-faint mono">${S.escapeHtml(account.id.slice(0, 12))}</div></td>
+            <td><span class="badge ${account.active ? 'active' : 'inactive'}">${account.active ? 'Ativa' : 'Pendente'}</span> ${account.isAdmin ? '<span class="badge admin">Admin</span>' : ''}</td>
+            <td>${account.keyCount || 0} chaves<div class="text-faint">${account.totalRequests || 0} requisições</div></td>
+            <td>${account.uploadCount || 0} uploads<div class="text-faint">${account.generationCount || 0} cards</div></td>
+            <td>${S.escapeHtml(S.formatDate(account.createdAt))}<div class="text-faint">login: ${S.escapeHtml(S.formatDate(account.lastLoginAt))}</div></td>
+            <td><div class="actions">
+                <button class="button small ${account.active ? 'danger' : 'success'}" data-action="active" data-value="${account.active}" type="button">${account.active ? 'Desativar' : 'Ativar'}</button>
+                <button class="button small" data-action="admin" data-value="${account.isAdmin}" type="button">${account.isAdmin ? 'Remover admin' : 'Tornar admin'}</button>
+                <button class="button small danger" data-action="delete" type="button">Excluir</button>
+            </div></td>
+        </tr>`).join('');
+    root.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Status</th><th>API</th><th>Arquivos</th><th>Datas</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => handleAccountAction(button)));
+}
+
+async function handleAccountAction(button) {
+    const id = button.closest('tr').dataset.id;
+    const action = button.dataset.action;
+    const msg = document.getElementById('accountsMessage');
+    try {
+        if (action === 'delete') {
+            if (!confirm('Excluir esta conta, suas chaves, uploads e cards?')) return;
+            await S.api(`/api/admin/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        } else if (action === 'active') {
+            await S.api(`/api/admin/accounts/${encodeURIComponent(id)}`, { method: 'PATCH', body: { active: button.dataset.value !== 'true' } });
+        } else if (action === 'admin') {
+            await S.api(`/api/admin/accounts/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isAdmin: button.dataset.value !== 'true' } });
+        }
+        S.message(msg, 'Alteração salva.', 'success');
+        await loadAll();
+    } catch (error) {
+        S.message(msg, error.message, 'error');
+    }
+}
+
+async function loadKeys() {
+    const data = await S.api('/api/admin/keys');
+    keys = data.keys || [];
+    renderKeys();
+}
+
+function renderKeys() {
+    const term = document.getElementById('keySearch').value.trim().toLowerCase();
+    const shown = keys.filter(key => `${key.name} ${key.ownerUsername} ${key.preview}`.toLowerCase().includes(term));
+    const root = document.getElementById('keysWrap');
+    if (!shown.length) return root.innerHTML = '<div class="empty">Nenhuma chave encontrada.</div>';
+    const rows = shown.map(key => `
+        <tr data-id="${S.escapeHtml(key.id)}">
+            <td><strong>${S.escapeHtml(key.name)}</strong><div class="text-faint mono">${S.escapeHtml(key.preview)}</div></td>
+            <td>${S.escapeHtml(key.ownerUsername)}<div class="text-faint">${key.ownerActive ? 'conta ativa' : 'conta inativa'}</div></td>
+            <td><span class="badge ${key.active ? 'active' : 'inactive'}">${key.active ? 'Ativa' : 'Revogada'}</span></td>
+            <td>${key.requestCount || 0}<div class="text-faint">último uso: ${S.escapeHtml(S.formatDate(key.lastUsedAt))}</div></td>
+            <td>${S.escapeHtml(S.formatDate(key.createdAt))}</td>
+            <td><div class="actions"><button class="button small" data-action="toggle" data-value="${key.active}" type="button">${key.active ? 'Revogar' : 'Reativar'}</button><button class="button small danger" data-action="delete" type="button">Excluir</button></div></td>
+        </tr>`).join('');
+    root.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Chave</th><th>Dono</th><th>Status</th><th>Uso</th><th>Criada</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => handleKeyAction(button)));
+}
+
+async function handleKeyAction(button) {
+    const id = button.closest('tr').dataset.id;
+    const msg = document.getElementById('keysMessage');
+    try {
+        if (button.dataset.action === 'delete') {
+            if (!confirm('Excluir esta chave permanentemente?')) return;
+            await S.api(`/api/admin/keys/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        } else {
+            await S.api(`/api/admin/keys/${encodeURIComponent(id)}`, { method: 'PATCH', body: { active: button.dataset.value !== 'true' } });
+        }
+        S.message(msg, 'Alteração salva.', 'success');
+        await loadAll();
+    } catch (error) {
+        S.message(msg, error.message, 'error');
+    }
+}
+
+document.getElementById('authForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('loginButton');
+    button.disabled = true;
+    try {
+        const data = await S.api('/api/auth/login', { method: 'POST', body: { username: document.getElementById('username').value.trim(), password: document.getElementById('password').value } });
+        if (!data.account.isAdmin) {
+            await S.api('/api/auth/logout', { method: 'POST' });
+            throw new Error('Essa conta não tem permissão de administrador.');
+        }
+        currentUser = data.account;
+        showAdmin();
+        await loadAll();
+    } catch (error) {
+        S.message(authMessage, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
+
+document.getElementById('accountSearch').addEventListener('input', renderAccounts);
+document.getElementById('accountFilter').addEventListener('change', renderAccounts);
+document.getElementById('keySearch').addEventListener('input', renderKeys);
+document.getElementById('refreshAccounts').addEventListener('click', loadAll);
+document.getElementById('refreshKeys').addEventListener('click', loadAll);
+document.getElementById('logoutButton').addEventListener('click', S.logout);
+S.setTabs();
+
+(async () => {
+    try {
+        currentUser = await S.session();
+        if (!currentUser || !currentUser.isAdmin) return;
+        showAdmin();
+        await loadAll();
+    } catch {}
+})();
+</script>
+</body>
+</html>

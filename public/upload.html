@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Uploads - SkyNetApi</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<main class="page hidden" id="app">
+    <nav class="topbar">
+        <a class="brand" href="/">SkyNetApi</a>
+        <span class="muted" id="who"></span>
+        <a class="nav-link" href="/painel">Painel</a>
+        <a class="nav-link hidden" id="adminLink" href="/admin">Admin</a>
+        <button class="button" id="logoutButton" type="button">Sair</button>
+    </nav>
+
+    <header style="margin-bottom:24px">
+        <div class="eyebrow">Biblioteca de imagens</div>
+        <h1 style="font-size:30px;margin-bottom:8px">Uploads</h1>
+        <p class="muted" style="margin:0">Envie imagens e reutilize os links no editor de cards.</p>
+    </header>
+
+    <section class="stats">
+        <div class="stat"><div class="value" id="filesCount">0</div><div class="label">Arquivos</div></div>
+        <div class="stat"><div class="value" id="totalSize">0 B</div><div class="label">Espaço usado</div></div>
+        <div class="stat"><div class="value" id="latestUpload">-</div><div class="label">Último upload</div></div>
+    </section>
+
+    <section class="card">
+        <h2 class="card-title">Enviar nova imagem</h2>
+        <div class="message" id="uploadMessage"></div>
+        <label class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif">
+            <strong>Arraste uma imagem aqui ou clique para escolher</strong>
+            <span class="hint">JPG, PNG, WEBP ou GIF. O servidor normaliza o arquivo e aplica o limite configurado.</span>
+        </label>
+        <div class="list-item hidden" id="selectedRow" style="margin-top:14px">
+            <div class="grow"><div class="title" id="selectedName"></div><div class="meta" id="selectedMeta"></div></div>
+            <button class="button primary" id="uploadButton" type="button">Enviar</button>
+            <button class="button" id="clearButton" type="button">Limpar</button>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="toolbar">
+            <h2 class="card-title" style="margin:0 auto 0 0">Seus arquivos</h2>
+            <input type="search" id="searchInput" placeholder="Filtrar por nome" aria-label="Filtrar arquivos">
+            <button class="button small" id="refreshButton" type="button">Atualizar</button>
+        </div>
+        <div class="files-grid" id="filesGrid"><div class="empty">Carregando...</div></div>
+    </section>
+</main>
+<script src="/common.js"></script>
+<script>
+const S = SkyNet;
+let currentUser = null;
+let files = [];
+let selectedFile = null;
+const app = document.getElementById('app');
+const input = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const selectedRow = document.getElementById('selectedRow');
+const message = document.getElementById('uploadMessage');
+
+function selectFile(file) {
+    selectedFile = file || null;
+    selectedRow.classList.toggle('hidden', !selectedFile);
+    if (selectedFile) {
+        document.getElementById('selectedName').textContent = selectedFile.name;
+        document.getElementById('selectedMeta').textContent = S.formatSize(selectedFile.size);
+    }
+}
+
+input.addEventListener('change', () => selectFile(input.files[0]));
+['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.add('dragging'); }));
+['dragleave','drop'].forEach(type => dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
+dropzone.addEventListener('drop', event => selectFile(event.dataTransfer.files[0]));
+document.getElementById('clearButton').addEventListener('click', () => { input.value = ''; selectFile(null); });
+
+document.getElementById('uploadButton').addEventListener('click', async () => {
+    if (!selectedFile) return;
+    const button = document.getElementById('uploadButton');
+    button.disabled = true;
+    try {
+        const body = new FormData();
+        body.append('file', selectedFile);
+        const data = await S.api('/api/uploads', { method: 'POST', body });
+        S.message(message, `Upload concluído: ${data.upload.originalName}`, 'success');
+        input.value = '';
+        selectFile(null);
+        await loadFiles();
+    } catch (error) {
+        S.message(message, error.message, 'error');
+    } finally {
+        button.disabled = false;
+    }
+});
+
+async function loadFiles() {
+    const data = await S.api('/api/uploads');
+    files = data.uploads || [];
+    renderStats();
+    renderFiles();
+}
+
+function renderStats() {
+    document.getElementById('filesCount').textContent = files.length;
+    document.getElementById('totalSize').textContent = S.formatSize(files.reduce((sum, file) => sum + Number(file.size || 0), 0));
+    document.getElementById('latestUpload').textContent = files[0] ? S.formatDate(files[0].createdAt) : '-';
+}
+
+function renderFiles() {
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    const shown = files.filter(file => String(file.originalName || '').toLowerCase().includes(term));
+    const root = document.getElementById('filesGrid');
+    if (!shown.length) {
+        root.innerHTML = '<div class="empty">Nenhum arquivo encontrado.</div>';
+        return;
+    }
+    root.innerHTML = shown.map(file => `
+        <article class="file-card" data-id="${S.escapeHtml(file.id)}">
+            <div class="thumb"><img src="${S.escapeHtml(file.url)}" alt="${S.escapeHtml(file.originalName)}" loading="lazy"></div>
+            <div class="info"><div class="name" title="${S.escapeHtml(file.originalName)}">${S.escapeHtml(file.originalName)}</div><div class="meta">${S.escapeHtml(S.formatSize(file.size))} · ${S.escapeHtml(S.formatDate(file.createdAt))}</div></div>
+            <div class="file-actions">
+                <button class="button small" data-copy="${S.escapeHtml(file.url)}" type="button">Copiar link</button>
+                <button class="button small danger" data-delete="${S.escapeHtml(file.id)}" type="button">Apagar</button>
+            </div>
+        </article>`).join('');
+    root.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+        await S.copy(location.origin + button.dataset.copy);
+        button.textContent = 'Copiado';
+        setTimeout(() => button.textContent = 'Copiar link', 1200);
+    }));
+    root.querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', async () => {
+        if (!confirm('Apagar esta imagem?')) return;
+        try {
+            await S.api(`/api/uploads/${encodeURIComponent(button.dataset.delete)}`, { method: 'DELETE' });
+            await loadFiles();
+        } catch (error) {
+            S.message(message, error.message, 'error');
+        }
+    }));
+}
+
+document.getElementById('searchInput').addEventListener('input', renderFiles);
+document.getElementById('refreshButton').addEventListener('click', loadFiles);
+document.getElementById('logoutButton').addEventListener('click', S.logout);
+
+(async () => {
+    try {
+        currentUser = await S.session();
+        if (!currentUser) return location.replace('/painel');
+        document.getElementById('who').textContent = currentUser.username;
+        document.getElementById('adminLink').classList.toggle('hidden', !currentUser.isAdmin);
+        app.classList.remove('hidden');
+        await loadFiles();
+    } catch {
+        location.replace('/painel');
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="SkyNetApi - gerador de cards com painel, uploads e API keys">
+    <title>SkyNetApi</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<main class="page">
+    <nav class="topbar" aria-label="Navegação principal">
+        <a class="brand" href="/">SkyNetApi</a>
+        <a class="nav-link" href="/painel">Painel</a>
+        <a class="nav-link" href="/upload">Uploads</a>
+        <a class="nav-link" href="/admin">Admin</a>
+    </nav>
+
+    <header class="hero">
+        <div class="eyebrow">API de geração de cards</div>
+        <h1>SkyNetApi</h1>
+        <p>Gere cards, organize imagens, controle API keys e acompanhe o uso em uma interface única.</p>
+    </header>
+
+    <section class="stats" aria-label="Status do serviço">
+        <div class="stat"><div class="value" id="statusValue">Verificando</div><div class="label">Status</div></div>
+        <div class="stat"><div class="value" id="versionValue">-</div><div class="label">Versão</div></div>
+        <div class="stat"><div class="value" id="uptimeValue">-</div><div class="label">Tempo online</div></div>
+    </section>
+
+    <section class="grid three">
+        <article class="card">
+            <h2 class="card-title">Painel de conta</h2>
+            <p class="muted">Crie e gerencie chaves, gere cards sem sair do navegador e acompanhe o histórico.</p>
+            <a class="button primary" href="/painel">Abrir painel</a>
+        </article>
+        <article class="card">
+            <h2 class="card-title">Uploads</h2>
+            <p class="muted">Envie suas imagens, filtre arquivos e copie links para usar no editor.</p>
+            <a class="button" href="/upload">Gerenciar uploads</a>
+        </article>
+        <article class="card">
+            <h2 class="card-title">Administração</h2>
+            <p class="muted">Ative contas, acompanhe uso e controle chaves por usuário.</p>
+            <a class="button" href="/admin">Abrir admin</a>
+        </article>
+    </section>
+
+    <section class="card" style="margin-top:18px">
+        <h2 class="card-title">Endpoints principais</h2>
+        <div class="endpoint"><span class="method post">POST</span>/generate-card <span class="text-faint">x-api-key</span></div>
+        <div class="endpoint"><span class="method post">POST</span>/api/uploads <span class="text-faint">sessão</span></div>
+        <div class="endpoint"><span class="method get">GET</span>/api/keys <span class="text-faint">sessão</span></div>
+        <div class="endpoint"><span class="method get">GET</span>/health <span class="text-faint">público</span></div>
+    </section>
+
+    <footer>SkyNetApi</footer>
+</main>
+<script src="/common.js"></script>
+<script>
+(async () => {
+    try {
+        const data = await SkyNet.api('/health');
+        document.getElementById('statusValue').textContent = data.status || 'OK';
+        document.getElementById('versionValue').textContent = data.version || '-';
+        const hours = Math.floor(Number(data.uptime || 0) / 3600);
+        document.getElementById('uptimeValue').textContent = hours < 1 ? 'menos de 1h' : `${hours}h`;
+    } catch {
+        document.getElementById('statusValue').textContent = 'Indisponível';
+    }
+})();
+</script>
+</body>
+</html>
