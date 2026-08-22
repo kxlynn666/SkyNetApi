@@ -61,7 +61,7 @@ window.SkyNet = (() => {
 
     async function logout() {
         try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
-        location.href = '/painel';
+        location.href = '/painel/login';
     }
 
     async function copy(text) {
@@ -80,24 +80,4 @@ window.SkyNet = (() => {
     }
 
     return { api, escapeHtml, formatDate, formatSize, message, session, logout, copy, setTabs };
-})();
-
-(() => {
-    const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
-    if (cleanPath !== '/painel') return;
-
-    const scripts = [
-        { src: '/tiktok-panel.js', marker: 'skynetTiktokPanel' },
-        { src: '/youtube-panel.js', marker: 'skynetYoutubePanel' },
-        { src: '/roblox-panel.js', marker: 'skynetRobloxPanel' },
-        { src: '/media-panel.js', marker: 'skynetMediaPanel' }
-    ];
-
-    for (const item of scripts) {
-        if (document.querySelector(`script[data-${item.marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
-        const script = document.createElement('script');
-        script.src = item.src;
-        script.dataset[item.marker] = '1';
-        document.head.appendChild(script);
-    }
 })();
