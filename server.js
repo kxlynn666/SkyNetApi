@@ -3,12 +3,14 @@ const { createApp } = require('./src/app');
 const C = require('./src/config');
 const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
+const { registerMediaRoutes } = require('./src/media');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
 
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
+registerMediaRoutes(app);
 
 app.get('/tiktok', (req, res) => {
     res.redirect(302, '/painel');
