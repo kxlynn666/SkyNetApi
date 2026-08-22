@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const { createApp } = require('./src/app');
 const C = require('./src/config');
@@ -12,9 +13,27 @@ registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
 
-app.get('/tiktok', (req, res) => {
-    res.redirect(302, '/painel');
-});
+const workspaceRoutes = [
+    '/painel',
+    '/painel/conta',
+    '/painel/chaves',
+    '/painel/cards',
+    '/painel/uploads',
+    '/painel/tiktok',
+    '/painel/youtube',
+    '/painel/media',
+    '/painel/roblox',
+    '/painel/historico',
+    '/painel/api'
+];
+
+for (const route of workspaceRoutes) {
+    app.get(route, (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'workspace.html')));
+}
+
+app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
+app.get('/upload', (req, res) => res.redirect(302, '/painel/uploads'));
+app.get('/tiktok', (req, res) => res.redirect(302, '/painel/tiktok'));
 
 app.use(createApp());
 
