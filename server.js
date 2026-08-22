@@ -8,6 +8,7 @@ const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
+const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 
 const app = express();
@@ -17,6 +18,7 @@ registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
 registerCardV2Routes(app);
+registerXpAdminRoutes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
     try {
