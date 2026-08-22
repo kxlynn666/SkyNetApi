@@ -50,7 +50,7 @@
         const style = document.createElement('style');
         style.id = 'cardV2WorkspaceStyles';
         style.textContent = `
-            .card2-preview{aspect-ratio:3/2;min-height:0;width:100%;border:1px dashed var(--border);border-radius:16px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-faint)}
+            .card2-preview{aspect-ratio:21/9;min-height:0;width:100%;border:1px dashed var(--border);border-radius:16px;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-faint)}
             .card2-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#090b11}
             .card2-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
             .card2-form-grid .form-group{margin:0}
@@ -72,15 +72,15 @@
         document.querySelectorAll('.workspace-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('href') === CARD2_PATH));
         document.getElementById('workspaceKicker').textContent = 'Criação';
         document.getElementById('workspaceTitle').textContent = 'Card 2.0';
-        document.getElementById('workspaceDescription').textContent = 'Crie um card de perfil moderno com foto quadrada 1:1 e informações organizadas ao lado.';
+        document.getElementById('workspaceDescription').textContent = 'Crie um card de perfil ultrawide 21:9 com foto quadrada 1:1 e informações organizadas ao lado.';
         document.title = 'Card 2.0 - SkyNetApi';
 
         const root = document.getElementById('workspaceContent');
         root.innerHTML = `
             <section class="workspace-page-grid">
                 <div class="workspace-card workspace-col-5">
-                    <div class="workspace-card-header"><div><h2>Perfil visual</h2><p>Layout 3:2 de 1500 × 1000, pensado para avatar quadrado sem deformação.</p></div></div>
-                    <div class="card2-format-note" style="margin-bottom:16px"><span class="card2-format-badge">1:1</span><span>A imagem principal é recortada em um quadro quadrado. O restante do card é usado para nome, identificador, bio e informações livres.</span></div>
+                    <div class="workspace-card-header"><div><h2>Perfil visual</h2><p>Layout 21:9 de 1680 × 720, com avatar quadrado 1:1 sem deformação.</p></div></div>
+                    <div class="card2-format-note" style="margin-bottom:16px"><span class="card2-format-badge">1:1</span><span>A foto principal é recortada em um quadro de 600 × 600. O formato 21:9 usa o espaço extra para nome, identificador, bio e informações livres.</span></div>
                     <div class="message" id="card2Message"></div>
                     <form id="card2Form" class="card2-form-grid">
                         <div class="form-group card2-span-2">
@@ -127,7 +127,7 @@
                     </form>
                 </div>
                 <div class="workspace-card workspace-col-7">
-                    <div class="workspace-card-header"><div><h2>Pré-visualização 3:2</h2><p>A foto permanece quadrada dentro do layout final.</p></div></div>
+                    <div class="workspace-card-header"><div><h2>Pré-visualização 21:9</h2><p>O card final usa 1680 × 720 e mantém a foto em 1:1.</p></div></div>
                     <div class="card2-preview" id="card2Preview"><span>O Card 2.0 aparecerá aqui.</span></div>
                     <div class="workspace-tool-actions">
                         <a class="button primary hidden" id="card2Download" download="card-v2.png">Baixar</a>
