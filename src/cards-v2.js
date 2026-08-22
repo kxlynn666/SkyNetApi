@@ -11,8 +11,9 @@ const C = require('./config');
 const S = require('./store');
 const Cards = require('./cards');
 
-const WIDTH = 1500;
-const HEIGHT = 1000;
+const WIDTH = 1680;
+const HEIGHT = 720;
+const AVATAR_SIZE = 600;
 let fontReady = false;
 
 function normalizePostCardV2Input(body = {}) {
@@ -126,34 +127,34 @@ function ensureFont() {
 function drawBackground(ctx, accent) {
     const gradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
     gradient.addColorStop(0, '#090b11');
-    gradient.addColorStop(0.55, '#0d1018');
+    gradient.addColorStop(0.52, '#0d1018');
     gradient.addColorStop(1, '#12101a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    const glow = ctx.createRadialGradient(1180, 180, 20, 1180, 180, 560);
+    const glow = ctx.createRadialGradient(1370, 120, 20, 1370, 120, 620);
     glow.addColorStop(0, hexToRgba(accent, 0.13));
     glow.addColorStop(1, hexToRgba(accent, 0));
     ctx.fillStyle = glow;
-    ctx.fillRect(650, 0, 850, 700);
+    ctx.fillRect(700, 0, 980, HEIGHT);
 
     ctx.save();
-    ctx.globalAlpha = 0.06;
+    ctx.globalAlpha = 0.055;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
-    for (let y = 120; y < HEIGHT; y += 110) {
+    for (let y = 92; y < HEIGHT; y += 92) {
         ctx.beginPath();
-        ctx.moveTo(720, y);
-        ctx.lineTo(WIDTH - 70, y);
+        ctx.moveTo(705, y);
+        ctx.lineTo(WIDTH - 54, y);
         ctx.stroke();
     }
     ctx.restore();
 }
 
 async function drawProfileImage(ctx, buffer, accent) {
-    const x = 70;
-    const y = 190;
-    const size = 620;
+    const x = 60;
+    const y = 60;
+    const size = AVATAR_SIZE;
     const prepared = await sharp(buffer, { limitInputPixels: 40_000_000 })
         .resize(size, size, { fit: 'cover', position: 'attention' })
         .png()
@@ -161,131 +162,128 @@ async function drawProfileImage(ctx, buffer, accent) {
     const image = await loadImage(prepared);
 
     ctx.save();
-    roundedRectPath(ctx, x, y, size, size, 34);
+    roundedRectPath(ctx, x, y, size, size, 32);
     ctx.fillStyle = '#0c0f16';
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(accent, 0.72);
+    ctx.strokeStyle = hexToRgba(accent, 0.68);
     ctx.lineWidth = 4;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 22;
+    ctx.shadowBlur = 20;
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
-    roundedRectPath(ctx, x, y, size, size, 31);
+    roundedRectPath(ctx, x, y, size, size, 29);
     ctx.clip();
     ctx.drawImage(image, x, y, size, size);
 
     const shade = ctx.createLinearGradient(x, y, x, y + size);
     shade.addColorStop(0, 'rgba(0,0,0,0)');
-    shade.addColorStop(0.72, 'rgba(0,0,0,.03)');
-    shade.addColorStop(1, 'rgba(0,0,0,.18)');
+    shade.addColorStop(0.78, 'rgba(0,0,0,.02)');
+    shade.addColorStop(1, 'rgba(0,0,0,.16)');
     ctx.fillStyle = shade;
     ctx.fillRect(x, y, size, size);
     ctx.restore();
 
     ctx.save();
     ctx.fillStyle = accent;
-    roundedRectPath(ctx, x, y + size + 24, 160, 5, 3);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.22)';
-    roundedRectPath(ctx, x + 174, y + size + 24, 90, 5, 3);
+    roundedRectPath(ctx, x + size + 26, 126, 5, 468, 3);
     ctx.fill();
     ctx.restore();
 }
 
 function drawProfileData(ctx, params) {
-    const left = 770;
-    const right = 1430;
+    const left = 720;
+    const right = 1620;
     const contentWidth = right - left;
 
     ctx.save();
     ctx.fillStyle = params.accent;
-    ctx.font = 'bold 24px "SkyNet Profile"';
+    ctx.font = 'bold 18px "SkyNet Profile"';
     ctx.textAlign = 'left';
-    ctx.fillText('PERFIL', left, 145);
+    ctx.fillText('PERFIL', left, 82);
     ctx.restore();
 
-    const titleSize = fitFont(ctx, params.nome, contentWidth, 82, 46);
+    const titleSize = fitFont(ctx, params.nome, contentWidth, 64, 38);
     ctx.save();
     ctx.font = `bold ${titleSize}px "SkyNet Profile"`;
     ctx.fillStyle = '#f7f8fb';
-    ctx.fillText(params.nome, left, 250);
+    ctx.fillText(params.nome, left, 160);
     ctx.restore();
 
     if (params.gamertag && params.gamertag !== params.nome) {
         ctx.save();
-        ctx.font = 'bold 30px "SkyNet Profile"';
+        ctx.font = 'bold 24px "SkyNet Profile"';
         ctx.fillStyle = 'rgba(218,221,232,.62)';
         const handle = params.gamertag.startsWith('@') ? params.gamertag : `@${params.gamertag}`;
-        ctx.fillText(handle, left, 304);
+        ctx.fillText(handle, left, 202);
         ctx.restore();
     }
 
-    if (params.status) drawTag(ctx, left, 345, params.status, params.accent);
+    if (params.status) drawTag(ctx, left, 228, params.status, params.accent);
 
-    drawSectionLabel(ctx, left, 455, 'SOBRE', params.accent);
-    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth, 30, 5);
+    drawSectionLabel(ctx, left, 326, 'SOBRE', params.accent);
+    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth, 26, 3);
     ctx.save();
-    ctx.font = 'bold 30px "SkyNet Profile"';
+    ctx.font = 'bold 26px "SkyNet Profile"';
     ctx.fillStyle = 'rgba(236,238,246,.84)';
     ctx.textBaseline = 'top';
-    bioLines.forEach((line, index) => ctx.fillText(line, left, 490 + index * 44));
+    bioLines.forEach((line, index) => ctx.fillText(line, left, 354 + index * 38));
     ctx.restore();
 
-    drawSectionLabel(ctx, left, 735, 'INFORMAÇÕES', params.accent);
-    const gap = 16;
+    drawSectionLabel(ctx, left, 515, 'INFORMAÇÕES', params.accent);
+    const gap = 18;
     const detailWidth = Math.floor((contentWidth - gap * 2) / 3);
     params.details.forEach((detail, index) => {
-        drawDetailCard(ctx, left + index * (detailWidth + gap), 770, detailWidth, 145, detail, params.accent);
+        drawDetailCard(ctx, left + index * (detailWidth + gap), 542, detailWidth, 116, detail, params.accent);
     });
 }
 
 function drawTag(ctx, x, y, text, accent) {
-    ctx.font = 'bold 22px "SkyNet Profile"';
-    const width = Math.min(420, Math.max(130, Math.ceil(ctx.measureText(text).width + 52)));
+    ctx.font = 'bold 19px "SkyNet Profile"';
+    const width = Math.min(420, Math.max(120, Math.ceil(ctx.measureText(text).width + 46)));
     ctx.save();
-    roundedRectPath(ctx, x, y, width, 52, 26);
-    ctx.fillStyle = hexToRgba(accent, 0.12);
+    roundedRectPath(ctx, x, y, width, 44, 22);
+    ctx.fillStyle = hexToRgba(accent, 0.11);
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(accent, 0.52);
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = hexToRgba(accent, 0.46);
+    ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = '#f1f2f7';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + 26, y + 27);
+    ctx.fillText(text, x + 23, y + 23);
     ctx.restore();
 }
 
 function drawSectionLabel(ctx, x, y, text, accent) {
     ctx.save();
-    ctx.font = 'bold 20px "SkyNet Profile"';
+    ctx.font = 'bold 17px "SkyNet Profile"';
     ctx.fillStyle = accent;
     ctx.fillText(text, x, y);
     const labelWidth = ctx.measureText(text).width;
-    ctx.fillStyle = hexToRgba(accent, 0.34);
-    ctx.fillRect(x + labelWidth + 24, y - 8, Math.max(80, 260 - labelWidth), 2);
+    ctx.fillStyle = hexToRgba(accent, 0.32);
+    ctx.fillRect(x + labelWidth + 20, y - 7, Math.max(90, 300 - labelWidth), 2);
     ctx.restore();
 }
 
 function drawDetailCard(ctx, x, y, width, height, detail, accent) {
     ctx.save();
-    roundedRectPath(ctx, x, y, width, height, 20);
+    roundedRectPath(ctx, x, y, width, height, 18);
     ctx.fillStyle = 'rgba(255,255,255,.035)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.09)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.font = 'bold 17px "SkyNet Profile"';
+    ctx.font = 'bold 15px "SkyNet Profile"';
     ctx.fillStyle = hexToRgba(accent, 0.82);
-    ctx.fillText(detail.label.toUpperCase(), x + 20, y + 38);
+    ctx.fillText(detail.label.toUpperCase(), x + 18, y + 31);
 
     const value = detail.value || '—';
-    const size = fitFont(ctx, value, width - 40, 34, 22);
+    const size = fitFont(ctx, value, width - 36, 30, 20);
     ctx.font = `bold ${size}px "SkyNet Profile"`;
     ctx.fillStyle = '#f6f7fa';
-    ctx.fillText(value, x + 20, y + 94);
+    ctx.fillText(value, x + 18, y + 78);
     ctx.restore();
 }
 
@@ -329,13 +327,13 @@ function wrapText(ctx, text, maxWidth, size, maxLines) {
 
 function drawOuterFrame(ctx, accent) {
     ctx.save();
-    roundedRectPath(ctx, 28, 28, WIDTH - 56, HEIGHT - 56, 34);
+    roundedRectPath(ctx, 24, 24, WIDTH - 48, HEIGHT - 48, 32);
     ctx.strokeStyle = 'rgba(255,255,255,.10)';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.strokeStyle = hexToRgba(accent, 0.24);
+    ctx.strokeStyle = hexToRgba(accent, 0.22);
     ctx.lineWidth = 1;
-    roundedRectPath(ctx, 36, 36, WIDTH - 72, HEIGHT - 72, 30);
+    roundedRectPath(ctx, 32, 32, WIDTH - 64, HEIGHT - 64, 28);
     ctx.stroke();
     ctx.restore();
 }
