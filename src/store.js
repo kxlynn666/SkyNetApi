@@ -3,8 +3,11 @@ const path = require('path');
 const crypto = require('crypto');
 const C = require('./config');
 
+const KEY_VAULT_FILE = path.join(C.DATA_DIR, '.key-vault-secret');
+
 function initStorage() {
     for (const dir of [C.DATA_DIR, C.UPLOADS_DIR, C.GENERATED_DIR]) fs.mkdirSync(dir, { recursive: true });
+    ensureKeyVaultSecret();
     ensureJsonFile(C.ACCOUNTS_FILE, []);
     ensureJsonFile(C.KEYS_FILE, []);
     ensureJsonFile(C.SESSIONS_FILE, []);
@@ -65,6 +68,38 @@ function safeEqualHex(a, b) {
         const right = Buffer.from(String(b), 'hex');
         return left.length === right.length && left.length > 0 && crypto.timingSafeEqual(left, right);
     } catch { return false; }
+}
+
+function ensureKeyVaultSecret() {
+    if (fs.existsSync(KEY_VAULT_FILE)) return;
+    fs.mkdirSync(path.dirname(KEY_VAULT_FILE), { recursive: true });
+    try {
+        fs.writeFileSync(KEY_VAULT_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
+    }
+}
+function getKeyVaultKey() {
+    ensureKeyVaultSecret();
+    const hex = fs.readFileSync(KEY_VAULT_FILE, 'utf8').trim();
+    if (!/^[0-9a-f]{64}$/i.test(hex)) throw new Error('Segredo local de API keys inválido.');
+    return Buffer.from(hex, 'hex');
+}
+function encryptApiKey(apiKey) {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', getKeyVaultKey(), iv);
+    const encrypted = Buffer.concat([cipher.update(String(apiKey), 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return `v1:${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('base64url')}`;
+}
+function decryptApiKey(payload) {
+    try {
+        const [version, ivHex, tagHex, data] = String(payload || '').split(':');
+        if (version !== 'v1' || !ivHex || !tagHex || !data) return null;
+        const decipher = crypto.createDecipheriv('aes-256-gcm', getKeyVaultKey(), Buffer.from(ivHex, 'hex'));
+        decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+        return Buffer.concat([decipher.update(Buffer.from(data, 'base64url')), decipher.final()]).toString('utf8');
+    } catch { return null; }
 }
 
 function ensureAdminAccount() {
@@ -149,7 +184,7 @@ function publicAccountView(account) {
     return { id: account.id, username: account.username, active: Boolean(account.active), isAdmin: Boolean(account.isAdmin), createdAt: account.createdAt, lastLoginAt: account.lastLoginAt || null };
 }
 function publicKeyView(key) {
-    return { id: key.id, name: key.name, preview: key.preview || 'skynet_...protegida', active: Boolean(key.active), createdAt: key.createdAt, lastUsedAt: key.lastUsedAt || null, requestCount: Number(key.requestCount || 0) };
+    return { id: key.id, name: key.name, preview: key.preview || 'skynet_...protegida', active: Boolean(key.active), createdAt: key.createdAt, lastUsedAt: key.lastUsedAt || null, requestCount: Number(key.requestCount || 0), canReveal: Boolean(key.keyCipher) };
 }
 function publicUploadView(record) {
     return { id: record.id, originalName: record.originalName, filename: record.filename, mime: record.mime, size: record.size, width: record.width || null, height: record.height || null, createdAt: record.createdAt, url: `/uploads/${encodeURIComponent(record.filename)}` };
@@ -165,5 +200,6 @@ module.exports = {
     initStorage, loadAccounts, saveAccounts, loadApiKeys, saveApiKeys, loadSessions, saveSessions,
     loadUploads, saveUploads, loadGenerations, saveGenerations, randomId, hashKey, normalizeUsername,
     createSecretHash, verifySecret, safeEqualHex, createSession, getSession, deleteSession, deleteSessionsForAccount,
-    authenticateApiKey, publicAccountView, publicKeyView, publicUploadView, publicGenerationView, removeFileIfExists
+    authenticateApiKey, encryptApiKey, decryptApiKey, publicAccountView, publicKeyView, publicUploadView,
+    publicGenerationView, removeFileIfExists
 };
