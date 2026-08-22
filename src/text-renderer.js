@@ -84,16 +84,12 @@ function drawTextBlock(ctx, { text, centerY, maxWidth, startSize, maxLines, neon
     const verticalPadding = strong ? 22 : 18;
     const lineHeight = Math.round(layout.size * (strong ? 1.22 : 1.18));
 
-    // A caixa acompanha a largura real do maior trecho de texto,
-    // mantendo apenas uma margem visual confortável.
     const minWidth = strong ? 220 : 160;
     const blockWidth = Math.min(
         maxWidth + horizontalPadding * 2,
         Math.max(minWidth, Math.ceil(measuredWidth + horizontalPadding * 2))
     );
 
-    // A altura usa a altura real aproximada da fonte + o espaçamento entre linhas,
-    // evitando sobras grandes acima e abaixo.
     const textHeight = layout.size + Math.max(0, layout.lines.length - 1) * lineHeight;
     const blockHeight = Math.ceil(textHeight + verticalPadding * 2);
 
@@ -159,7 +155,7 @@ function buildTextOverlay({ textoCima, textoPrincipal, textoBaixo, neon, hasAvat
 
     drawTextBlock(ctx, {
         text: textoBaixo,
-        centerY: 948,
+        centerY: 925,
         maxWidth: 870,
         startSize: 42,
         maxLines: 2,
