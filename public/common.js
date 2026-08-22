@@ -84,6 +84,14 @@ window.SkyNet = (() => {
 
 (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
+
+    if (cleanPath.startsWith('/u/')) {
+        const script = document.createElement('script');
+        script.src = '/community-v2.js';
+        script.dataset.communityPublic = '1';
+        document.head.appendChild(script);
+    }
+
     if (cleanPath !== '/admin') return;
     let loaded = false;
     const load = () => {
@@ -91,10 +99,13 @@ window.SkyNet = (() => {
         const app = document.getElementById('app');
         if (!app || app.classList.contains('hidden')) return;
         loaded = true;
-        const script = document.createElement('script');
-        script.src = '/admin-extended.js';
-        script.dataset.adminExtended = '1';
-        document.head.appendChild(script);
+        for (const [src, marker] of [['/admin-extended.js', 'adminExtended'], ['/admin-community.js', 'adminCommunity']]) {
+            if (document.querySelector(`script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
+            const script = document.createElement('script');
+            script.src = src;
+            script.dataset[marker] = '1';
+            document.head.appendChild(script);
+        }
     };
     load();
     const observer = new MutationObserver(() => {
