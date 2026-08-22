@@ -1083,16 +1083,16 @@ function writeJsonAtomic(file, data) {
     fs.renameSync(temp, file);
 }
 
-const loadAccounts = () => readJson(ACCOUNTS_FILE);
-const saveAccounts = data => writeJsonAtomic(ACCOUNTS_FILE, data);
-const loadApiKeys = () => readJson(KEYS_FILE);
-const saveApiKeys = data => writeJsonAtomic(KEYS_FILE, data);
-const loadSessions = () => readJson(SESSIONS_FILE);
-const saveSessions = data => writeJsonAtomic(SESSIONS_FILE, data);
-const loadUploads = () => readJson(UPLOADS_FILE);
-const saveUploads = data => writeJsonAtomic(UPLOADS_FILE, data);
-const loadGenerations = () => readJson(GENERATIONS_FILE);
-const saveGenerations = data => writeJsonAtomic(GENERATIONS_FILE, data);
+function loadAccounts() { return readJson(ACCOUNTS_FILE); }
+function saveAccounts(data) { return writeJsonAtomic(ACCOUNTS_FILE, data); }
+function loadApiKeys() { return readJson(KEYS_FILE); }
+function saveApiKeys(data) { return writeJsonAtomic(KEYS_FILE, data); }
+function loadSessions() { return readJson(SESSIONS_FILE); }
+function saveSessions(data) { return writeJsonAtomic(SESSIONS_FILE, data); }
+function loadUploads() { return readJson(UPLOADS_FILE); }
+function saveUploads(data) { return writeJsonAtomic(UPLOADS_FILE, data); }
+function loadGenerations() { return readJson(GENERATIONS_FILE); }
+function saveGenerations(data) { return writeJsonAtomic(GENERATIONS_FILE, data); }
 
 function ensureAdminAccount() {
     const accounts = loadAccounts();
