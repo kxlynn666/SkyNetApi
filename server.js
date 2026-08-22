@@ -5,6 +5,7 @@ const C = require('./src/config');
 const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
+const { registerCardV2Routes } = require('./src/cards-v2-routes');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
@@ -12,15 +13,16 @@ if (C.TRUST_PROXY) app.set('trust proxy', 1);
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
+registerCardV2Routes(app);
 
 const workspaceRoutes = [
     '/painel',
     '/painel/conta',
     '/painel/chaves',
     '/painel/cards',
+    '/painel/card2',
     '/painel/uploads',
     '/painel/tiktok',
-    '/painel/youtube',
     '/painel/media',
     '/painel/roblox',
     '/painel/historico',
@@ -32,6 +34,7 @@ for (const route of workspaceRoutes) {
 }
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
+app.get('/painel/youtube', (req, res) => res.redirect(302, '/painel/card2'));
 
 app.get('/painel.html', (req, res) => res.redirect(302, '/painel'));
 app.get('/upload', (req, res) => res.redirect(302, '/painel/uploads'));
