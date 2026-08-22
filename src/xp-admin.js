@@ -120,13 +120,8 @@ function registerXpAdminRoutes(app) {
         S.saveAccounts(accounts);
 
         const xpState = getXpState(account.id);
-        if (has(body, 'activeMinutes')) {
-            const minutes = clampInteger(body.activeMinutes, 0, 10_000_000);
-            xpState.activeMinutes = minutes;
-        }
-        if (has(body, 'xpAdjustment')) {
-            xpState.xpAdjustment = clampInteger(body.xpAdjustment, -100_000_000, 100_000_000);
-        }
+        if (has(body, 'activeMinutes')) xpState.activeMinutes = clampInteger(body.activeMinutes, 0, 10_000_000);
+        if (has(body, 'xpAdjustment')) xpState.xpAdjustment = clampInteger(body.xpAdjustment, -100_000_000, 100_000_000);
 
         if (has(body, 'targetLevel') && !has(body, 'targetXp')) {
             const level = clampInteger(body.targetLevel, 1, 10_000);
@@ -208,6 +203,8 @@ function getXpState(accountId) {
         accountId,
         activeMinutes: 0,
         xpAdjustment: 0,
+        usageXp: 0,
+        usageLast: null,
         lastHeartbeatAt: null,
         updatedAt: new Date().toISOString()
     };
@@ -247,26 +244,43 @@ function getUsage(accountId) {
     return { requests, cards, uploads, messages };
 }
 
-function getEarnedXpWithoutAdjustment(accountId, state = getXpState(accountId)) {
+function settleUsage(accountId, state = getXpState(accountId)) {
     const usage = getUsage(accountId);
-    return (
-        usage.requests * XP_WEIGHTS.apiRequest +
-        usage.cards * XP_WEIGHTS.card +
-        usage.uploads * XP_WEIGHTS.upload +
-        usage.messages * XP_WEIGHTS.message +
-        Number(state.activeMinutes || 0) * XP_WEIGHTS.activeMinute
+    const last = state.usageLast && typeof state.usageLast === 'object'
+        ? state.usageLast
+        : { requests: 0, cards: 0, uploads: 0, messages: 0 };
+
+    const delta = {
+        requests: Math.max(0, usage.requests - Number(last.requests || 0)),
+        cards: Math.max(0, usage.cards - Number(last.cards || 0)),
+        uploads: Math.max(0, usage.uploads - Number(last.uploads || 0)),
+        messages: Math.max(0, usage.messages - Number(last.messages || 0))
+    };
+
+    const gained = (
+        delta.requests * XP_WEIGHTS.apiRequest +
+        delta.cards * XP_WEIGHTS.card +
+        delta.uploads * XP_WEIGHTS.upload +
+        delta.messages * XP_WEIGHTS.message
     );
+
+    state.usageXp = Number(state.usageXp || 0) + gained;
+    state.usageLast = usage;
+    state.updatedAt = new Date().toISOString();
+    saveXpState(state);
+    return { state, usage, gained };
+}
+
+function getEarnedXpWithoutAdjustment(accountId, state = getXpState(accountId)) {
+    const settled = settleUsage(accountId, state);
+    return Number(settled.state.usageXp || 0) + Number(settled.state.activeMinutes || 0) * XP_WEIGHTS.activeMinute;
 }
 
 function getXpView(accountId) {
-    const state = getXpState(accountId);
-    const usage = getUsage(accountId);
-    const usageXp = (
-        usage.requests * XP_WEIGHTS.apiRequest +
-        usage.cards * XP_WEIGHTS.card +
-        usage.uploads * XP_WEIGHTS.upload +
-        usage.messages * XP_WEIGHTS.message
-    );
+    const settled = settleUsage(accountId, getXpState(accountId));
+    const state = settled.state;
+    const usage = settled.usage;
+    const usageXp = Number(state.usageXp || 0);
     const timeXp = Number(state.activeMinutes || 0) * XP_WEIGHTS.activeMinute;
     const totalXp = Math.max(0, usageXp + timeXp + Number(state.xpAdjustment || 0));
     const level = levelForXp(totalXp);
@@ -338,8 +352,7 @@ function adminAccountView(account) {
 }
 
 function deleteFullAccount(accountId) {
-    const accounts = S.loadAccounts();
-    S.saveAccounts(accounts.filter(item => item.id !== accountId));
+    S.saveAccounts(S.loadAccounts().filter(item => item.id !== accountId));
 
     const uploads = S.loadUploads();
     for (const item of uploads.filter(item => item.accountId === accountId)) {
@@ -435,8 +448,7 @@ function readOptionalJson(file) {
     try {
         const data = JSON.parse(fs.readFileSync(file, 'utf8'));
         return Array.isArray(data) ? data : [];
-    } catch (error) {
-        if (error.code === 'ENOENT') return [];
+    } catch {
         return [];
     }
 }
