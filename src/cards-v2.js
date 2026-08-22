@@ -23,12 +23,6 @@ function normalizePostCardV2Input(body = {}) {
         nome: body.nome ?? body.titulo ?? body.display_name ?? '',
         status: body.status ?? body.etiqueta ?? '',
         bio: body.bio ?? body.descricao ?? '',
-        stat1Label: body.stat1_label ?? body.info1_label ?? 'INFO 1',
-        stat1Value: body.stat1_value ?? body.info1_value ?? '',
-        stat2Label: body.stat2_label ?? body.info2_label ?? 'INFO 2',
-        stat2Value: body.stat2_value ?? body.info2_value ?? '',
-        stat3Label: body.stat3_label ?? body.info3_label ?? 'INFO 3',
-        stat3Value: body.stat3_value ?? body.info3_value ?? '',
         accent: body.accent ?? '#a855f7'
     };
 }
@@ -48,12 +42,7 @@ function sanitizeInput(input) {
         gamertag,
         nome,
         status: cleanText(input.status, 42),
-        bio: cleanText(input.bio, 260),
-        details: [
-            { label: cleanText(input.stat1Label, 18) || 'INFO 1', value: cleanText(input.stat1Value, 28) },
-            { label: cleanText(input.stat2Label, 18) || 'INFO 2', value: cleanText(input.stat2Value, 28) },
-            { label: cleanText(input.stat3Label, 18) || 'INFO 3', value: cleanText(input.stat3Value, 28) }
-        ],
+        bio: cleanText(input.bio, 300),
         accent: /^#[0-9a-f]{6}$/i.test(String(input.accent || '')) ? String(input.accent) : '#a855f7'
     };
 }
@@ -199,7 +188,7 @@ function drawProfileData(ctx, params) {
 
     ctx.save();
     ctx.fillStyle = params.accent;
-    ctx.font = 'bold 18px "SkyNet Profile"';
+    ctx.font = 'bold 22px "SkyNet Profile"';
     ctx.textAlign = 'left';
     ctx.fillText('PERFIL', left, 82);
     ctx.restore();
@@ -213,77 +202,106 @@ function drawProfileData(ctx, params) {
 
     if (params.gamertag && params.gamertag !== params.nome) {
         ctx.save();
-        ctx.font = 'bold 24px "SkyNet Profile"';
-        ctx.fillStyle = 'rgba(218,221,232,.62)';
+        ctx.font = 'bold 30px "SkyNet Profile"';
+        ctx.fillStyle = 'rgba(231,233,241,.82)';
         const handle = params.gamertag.startsWith('@') ? params.gamertag : `@${params.gamertag}`;
-        ctx.fillText(handle, left, 202);
+        ctx.fillText(handle, left, 210);
         ctx.restore();
     }
 
-    if (params.status) drawTag(ctx, left, 228, params.status, params.accent);
+    if (params.status) drawTag(ctx, left, 240, params.status, params.accent);
 
-    drawSectionLabel(ctx, left, 326, 'SOBRE', params.accent);
-    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth, 26, 3);
+    drawSectionLabel(ctx, left, 350, 'SOBRE', params.accent);
+    const bioLines = wrapText(ctx, params.bio || 'Sem descrição.', contentWidth, 32, 4);
     ctx.save();
-    ctx.font = 'bold 26px "SkyNet Profile"';
-    ctx.fillStyle = 'rgba(236,238,246,.84)';
+    ctx.font = 'bold 32px "SkyNet Profile"';
+    ctx.fillStyle = 'rgba(245,246,250,.92)';
     ctx.textBaseline = 'top';
-    bioLines.forEach((line, index) => ctx.fillText(line, left, 354 + index * 38));
+    bioLines.forEach((line, index) => ctx.fillText(line, left, 382 + index * 44));
     ctx.restore();
 
-    drawSectionLabel(ctx, left, 515, 'INFORMAÇÕES', params.accent);
-    const gap = 18;
-    const detailWidth = Math.floor((contentWidth - gap * 2) / 3);
-    params.details.forEach((detail, index) => {
-        drawDetailCard(ctx, left + index * (detailWidth + gap), 542, detailWidth, 116, detail, params.accent);
-    });
+    drawDecorativeFooter(ctx, left, right, 584, params.accent);
 }
 
 function drawTag(ctx, x, y, text, accent) {
-    ctx.font = 'bold 19px "SkyNet Profile"';
-    const width = Math.min(420, Math.max(120, Math.ceil(ctx.measureText(text).width + 46)));
+    ctx.font = 'bold 23px "SkyNet Profile"';
+    const width = Math.min(480, Math.max(138, Math.ceil(ctx.measureText(text).width + 56)));
     ctx.save();
-    roundedRectPath(ctx, x, y, width, 44, 22);
-    ctx.fillStyle = hexToRgba(accent, 0.11);
+    roundedRectPath(ctx, x, y, width, 52, 26);
+    ctx.fillStyle = hexToRgba(accent, 0.14);
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(accent, 0.46);
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = hexToRgba(accent, 0.56);
+    ctx.lineWidth = 1.8;
     ctx.stroke();
-    ctx.fillStyle = '#f1f2f7';
+    ctx.fillStyle = '#f5f6fa';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + 23, y + 23);
+    ctx.fillText(text, x + 28, y + 27);
     ctx.restore();
 }
 
 function drawSectionLabel(ctx, x, y, text, accent) {
     ctx.save();
-    ctx.font = 'bold 17px "SkyNet Profile"';
+    ctx.font = 'bold 20px "SkyNet Profile"';
     ctx.fillStyle = accent;
     ctx.fillText(text, x, y);
     const labelWidth = ctx.measureText(text).width;
-    ctx.fillStyle = hexToRgba(accent, 0.32);
-    ctx.fillRect(x + labelWidth + 20, y - 7, Math.max(90, 300 - labelWidth), 2);
+    ctx.fillStyle = hexToRgba(accent, 0.38);
+    ctx.fillRect(x + labelWidth + 22, y - 8, Math.max(120, 340 - labelWidth), 2);
     ctx.restore();
 }
 
-function drawDetailCard(ctx, x, y, width, height, detail, accent) {
+function drawDecorativeFooter(ctx, left, right, y, accent) {
+    const width = right - left;
     ctx.save();
-    roundedRectPath(ctx, x, y, width, height, 18);
-    ctx.fillStyle = 'rgba(255,255,255,.035)';
+
+    const line = ctx.createLinearGradient(left, 0, right, 0);
+    line.addColorStop(0, hexToRgba(accent, 0.85));
+    line.addColorStop(0.32, hexToRgba(accent, 0.22));
+    line.addColorStop(1, 'rgba(255,255,255,.035)');
+    ctx.fillStyle = line;
+    roundedRectPath(ctx, left, y, width, 3, 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.09)';
+
+    ctx.fillStyle = hexToRgba(accent, 0.16);
+    roundedRectPath(ctx, left, y + 24, 238, 54, 18);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(accent, 0.32);
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.font = 'bold 15px "SkyNet Profile"';
-    ctx.fillStyle = hexToRgba(accent, 0.82);
-    ctx.fillText(detail.label.toUpperCase(), x + 18, y + 31);
+    ctx.fillStyle = hexToRgba(accent, 0.75);
+    roundedRectPath(ctx, left + 24, y + 47, 94, 7, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    roundedRectPath(ctx, left + 132, y + 47, 72, 7, 4);
+    ctx.fill();
 
-    const value = detail.value || '—';
-    const size = fitFont(ctx, value, width - 36, 30, 20);
-    ctx.font = `bold ${size}px "SkyNet Profile"`;
-    ctx.fillStyle = '#f6f7fa';
-    ctx.fillText(value, x + 18, y + 78);
+    const centerX = left + 380;
+    for (let index = 0; index < 4; index += 1) {
+        const x = centerX + index * 42;
+        ctx.beginPath();
+        ctx.arc(x, y + 51, index === 0 ? 7 : 5, 0, Math.PI * 2);
+        ctx.strokeStyle = index === 0 ? hexToRgba(accent, 0.75) : 'rgba(255,255,255,.18)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    const rightBlockX = right - 330;
+    ctx.strokeStyle = 'rgba(255,255,255,.09)';
+    ctx.lineWidth = 1.5;
+    roundedRectPath(ctx, rightBlockX, y + 18, 330, 66, 20);
+    ctx.stroke();
+
+    ctx.fillStyle = hexToRgba(accent, 0.62);
+    roundedRectPath(ctx, rightBlockX + 20, y + 39, 116, 5, 3);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    roundedRectPath(ctx, rightBlockX + 20, y + 54, 206, 5, 3);
+    ctx.fill();
+    roundedRectPath(ctx, rightBlockX + 244, y + 39, 64, 20, 10);
+    ctx.fillStyle = hexToRgba(accent, 0.11);
+    ctx.fill();
+
     ctx.restore();
 }
 
