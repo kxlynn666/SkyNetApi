@@ -32,8 +32,12 @@ for (const route of workspaceRoutes) {
 }
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
+
+app.get('/painel.html', (req, res) => res.redirect(302, '/painel'));
 app.get('/upload', (req, res) => res.redirect(302, '/painel/uploads'));
+app.get('/upload.html', (req, res) => res.redirect(302, '/painel/uploads'));
 app.get('/tiktok', (req, res) => res.redirect(302, '/painel/tiktok'));
+app.get('/tiktok.html', (req, res) => res.redirect(302, '/painel/tiktok'));
 
 app.use(createApp());
 
