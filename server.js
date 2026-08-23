@@ -10,6 +10,7 @@ const { registerMediaRoutes } = require('./src/media');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerMusicRoutes } = require('./src/music');
+const { registerBratRoutes } = require('./src/brat');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
@@ -46,6 +47,7 @@ registerMediaRoutes(app);
 registerCardV2Routes(app);
 registerXpAdminRoutes(app);
 registerMusicRoutes(app);
+registerBratRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
