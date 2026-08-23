@@ -6,10 +6,10 @@ const C = require('./config');
 const S = require('./store');
 
 const SIZE = 900;
-const TEXT_BOX = { x: 90, y: 200, width: 720, height: 500 };
-const PAD = 12;
+const TEXT_BOX = { x: 90, y: 95, width: 720, height: 710 };
+const PAD = 10;
 const SCALE_X = 0.72;
-const MAX_FONT = 390;
+const MAX_FONT = 520;
 const MIN_FONT = 8;
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
@@ -202,7 +202,7 @@ async function renderBratPng(text) {
     ctx.fillRect(0, 0, SIZE, SIZE);
 
     const layout = fitText(ctx, text);
-    const centerY = SIZE / 2;
+    const centerY = TEXT_BOX.y + TEXT_BOX.height / 2;
     const firstBaseline = centerY - layout.totalHeight / 2 + layout.lineHeight * 0.78;
 
     ctx.save();
