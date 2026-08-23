@@ -9,26 +9,13 @@ const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
+const { registerMusicRoutes } = require('./src/music');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
-
-app.use((req, res, next) => {
-    const originalSetHeader = res.setHeader.bind(res);
-    res.setHeader = (name, value) => {
-        if (String(name).toLowerCase() === 'content-security-policy') {
-            const policy = Array.isArray(value) ? value.join('; ') : String(value || '');
-            if (!/(^|;)\s*frame-src\s/i.test(policy)) {
-                value = `${policy}; frame-src https://open.spotify.com`;
-            }
-        }
-        return originalSetHeader(name, value);
-    };
-    return next();
-});
 
 app.use((req, res, next) => {
     if (req.method !== 'DELETE') return next();
@@ -58,6 +45,7 @@ registerRobloxRoutes(app);
 registerMediaRoutes(app);
 registerCardV2Routes(app);
 registerXpAdminRoutes(app);
+registerMusicRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
