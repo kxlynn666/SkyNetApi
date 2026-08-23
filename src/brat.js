@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const sharp = require('sharp');
 const { createCanvas, GlobalFonts, loadImage } = require('@napi-rs/canvas');
 const C = require('./config');
@@ -15,8 +16,11 @@ const MIN_FONT = 4;
 const SOFT_BLUR = 0.7;
 const API_SIZE = 300;
 const API_BLUR = 0.9;
-const EMOJI_SCALE = 0.92;
-const EMOJI_ADVANCE = 0.96;
+const EMOJI_SCALE = 0.98;
+const EMOJI_ADVANCE = 1.0;
+const EMOJI_TIMEOUT_MS = 4500;
+const EMOJI_MAX_BYTES = 2 * 1024 * 1024;
+const FLUENT_EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/shuding/fluentui-emoji-unicode@main/assets';
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
 const buckets = new Map();
@@ -263,29 +267,20 @@ function fitText(ctx, text) {
 
 function emojiCodeCandidates(value) {
     const points = [...String(value || '')].map(char => char.codePointAt(0));
-    const make = (items, padded) => items
-        .map(point => point.toString(16).toUpperCase().padStart(padded ? 4 : 1, '0'))
-        .join('-');
-
-    const withoutVs = points.filter(point => point !== 0xFE0F);
-    const candidates = [
-        make(points, true),
-        make(points, false),
-        make(withoutVs, true),
-        make(withoutVs, false)
-    ];
-
-    return [...new Set(candidates.filter(Boolean))];
+    const withoutVs = points.filter(point => point !== 0xFE0F && point !== 0xFE0E);
+    const make = items => items.map(point => point.toString(16).toLowerCase()).join('-');
+    return [...new Set([make(points), make(withoutVs)].filter(Boolean))];
 }
 
-function findEmojiAsset(value) {
+function findOpenMojiFallback(value) {
     const base = path.join(C.ROOT, 'node_modules', 'openmoji', 'color');
     const folders = [
         { dir: path.join(base, '72x72'), ext: '.png' },
         { dir: path.join(base, 'svg'), ext: '.svg' }
     ];
 
-    for (const code of emojiCodeCandidates(value)) {
+    const codes = emojiCodeCandidates(value).flatMap(code => [code.toUpperCase(), code]);
+    for (const code of codes) {
         for (const folder of folders) {
             const file = path.join(folder.dir, `${code}${folder.ext}`);
             if (fs.existsSync(file)) return file;
@@ -294,23 +289,40 @@ function findEmojiAsset(value) {
     return null;
 }
 
+async function fetchFluentEmoji(value) {
+    for (const code of emojiCodeCandidates(value)) {
+        const url = `${FLUENT_EMOJI_BASE}/${code}_3d.png`;
+        try {
+            const response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                timeout: EMOJI_TIMEOUT_MS,
+                maxContentLength: EMOJI_MAX_BYTES,
+                maxBodyLength: EMOJI_MAX_BYTES,
+                validateStatus: status => status === 200
+            });
+            const buffer = Buffer.from(response.data);
+            if (!buffer.length || buffer.length > EMOJI_MAX_BYTES) continue;
+            return await loadImage(buffer);
+        } catch {}
+    }
+    return null;
+}
+
 async function loadEmojiAsset(value) {
     if (emojiCache.has(value)) return emojiCache.get(value);
 
-    const file = findEmojiAsset(value);
-    if (!file) {
-        emojiCache.set(value, null);
-        return null;
+    let image = await fetchFluentEmoji(value);
+
+    if (!image) {
+        const fallbackFile = findOpenMojiFallback(value);
+        if (fallbackFile) {
+            try { image = await loadImage(fallbackFile); }
+            catch { image = null; }
+        }
     }
 
-    try {
-        const image = await loadImage(file);
-        emojiCache.set(value, image);
-        return image;
-    } catch {
-        emojiCache.set(value, null);
-        return null;
-    }
+    emojiCache.set(value, image || null);
+    return image || null;
 }
 
 async function preloadEmojiAssets(text) {
@@ -342,11 +354,17 @@ function drawRichText(ctx, text, x, y, size) {
 
         if (image) {
             const emojiSize = size * EMOJI_SCALE;
-            const top = y - size * 0.78;
+            const top = y - size * 0.80;
             const offset = Math.max(0, (advance - emojiSize) / 2);
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.10)';
+            ctx.shadowBlur = Math.max(0.5, size * 0.018);
+            ctx.shadowOffsetY = Math.max(0.25, size * 0.012);
             ctx.drawImage(image, cursor + offset, top, emojiSize, emojiSize);
+            ctx.restore();
         } else {
-            // Fallback para o glifo do sistema caso um emoji não exista no pacote.
+            // Fallback para o glifo do sistema caso nenhum asset esteja disponível.
             ctx.fillText(part, cursor, y);
         }
         cursor += advance;
