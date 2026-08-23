@@ -65,8 +65,7 @@
     const paragraphs = text.split('\n');
     const lines = [];
     for (let i = 0; i < paragraphs.length; i += 1) {
-      const wrapped = wrapParagraph(paragraphs[i], size, maxWidth);
-      lines.push(...wrapped);
+      lines.push(...wrapParagraph(paragraphs[i], size, maxWidth));
     }
     const lineHeight = size * 0.94;
     const totalHeight = Math.max(lineHeight, lines.length * lineHeight);
@@ -107,9 +106,10 @@
     const left = visibleLeft / SCALE_X;
     const width = visibleWidth / SCALE_X;
 
+    ctx.textAlign = 'left';
+
     if (words.length === 1) {
-      ctx.textAlign = 'center';
-      ctx.fillText(words[0], SIZE / 2 / SCALE_X, y);
+      ctx.fillText(words[0], left, y);
       return;
     }
 
@@ -117,7 +117,6 @@
     const wordsWidth = wordWidths.reduce((sum, value) => sum + value, 0);
     const gap = Math.max(0, (width - wordsWidth) / (words.length - 1));
 
-    ctx.textAlign = 'left';
     let x = left;
     words.forEach((word, index) => {
       ctx.fillText(word, x, y);
