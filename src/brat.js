@@ -5,8 +5,7 @@ const { createCanvas, GlobalFonts, loadImage } = require('@napi-rs/canvas');
 const C = require('./config');
 const S = require('./store');
 
-// O painel usa 400 x 400. As rotas GET públicas passam por uma etapa final
-// separada e retornam 300 x 300, propositalmente menos nítidas.
+// Painel: 400 x 400. GET público: 300 x 300 e propositalmente mais suave.
 const SIZE = 400;
 const TEXT_BOX = { x: 40, y: 43, width: 320, height: 315 };
 const PAD = 4;
@@ -15,10 +14,17 @@ const MIN_FONT = 4;
 const SOFT_BLUR = 0.7;
 const API_SIZE = 300;
 const API_BLUR = 0.9;
-const EMOJI_SCALE = 0.82;
-const EMOJI_ADVANCE = 0.88;
+const EMOJI_SCALE = 0.88;
+const EMOJI_ADVANCE = 0.92;
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
+
+// Assets Samsung NÃO são distribuídos pelo projeto. Se o deploy possuir assets
+// licenciados, eles têm prioridade sobre o fallback Twemoji.
+const SAMSUNG_EMOJI_DIR = process.env.SAMSUNG_EMOJI_DIR
+    ? path.resolve(process.env.SAMSUNG_EMOJI_DIR)
+    : path.join(C.DATA_DIR, 'samsung-emoji');
+
 const buckets = new Map();
 const emojiCache = new Map();
 const graphemeSegmenter = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' });
@@ -27,10 +33,7 @@ let fontReady = false;
 function registerBratRoutes(app) {
     registerFont();
 
-    // A prévia/download do painel usa o renderer-base em 400 x 400.
     app.get('/painel/brat/image', handlePanelBratImage);
-
-    // As rotas públicas mantêm o mesmo layout, mas saem menores e mais suaves.
     app.get('/generate-brat', handleBratImage);
     app.get('/api/brat', handleBratImage);
     app.get('/brat', (req, res, next) => {
@@ -122,6 +125,7 @@ function takeRateSlot(key) {
     for (const [bucketKey, bucket] of buckets) {
         if (bucket.resetAt <= now) buckets.delete(bucketKey);
     }
+
     const id = String(key || 'unknown');
     let bucket = buckets.get(id);
     if (!bucket || bucket.resetAt <= now) {
@@ -139,6 +143,7 @@ function registerFont() {
         path.join(C.ROOT, 'node_modules', 'dejavu-fonts-ttf', 'ttf', 'DejaVuSansCondensed.ttf'),
         C.FONT_PATH
     ];
+
     for (const file of candidates) {
         try {
             if (file && fs.existsSync(file)) {
@@ -158,7 +163,6 @@ function cleanText(value, maxLength) {
 }
 
 function setFont(ctx, size) {
-    // Fonte condensada natural; nenhum scaleX ou transformação horizontal.
     ctx.font = `${size}px "Brat Sans", Arial, sans-serif`;
 }
 
@@ -220,6 +224,7 @@ function wrapParagraph(ctx, paragraph, size, maxWidth) {
     const words = rawWords.flatMap(word => splitLongWord(ctx, word, maxWidth, size));
     const lines = [];
     let line = '';
+
     for (const word of words) {
         const candidate = line ? `${line} ${word}` : word;
         if (!line || measureRichText(ctx, candidate, size) <= maxWidth) line = candidate;
@@ -249,6 +254,7 @@ function fitText(ctx, text) {
     let high = MAX_FONT;
     let best = MIN_FONT;
     let bestLayout = layoutFor(ctx, text, MIN_FONT);
+
     while (low <= high) {
         const mid = Math.floor((low + high) / 2);
         const layout = layoutFor(ctx, text, mid);
@@ -256,7 +262,9 @@ function fitText(ctx, text) {
             best = mid;
             bestLayout = layout;
             low = mid + 1;
-        } else high = mid - 1;
+        } else {
+            high = mid - 1;
+        }
     }
     return { size: best, ...bestLayout };
 }
@@ -264,8 +272,37 @@ function fitText(ctx, text) {
 function emojiCodeCandidates(value) {
     const points = [...String(value || '')].map(char => char.codePointAt(0));
     const withoutVs = points.filter(point => point !== 0xFE0F && point !== 0xFE0E);
-    const make = items => items.map(point => point.toString(16).toLowerCase()).join('-');
-    return [...new Set([make(withoutVs), make(points)].filter(Boolean))];
+    const makeLower = items => items.map(point => point.toString(16).toLowerCase()).join('-');
+    const makeUpper = items => items.map(point => point.toString(16).toUpperCase()).join('-');
+    return [...new Set([
+        makeLower(withoutVs),
+        makeLower(points),
+        makeUpper(withoutVs),
+        makeUpper(points)
+    ].filter(Boolean))];
+}
+
+function findSamsungEmojiAsset(value) {
+    const folders = [
+        SAMSUNG_EMOJI_DIR,
+        path.join(SAMSUNG_EMOJI_DIR, 'png'),
+        path.join(SAMSUNG_EMOJI_DIR, 'webp'),
+        path.join(SAMSUNG_EMOJI_DIR, '72x72'),
+        path.join(SAMSUNG_EMOJI_DIR, '128x128')
+    ];
+    const extensions = ['.png', '.webp', '.jpg', '.jpeg'];
+
+    for (const code of emojiCodeCandidates(value)) {
+        for (const folder of folders) {
+            for (const ext of extensions) {
+                const file = path.join(folder, `${code}${ext}`);
+                try {
+                    if (fs.existsSync(file) && fs.statSync(file).isFile()) return file;
+                } catch {}
+            }
+        }
+    }
+    return null;
 }
 
 function findTwemojiAsset(value) {
@@ -276,8 +313,9 @@ function findTwemojiAsset(value) {
     ];
 
     for (const code of emojiCodeCandidates(value)) {
+        const normalized = code.toLowerCase();
         for (const folder of folders) {
-            const file = path.join(folder.dir, `${code}${folder.ext}`);
+            const file = path.join(folder.dir, `${normalized}${folder.ext}`);
             if (fs.existsSync(file)) return file;
         }
     }
@@ -287,7 +325,8 @@ function findTwemojiAsset(value) {
 async function loadEmojiAsset(value) {
     if (emojiCache.has(value)) return emojiCache.get(value);
 
-    const file = findTwemojiAsset(value);
+    // Prioridade absoluta: Samsung local/licenciado. Twemoji é somente fallback.
+    const file = findSamsungEmojiAsset(value) || findTwemojiAsset(value);
     if (!file) {
         emojiCache.set(value, null);
         return null;
@@ -332,11 +371,10 @@ function drawRichText(ctx, text, x, y, size) {
 
         if (image) {
             const emojiSize = size * EMOJI_SCALE;
-            const top = y - size * 0.74;
+            const top = y - size * 0.76;
             const offset = Math.max(0, (advance - emojiSize) / 2);
             ctx.drawImage(image, cursor + offset, top, emojiSize, emojiSize);
         } else {
-            // Fallback para o glifo do sistema caso nenhum asset esteja disponível.
             ctx.fillText(part, cursor, y);
         }
         cursor += advance;
@@ -363,6 +401,7 @@ function drawJustifiedLine(ctx, line, y, size) {
     const wordsWidth = widths.reduce((sum, value) => sum + value, 0);
     const gap = Math.max(0, (width - wordsWidth) / (words.length - 1));
     let x = left;
+
     words.forEach((word, index) => {
         drawRichText(ctx, word, x, y, size);
         x += widths[index] + gap;
@@ -390,7 +429,6 @@ async function renderBratPng(text) {
         drawJustifiedLine(ctx, line, firstBaseline + index * layout.lineHeight, layout.size);
     });
 
-    // Base do painel: 400 x 400, baixa resolução e blur suave.
     const base = canvas.toBuffer('image/png');
     return sharp(base)
         .blur(SOFT_BLUR)
@@ -400,8 +438,6 @@ async function renderBratPng(text) {
 }
 
 async function makePublicApiPng(basePng) {
-    // GET público: reduz de verdade para 300 x 300 e suaviza um pouco mais.
-    // O resize é uniforme, então não estica nem comprime a fonte ou os emojis.
     return sharp(basePng)
         .resize(API_SIZE, API_SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
         .blur(API_BLUR)
