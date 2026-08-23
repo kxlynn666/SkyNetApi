@@ -14,6 +14,7 @@ bin/yt-dlp*
 # Dados persistentes e arquivos gerados em runtime
 data/*.json
 data/.key-vault-secret
+data/music/*
 public/uploads/*
 public/generated/*
 
