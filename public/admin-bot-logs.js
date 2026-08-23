@@ -16,13 +16,13 @@
         document.head.appendChild(style);
     }
 
-    async function boot() {
-        try {
-            const session = await S.session();
-            if (!session?.isAdmin) return;
-        } catch { return; }
+    function boot() {
         installStyles();
-        waitForAdmin(() => {
+        waitForAdmin(async () => {
+            try {
+                const session = await S.session();
+                if (!session?.isAdmin) return;
+            } catch { return; }
             addTab();
             loadAll();
         });
