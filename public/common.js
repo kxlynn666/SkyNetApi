@@ -118,7 +118,6 @@ window.SkyNet = (() => {
 })();
 
 (() => {
-    if (location.pathname === '/music-popup.html') return;
     if (document.querySelector('script[data-skynet-music-player]')) return;
     const script = document.createElement('script');
     script.src = '/music-player-v2.js';
