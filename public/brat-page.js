@@ -37,6 +37,7 @@
       .brat-workspace-badge{flex:0 0 auto;padding:4px 8px;border-radius:8px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.24);font-weight:700;color:var(--text)}
       .brat-workspace-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
       .brat-workspace-form input{width:100%}
+      .brat-api-code{display:block;margin-top:6px;word-break:break-all;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
       @media(max-width:820px){.brat-workspace-preview{max-width:620px;margin:0 auto}}
     `;
     document.head.appendChild(style);
@@ -54,7 +55,7 @@
 
     document.getElementById('workspaceKicker').textContent = 'Criação';
     document.getElementById('workspaceTitle').textContent = 'Brat Generator';
-    document.getElementById('workspaceDescription').textContent = 'Gere uma imagem quadrada minimalista com fundo branco, texto preto, blur e alinhamento justify puxado para a esquerda.';
+    document.getElementById('workspaceDescription').textContent = 'Gere uma imagem quadrada minimalista com fundo branco, texto preto mais denso, blur e alinhamento justify puxado para a esquerda.';
     document.title = 'Brat Generator - SkyNetApi';
 
     const root = document.getElementById('workspaceContent');
@@ -74,6 +75,13 @@
               <div class="workspace-info"><div class="label">Estilo</div><div class="value">Branco / preto</div></div>
               <div class="workspace-info"><div class="label">Alinhamento</div><div class="value">Justify à esquerda</div></div>
               <div class="workspace-info"><div class="label">Efeito</div><div class="value">Blur suave</div></div>
+            </div>
+            <div class="brat-workspace-note">
+              <span class="brat-workspace-badge">API</span>
+              <span>Também funciona por rota e responde diretamente com PNG.
+                <code class="brat-api-code">GET /generate-brat?texto=SEU_TEXTO&amp;apikey=SUA_API_KEY</code>
+                <code class="brat-api-code">GET /brat?texto=SEU_TEXTO&amp;apikey=SUA_API_KEY</code>
+              </span>
             </div>
             <div class="brat-workspace-actions">
               <button class="button primary" id="saveButton" type="button">Baixar PNG</button>
@@ -96,7 +104,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=3`;
+    script.src = `/brat-generator.js?v=4`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
