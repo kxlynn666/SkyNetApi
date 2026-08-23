@@ -73,7 +73,7 @@
               <div class="hint">Até 450 caracteres. A prévia usa exatamente o mesmo renderer da rota GET.</div>
             </div>
             <div class="workspace-info-grid" style="grid-template-columns:1fr 1fr">
-              <div class="workspace-info"><div class="label">Formato</div><div class="value">450 × 450</div></div>
+              <div class="workspace-info"><div class="label">Formato</div><div class="value">400 × 400</div></div>
               <div class="workspace-info"><div class="label">Estilo</div><div class="value">Branco / preto</div></div>
               <div class="workspace-info"><div class="label">Alinhamento</div><div class="value">Justify à esquerda</div></div>
               <div class="workspace-info"><div class="label">Qualidade</div><div class="value">Baixa / suave</div></div>
@@ -92,7 +92,7 @@
           </div>
         </div>
         <div class="workspace-card workspace-col-7">
-          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>O arquivo real é 450 × 450; a interface apenas amplia a exibição.</p></div></div>
+          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>O arquivo real é 400 × 400; a interface apenas amplia a exibição.</p></div></div>
           <div class="brat-workspace-preview" id="bratPreview">
             <div class="brat-preview-state">Gerando prévia...</div>
           </div>
@@ -106,7 +106,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=7`;
+    script.src = `/brat-generator.js?v=8`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
