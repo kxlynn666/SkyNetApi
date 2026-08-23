@@ -7,11 +7,11 @@
 
   const ctx = canvas.getContext('2d', { alpha: false });
   const SIZE = 900;
-  const TEXT_BOX = { x: 90, y: 200, width: 720, height: 500 };
-  const PAD = 12;
+  const TEXT_BOX = { x: 90, y: 95, width: 720, height: 710 };
+  const PAD = 10;
   const SCALE_X = 0.72;
   const BLUR = 2.8;
-  const MAX_FONT = 390;
+  const MAX_FONT = 520;
   const MIN_FONT = 8;
 
   function normalizeText(value) {
@@ -137,7 +137,7 @@
 
     const layout = fitText(value);
     const centerX = SIZE / 2;
-    const centerY = SIZE / 2;
+    const centerY = TEXT_BOX.y + TEXT_BOX.height / 2;
     const firstBaseline = centerY - layout.totalHeight / 2 + layout.lineHeight * 0.78;
 
     ctx.save();
