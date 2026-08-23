@@ -18,6 +18,10 @@ let fontReady = false;
 
 function registerBratRoutes(app) {
     registerFont();
+
+    // A prévia/download do painel usa exatamente o mesmo renderer da API pública.
+    app.get('/painel/brat/image', handlePanelBratImage);
+
     app.get('/generate-brat', handleBratImage);
     app.get('/api/brat', handleBratImage);
     app.get('/brat', (req, res, next) => {
@@ -29,6 +33,21 @@ function registerBratRoutes(app) {
         if (!wantsImage) return next();
         return handleBratImage(req, res, next);
     });
+}
+
+async function handlePanelBratImage(req, res, next) {
+    try {
+        const account = getSessionAccount(req);
+        if (!account) return res.status(401).json({ ok: false, error: 'Sessão inválida ou expirada.' });
+
+        const texto = cleanText(req.query?.texto ?? req.query?.text, 450);
+        if (!texto) return res.status(400).json({ ok: false, error: 'Informe o parâmetro texto.' });
+
+        const png = await renderBratPng(texto);
+        return sendPng(res, png, 'brat.png');
+    } catch (error) {
+        return next(error);
+    }
 }
 
 async function handleBratImage(req, res, next) {
@@ -46,16 +65,40 @@ async function handleBratImage(req, res, next) {
         if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou ausente.' });
 
         const png = await renderBratPng(texto);
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Content-Length', String(png.length));
-        res.setHeader('Content-Disposition', 'inline; filename="brat.png"');
-        res.setHeader('Cache-Control', 'no-store');
-        res.setHeader('Referrer-Policy', 'no-referrer');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        return res.end(png);
+        return sendPng(res, png, 'brat.png');
     } catch (error) {
         return next(error);
     }
+}
+
+function sendPng(res, png, filename) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', String(png.length));
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.end(png);
+}
+
+function getSessionAccount(req) {
+    const token = parseCookies(req.headers.cookie || '').skynet_session || '';
+    const session = token ? S.getSession(token) : null;
+    if (!session) return null;
+    return S.loadAccounts().find(account => account.id === session.accountId && account.active) || null;
+}
+
+function parseCookies(header) {
+    const out = {};
+    for (const part of String(header || '').split(';')) {
+        const index = part.indexOf('=');
+        if (index < 0) continue;
+        const key = part.slice(0, index).trim();
+        const value = part.slice(index + 1).trim();
+        try { out[key] = decodeURIComponent(value); }
+        catch { out[key] = value; }
+    }
+    return out;
 }
 
 function readApiKey(req) {
