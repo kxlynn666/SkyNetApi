@@ -100,6 +100,7 @@ const workspaceRoutes = [
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
+    '/painel/brat',
     '/painel/uploads',
     '/painel/tiktok',
     '/painel/media',
@@ -112,9 +113,8 @@ for (const route of workspaceRoutes) {
     app.get(route, (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'workspace.html')));
 }
 
-for (const route of ['/brat', '/brat-generator', '/painel/brat']) {
-    app.get(route, (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'brat.html')));
-}
+app.get('/brat', (req, res) => res.redirect(302, '/painel/brat'));
+app.get('/brat-generator', (req, res) => res.redirect(302, '/painel/brat'));
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
 app.get('/u/:username', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'public-profile.html')));
