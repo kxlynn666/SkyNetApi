@@ -96,7 +96,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=2`;
+    script.src = `/brat-generator.js?v=3`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
