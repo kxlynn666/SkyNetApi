@@ -5,13 +5,14 @@ const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const C = require('./config');
 const S = require('./store');
 
-const SIZE = 900;
-const TEXT_BOX = { x: 90, y: 95, width: 720, height: 710 };
-const PAD = 10;
-const MAX_FONT = 520;
-const MIN_FONT = 8;
-const SOFT_SIZE = 620;
-const SOFT_BLUR = 0.55;
+// O Brat é gerado nativamente em baixa resolução. A interface pode ampliar a
+// prévia visualmente, mas o arquivo retornado continua sendo 450 x 450.
+const SIZE = 450;
+const TEXT_BOX = { x: 45, y: 48, width: 360, height: 354 };
+const PAD = 5;
+const MAX_FONT = 260;
+const MIN_FONT = 4;
+const SOFT_BLUR = 0.7;
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
 const buckets = new Map();
@@ -145,7 +146,7 @@ function cleanText(value, maxLength) {
 }
 
 function setFont(ctx, size) {
-    // A fonte já é naturalmente condensada. Não aplicar scaleX/transform para não deformá-la.
+    // Fonte condensada natural; nenhum scaleX ou transformação horizontal.
     ctx.font = `${size}px "Brat Sans", Arial, sans-serif`;
 }
 
@@ -259,14 +260,12 @@ async function renderBratPng(text) {
         drawJustifiedLine(ctx, line, firstBaseline + index * layout.lineHeight, layout.size);
     });
 
-    // Aspecto propositalmente suave/baixa fidelidade do Brat: a imagem inteira é
-    // reduzida e ampliada uniformemente. Isso não deforma nem estica a fonte.
+    // Blur leve aplicado diretamente no arquivo de baixa resolução. Não há
+    // upscale posterior: o PNG final permanece 450 x 450 e propositalmente suave.
     const base = canvas.toBuffer('image/png');
     return sharp(base)
-        .resize(SOFT_SIZE, SOFT_SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
         .blur(SOFT_BLUR)
-        .resize(SIZE, SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
-        .linear(1.04, -4)
+        .linear(1.03, -3)
         .png({ compressionLevel: 9 })
         .toBuffer();
 }
