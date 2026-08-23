@@ -116,3 +116,12 @@ window.SkyNet = (() => {
     });
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
+
+(() => {
+    if (location.pathname === '/spotify-popup.html') return;
+    if (document.querySelector('script[data-skynet-spotify-player]')) return;
+    const script = document.createElement('script');
+    script.src = '/spotify-player.js';
+    script.dataset.skynetSpotifyPlayer = '1';
+    document.head.appendChild(script);
+})();
