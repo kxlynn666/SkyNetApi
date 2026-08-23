@@ -5,14 +5,16 @@ const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const C = require('./config');
 const S = require('./store');
 
-// O Brat é gerado nativamente em baixa resolução. A interface pode ampliar a
-// prévia visualmente, mas o arquivo retornado continua sendo 400 x 400.
+// O painel usa 400 x 400. As rotas GET públicas passam por uma etapa final
+// separada e retornam 300 x 300, propositalmente menos nítidas.
 const SIZE = 400;
 const TEXT_BOX = { x: 40, y: 43, width: 320, height: 315 };
 const PAD = 4;
 const MAX_FONT = 231;
 const MIN_FONT = 4;
 const SOFT_BLUR = 0.7;
+const API_SIZE = 300;
+const API_BLUR = 0.9;
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
 const buckets = new Map();
@@ -21,9 +23,10 @@ let fontReady = false;
 function registerBratRoutes(app) {
     registerFont();
 
-    // A prévia/download do painel usa exatamente o mesmo renderer da API pública.
+    // A prévia/download do painel usa o renderer-base em 400 x 400.
     app.get('/painel/brat/image', handlePanelBratImage);
 
+    // As rotas públicas mantêm o mesmo layout, mas saem menores e mais suaves.
     app.get('/generate-brat', handleBratImage);
     app.get('/api/brat', handleBratImage);
     app.get('/brat', (req, res, next) => {
@@ -66,7 +69,8 @@ async function handleBratImage(req, res, next) {
         const auth = S.authenticateApiKey(apiKey);
         if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou ausente.' });
 
-        const png = await renderBratPng(texto);
+        const basePng = await renderBratPng(texto);
+        const png = await makePublicApiPng(basePng);
         return sendPng(res, png, 'brat.png');
     } catch (error) {
         return next(error);
@@ -260,12 +264,22 @@ async function renderBratPng(text) {
         drawJustifiedLine(ctx, line, firstBaseline + index * layout.lineHeight, layout.size);
     });
 
-    // Blur leve aplicado diretamente no arquivo de baixa resolução. Não há
-    // upscale posterior: o PNG final permanece 400 x 400 e propositalmente suave.
+    // Base do painel: 400 x 400, baixa resolução e blur suave.
     const base = canvas.toBuffer('image/png');
     return sharp(base)
         .blur(SOFT_BLUR)
         .linear(1.03, -3)
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+}
+
+async function makePublicApiPng(basePng) {
+    // GET público: reduz de verdade para 300 x 300 e suaviza um pouco mais.
+    // O resize é uniforme, então não estica nem comprime a fonte.
+    return sharp(basePng)
+        .resize(API_SIZE, API_SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
+        .blur(API_BLUR)
+        .linear(1.02, -2)
         .png({ compressionLevel: 9 })
         .toBuffer();
 }
