@@ -97,6 +97,34 @@
     return { size: best, ...bestLayout };
   }
 
+  function drawJustifiedLine(line, y, size) {
+    const words = String(line || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+
+    setFont(size);
+    const visibleLeft = TEXT_BOX.x + PAD;
+    const visibleWidth = TEXT_BOX.width - PAD * 2;
+    const left = visibleLeft / SCALE_X;
+    const width = visibleWidth / SCALE_X;
+
+    if (words.length === 1) {
+      ctx.textAlign = 'center';
+      ctx.fillText(words[0], SIZE / 2 / SCALE_X, y);
+      return;
+    }
+
+    const wordWidths = words.map(word => ctx.measureText(word).width);
+    const wordsWidth = wordWidths.reduce((sum, value) => sum + value, 0);
+    const gap = Math.max(0, (width - wordsWidth) / (words.length - 1));
+
+    ctx.textAlign = 'left';
+    let x = left;
+    words.forEach((word, index) => {
+      ctx.fillText(word, x, y);
+      x += wordWidths[index] + gap;
+    });
+  }
+
   function draw(text) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -118,14 +146,12 @@
     ctx.scale(SCALE_X, 1);
     ctx.translate(-centerX / SCALE_X, 0);
     ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.filter = `blur(${BLUR}px)`;
     setFont(layout.size);
 
-    const drawX = centerX / SCALE_X;
     layout.lines.forEach((line, index) => {
-      ctx.fillText(line || ' ', drawX, firstBaseline + index * layout.lineHeight);
+      drawJustifiedLine(line, firstBaseline + index * layout.lineHeight, layout.size);
     });
     ctx.restore();
   }
