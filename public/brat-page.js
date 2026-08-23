@@ -31,7 +31,7 @@
     style.id = 'bratWorkspaceStyles';
     style.textContent = `
       .brat-workspace-preview{width:100%;aspect-ratio:1/1;border:1px solid var(--border);border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
-      .brat-workspace-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#fff}
+      .brat-workspace-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#fff;image-rendering:auto}
       .brat-workspace-preview.loading{opacity:.72}
       .brat-preview-state{padding:24px;color:#111;font-size:13px;line-height:1.5;text-align:center;cursor:default}
       .brat-workspace-form{display:grid;gap:14px}
@@ -57,7 +57,7 @@
 
     document.getElementById('workspaceKicker').textContent = 'Criação';
     document.getElementById('workspaceTitle').textContent = 'Brat Generator';
-    document.getElementById('workspaceDescription').textContent = 'Gere uma imagem quadrada minimalista com fundo branco, texto preto mais denso, blur e alinhamento justify puxado para a esquerda.';
+    document.getElementById('workspaceDescription').textContent = 'Gere uma imagem quadrada em baixa resolução, com fundo branco, texto preto, blur suave e alinhamento justify puxado para a esquerda.';
     document.title = 'Brat Generator - SkyNetApi';
 
     const root = document.getElementById('workspaceContent');
@@ -73,14 +73,14 @@
               <div class="hint">Até 450 caracteres. A prévia usa exatamente o mesmo renderer da rota GET.</div>
             </div>
             <div class="workspace-info-grid" style="grid-template-columns:1fr 1fr">
-              <div class="workspace-info"><div class="label">Formato</div><div class="value">900 × 900</div></div>
+              <div class="workspace-info"><div class="label">Formato</div><div class="value">450 × 450</div></div>
               <div class="workspace-info"><div class="label">Estilo</div><div class="value">Branco / preto</div></div>
               <div class="workspace-info"><div class="label">Alinhamento</div><div class="value">Justify à esquerda</div></div>
-              <div class="workspace-info"><div class="label">Render</div><div class="value">Único / servidor</div></div>
+              <div class="workspace-info"><div class="label">Qualidade</div><div class="value">Baixa / suave</div></div>
             </div>
             <div class="brat-workspace-note">
               <span class="brat-workspace-badge">API</span>
-              <span>Também funciona por rota e responde diretamente com PNG.
+              <span>Também funciona por rota e responde diretamente com o mesmo PNG de baixa resolução.
                 <code class="brat-api-code">GET /generate-brat?texto=SEU_TEXTO&amp;apikey=SUA_API_KEY</code>
                 <code class="brat-api-code">GET /brat?texto=SEU_TEXTO&amp;apikey=SUA_API_KEY</code>
               </span>
@@ -92,7 +92,7 @@
           </div>
         </div>
         <div class="workspace-card workspace-col-7">
-          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>Esta prévia vem do mesmo renderer usado por /generate-brat.</p></div></div>
+          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>O arquivo real é 450 × 450; a interface apenas amplia a exibição.</p></div></div>
           <div class="brat-workspace-preview" id="bratPreview">
             <div class="brat-preview-state">Gerando prévia...</div>
           </div>
@@ -106,7 +106,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=6`;
+    script.src = `/brat-generator.js?v=7`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
