@@ -6,11 +6,11 @@ const C = require('./config');
 const S = require('./store');
 
 // O Brat é gerado nativamente em baixa resolução. A interface pode ampliar a
-// prévia visualmente, mas o arquivo retornado continua sendo 450 x 450.
-const SIZE = 450;
-const TEXT_BOX = { x: 45, y: 48, width: 360, height: 354 };
-const PAD = 5;
-const MAX_FONT = 260;
+// prévia visualmente, mas o arquivo retornado continua sendo 400 x 400.
+const SIZE = 400;
+const TEXT_BOX = { x: 40, y: 43, width: 320, height: 315 };
+const PAD = 4;
+const MAX_FONT = 231;
 const MIN_FONT = 4;
 const SOFT_BLUR = 0.7;
 const LIMIT_WINDOW_MS = 60_000;
@@ -261,7 +261,7 @@ async function renderBratPng(text) {
     });
 
     // Blur leve aplicado diretamente no arquivo de baixa resolução. Não há
-    // upscale posterior: o PNG final permanece 450 x 450 e propositalmente suave.
+    // upscale posterior: o PNG final permanece 400 x 400 e propositalmente suave.
     const base = canvas.toBuffer('image/png');
     return sharp(base)
         .blur(SOFT_BLUR)
