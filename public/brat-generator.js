@@ -7,11 +7,11 @@
 
   const ctx = canvas.getContext('2d', { alpha: false });
   const SIZE = 900;
-  const TEXT_BOX = { x: 150, y: 250, width: 600, height: 400 };
-  const PAD = 20;
+  const TEXT_BOX = { x: 90, y: 200, width: 720, height: 500 };
+  const PAD = 12;
   const SCALE_X = 0.72;
   const BLUR = 3.6;
-  const MAX_FONT = 350;
+  const MAX_FONT = 390;
   const MIN_FONT = 8;
 
   function normalizeText(value) {
