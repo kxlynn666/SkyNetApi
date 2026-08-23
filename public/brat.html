@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Gerador minimalista de imagem com fundo branco e texto preto no estilo brat.">
+  <title>Brat Generator - SkyNetApi</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;min-height:100%;background:#fff;color:#000}
+    body{font-family:Arial,Helvetica,sans-serif;text-align:center;overflow-x:hidden}
+    .brat-page{width:100%;min-height:100vh;overflow:hidden;background:#fff}
+    .brat-preview-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:80vh;cursor:pointer;background:#fff}
+    #bratCanvas{display:block;width:min(80vh,900px,calc(100vw - 24px));height:auto;aspect-ratio:1/1;background:#fff}
+    .brat-controls{display:flex;align-items:center;justify-content:center;gap:10px;width:min(620px,94vw);margin:14px auto 0;padding:0 8px}
+    #bratInput{margin:0;padding:0 18px;font-size:18px;border:1px solid #d1d1d1;border-radius:16px;width:min(450px,calc(100vw - 112px));height:50px;line-height:50px;outline:none;font-family:"Times New Roman",Times,serif;text-align:center;color:#000;background:#fff;box-shadow:none}
+    #bratInput:focus{border-color:#a8a8a8}
+    #saveButton{height:50px;font-size:16px;border-radius:16px;padding:0 20px;cursor:pointer;background:#fff;border:1px solid #d1d1d1;color:#000;font-family:Arial,Helvetica,sans-serif;white-space:nowrap}
+    #saveButton:hover{filter:blur(.8px)}
+    #saveButton:active{transform:translateY(1px)}
+    .brat-note{margin:12px auto 0;font:12px/1.4 Arial,Helvetica,sans-serif;color:#000;opacity:.62}
+    @media(max-width:1023px){.brat-preview-wrap{height:85vh;margin-top:4vh}.brat-controls{margin-top:8px}}
+    @media(max-width:620px){.brat-preview-wrap{height:70vh;margin-top:0}.brat-controls{gap:8px;width:96vw}.brat-controls #bratInput{width:calc(100% - 82px);padding:0 12px;font-size:16px}.brat-controls #saveButton{padding:0 14px}.brat-note{padding:0 16px}}
+  </style>
+</head>
+<body>
+  <main class="brat-page">
+    <div class="brat-preview-wrap" id="bratPreview" title="Clique para salvar a imagem">
+      <canvas id="bratCanvas" width="900" height="900" aria-label="Prévia da imagem gerada"></canvas>
+    </div>
+    <div class="brat-controls">
+      <input id="bratInput" type="text" autocomplete="off" spellcheck="false" value="brat and it’s completely different but also still brat" aria-label="Texto da imagem">
+      <button id="saveButton" type="button">Save</button>
+    </div>
+    <div class="brat-note" id="bratNote">900 × 900 · fundo branco · texto preto</div>
+  </main>
+  <script src="/brat-generator.js"></script>
+</body>
+</html>
