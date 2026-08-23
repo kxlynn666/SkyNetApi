@@ -17,6 +17,20 @@ const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
+    const originalSetHeader = res.setHeader.bind(res);
+    res.setHeader = (name, value) => {
+        if (String(name).toLowerCase() === 'content-security-policy') {
+            const policy = Array.isArray(value) ? value.join('; ') : String(value || '');
+            if (!/(^|;)\s*frame-src\s/i.test(policy)) {
+                value = `${policy}; frame-src https://open.spotify.com`;
+            }
+        }
+        return originalSetHeader(name, value);
+    };
+    return next();
+});
+
+app.use((req, res, next) => {
     if (req.method !== 'DELETE') return next();
     let accountId = null;
     const adminMatch = req.path.match(/^\/api\/admin\/users\/([^/]+)\/full$/);
