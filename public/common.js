@@ -101,7 +101,7 @@ window.SkyNet = (() => {
         const app = document.getElementById('app');
         if (!app || app.classList.contains('hidden')) return;
         loaded = true;
-        for (const [src, marker] of [['/admin-extended.js', 'adminExtended'], ['/admin-community.js', 'adminCommunity']]) {
+        for (const [src, marker] of [['/admin-extended.js', 'adminExtended'], ['/admin-community.js', 'adminCommunity'], ['/admin-music.js', 'adminMusic']]) {
             if (document.querySelector(`script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
             const script = document.createElement('script');
             script.src = src;
@@ -118,10 +118,10 @@ window.SkyNet = (() => {
 })();
 
 (() => {
-    if (location.pathname === '/spotify-popup.html') return;
-    if (document.querySelector('script[data-skynet-spotify-player]')) return;
+    if (location.pathname === '/music-popup.html') return;
+    if (document.querySelector('script[data-skynet-music-player]')) return;
     const script = document.createElement('script');
-    script.src = '/spotify-player.js';
-    script.dataset.skynetSpotifyPlayer = '1';
+    script.src = '/music-player-v2.js';
+    script.dataset.skynetMusicPlayer = '1';
     document.head.appendChild(script);
 })();
