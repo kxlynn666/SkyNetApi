@@ -115,6 +115,7 @@ for (const route of workspaceRoutes) {
 
 app.get('/brat', (req, res) => res.redirect(302, '/painel/brat'));
 app.get('/brat-generator', (req, res) => res.redirect(302, '/painel/brat'));
+app.get('/brat.html', (req, res) => res.redirect(302, '/painel/brat'));
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
 app.get('/u/:username', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'public-profile.html')));
