@@ -10,7 +10,7 @@
   const TEXT_BOX = { x: 90, y: 200, width: 720, height: 500 };
   const PAD = 12;
   const SCALE_X = 0.72;
-  const BLUR = 3.6;
+  const BLUR = 2.8;
   const MAX_FONT = 390;
   const MIN_FONT = 8;
 
