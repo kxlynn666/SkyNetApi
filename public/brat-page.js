@@ -30,8 +30,10 @@
     const style = document.createElement('style');
     style.id = 'bratWorkspaceStyles';
     style.textContent = `
-      .brat-workspace-preview{width:100%;aspect-ratio:1/1;border:1px solid var(--border);border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
-      .brat-workspace-preview canvas{width:100%;height:100%;display:block;background:#fff}
+      .brat-workspace-preview{width:100%;aspect-ratio:1/1;border:1px solid var(--border);border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+      .brat-workspace-preview img{width:100%;height:100%;display:block;object-fit:contain;background:#fff}
+      .brat-workspace-preview.loading{opacity:.72}
+      .brat-preview-state{padding:24px;color:#111;font-size:13px;line-height:1.5;text-align:center;cursor:default}
       .brat-workspace-form{display:grid;gap:14px}
       .brat-workspace-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025);color:var(--muted);font-size:13px;line-height:1.5}
       .brat-workspace-badge{flex:0 0 auto;padding:4px 8px;border-radius:8px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.24);font-weight:700;color:var(--text)}
@@ -68,13 +70,13 @@
             <div class="form-group">
               <label for="bratInput">Texto</label>
               <input id="bratInput" type="text" maxlength="450" autocomplete="off" spellcheck="false" value="brat and it’s completely different but also still brat">
-              <div class="hint">Até 450 caracteres. A prévia atualiza em tempo real.</div>
+              <div class="hint">Até 450 caracteres. A prévia usa exatamente o mesmo renderer da rota GET.</div>
             </div>
             <div class="workspace-info-grid" style="grid-template-columns:1fr 1fr">
               <div class="workspace-info"><div class="label">Formato</div><div class="value">900 × 900</div></div>
               <div class="workspace-info"><div class="label">Estilo</div><div class="value">Branco / preto</div></div>
               <div class="workspace-info"><div class="label">Alinhamento</div><div class="value">Justify à esquerda</div></div>
-              <div class="workspace-info"><div class="label">Enquadramento</div><div class="value">Adaptativo</div></div>
+              <div class="workspace-info"><div class="label">Render</div><div class="value">Único / servidor</div></div>
             </div>
             <div class="brat-workspace-note">
               <span class="brat-workspace-badge">API</span>
@@ -90,9 +92,9 @@
           </div>
         </div>
         <div class="workspace-card workspace-col-7">
-          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>A imagem final é exatamente a área branca abaixo.</p></div></div>
+          <div class="workspace-card-header"><div><h2>Pré-visualização</h2><p>Esta prévia vem do mesmo renderer usado por /generate-brat.</p></div></div>
           <div class="brat-workspace-preview" id="bratPreview">
-            <canvas id="bratCanvas" width="900" height="900" aria-label="Prévia do Brat Generator"></canvas>
+            <div class="brat-preview-state">Gerando prévia...</div>
           </div>
         </div>
       </section>`;
@@ -104,7 +106,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=5`;
+    script.src = `/brat-generator.js?v=6`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
