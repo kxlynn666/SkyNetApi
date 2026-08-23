@@ -1,0 +1,226 @@
+const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
+const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+const C = require('./config');
+const S = require('./store');
+
+const SIZE = 900;
+const TEXT_BOX = { x: 90, y: 200, width: 720, height: 500 };
+const PAD = 12;
+const SCALE_X = 0.72;
+const MAX_FONT = 390;
+const MIN_FONT = 8;
+const LIMIT_WINDOW_MS = 60_000;
+const LIMIT_MAX = 30;
+const buckets = new Map();
+let fontReady = false;
+
+function registerBratRoutes(app) {
+    registerFont();
+    app.get('/generate-brat', handleBratImage);
+    app.get('/api/brat', handleBratImage);
+    app.get('/brat', (req, res, next) => {
+        const wantsImage = Object.prototype.hasOwnProperty.call(req.query || {}, 'texto')
+            || Object.prototype.hasOwnProperty.call(req.query || {}, 'text')
+            || Object.prototype.hasOwnProperty.call(req.query || {}, 'apikey')
+            || Boolean(req.headers['x-api-key'])
+            || Boolean(req.headers.authorization);
+        if (!wantsImage) return next();
+        return handleBratImage(req, res, next);
+    });
+}
+
+async function handleBratImage(req, res, next) {
+    try {
+        if (!takeRateSlot(req.ip || req.socket?.remoteAddress || 'unknown')) {
+            res.setHeader('Retry-After', '60');
+            return res.status(429).json({ ok: false, error: 'Limite de geração atingido. Tente novamente em instantes.' });
+        }
+
+        const texto = cleanText(req.query?.texto ?? req.query?.text, 450);
+        if (!texto) return res.status(400).json({ ok: false, error: 'Informe o parâmetro texto.' });
+
+        const apiKey = readApiKey(req);
+        const auth = S.authenticateApiKey(apiKey);
+        if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou ausente.' });
+
+        const png = await renderBratPng(texto);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', String(png.length));
+        res.setHeader('Content-Disposition', 'inline; filename="brat.png"');
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        return res.end(png);
+    } catch (error) {
+        return next(error);
+    }
+}
+
+function readApiKey(req) {
+    const authorization = String(req.headers.authorization || '');
+    const bearer = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+    return String(req.query?.apikey || req.headers['x-api-key'] || bearer || '').trim();
+}
+
+function takeRateSlot(key) {
+    const now = Date.now();
+    for (const [bucketKey, bucket] of buckets) {
+        if (bucket.resetAt <= now) buckets.delete(bucketKey);
+    }
+    const id = String(key || 'unknown');
+    let bucket = buckets.get(id);
+    if (!bucket || bucket.resetAt <= now) {
+        bucket = { count: 0, resetAt: now + LIMIT_WINDOW_MS };
+        buckets.set(id, bucket);
+    }
+    bucket.count += 1;
+    return bucket.count <= LIMIT_MAX;
+}
+
+function registerFont() {
+    if (fontReady) return;
+    fontReady = true;
+    const candidates = [
+        path.join(C.ROOT, 'node_modules', 'dejavu-fonts-ttf', 'ttf', 'DejaVuSansCondensed.ttf'),
+        C.FONT_PATH
+    ];
+    for (const file of candidates) {
+        try {
+            if (file && fs.existsSync(file)) {
+                GlobalFonts.registerFromPath(file, 'Brat Sans');
+                return;
+            }
+        } catch {}
+    }
+}
+
+function cleanText(value, maxLength) {
+    return String(value ?? '').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, maxLength);
+}
+
+function setFont(ctx, size) {
+    ctx.font = `${size}px "Brat Sans", Arial, sans-serif`;
+}
+
+function splitLongWord(ctx, word, maxUnscaledWidth, size) {
+    setFont(ctx, size);
+    if (ctx.measureText(word).width <= maxUnscaledWidth) return [word];
+    const chunks = [];
+    let current = '';
+    for (const char of [...word]) {
+        const candidate = current + char;
+        if (current && ctx.measureText(candidate).width > maxUnscaledWidth) {
+            chunks.push(current);
+            current = char;
+        } else {
+            current = candidate;
+        }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
+function wrapParagraph(ctx, paragraph, size, maxUnscaledWidth) {
+    setFont(ctx, size);
+    const rawWords = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (!rawWords.length) return [''];
+    const words = rawWords.flatMap(word => splitLongWord(ctx, word, maxUnscaledWidth, size));
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (!line || ctx.measureText(candidate).width <= maxUnscaledWidth) line = candidate;
+        else {
+            lines.push(line);
+            line = word;
+        }
+    }
+    if (line) lines.push(line);
+    return lines;
+}
+
+function layoutFor(ctx, text, size) {
+    const maxWidth = (TEXT_BOX.width - PAD * 2) / SCALE_X;
+    const lines = [];
+    for (const paragraph of text.split('\n')) lines.push(...wrapParagraph(ctx, paragraph, size, maxWidth));
+    const lineHeight = size * 0.94;
+    const totalHeight = Math.max(lineHeight, lines.length * lineHeight);
+    setFont(ctx, size);
+    const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line || ' ').width * SCALE_X), 0);
+    return { lines, lineHeight, totalHeight, widest };
+}
+
+function fitText(ctx, text) {
+    const usableWidth = TEXT_BOX.width - PAD * 2;
+    const usableHeight = TEXT_BOX.height - PAD * 2;
+    let low = MIN_FONT;
+    let high = MAX_FONT;
+    let best = MIN_FONT;
+    let bestLayout = layoutFor(ctx, text, MIN_FONT);
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const layout = layoutFor(ctx, text, mid);
+        if (layout.widest <= usableWidth && layout.totalHeight <= usableHeight) {
+            best = mid;
+            bestLayout = layout;
+            low = mid + 1;
+        } else high = mid - 1;
+    }
+    return { size: best, ...bestLayout };
+}
+
+function drawJustifiedLine(ctx, line, y, size) {
+    const words = String(line || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    setFont(ctx, size);
+    const visibleLeft = TEXT_BOX.x + PAD;
+    const visibleWidth = TEXT_BOX.width - PAD * 2;
+    const left = visibleLeft / SCALE_X;
+    const width = visibleWidth / SCALE_X;
+    ctx.textAlign = 'left';
+    if (words.length === 1) {
+        ctx.fillText(words[0], left, y);
+        return;
+    }
+    const widths = words.map(word => ctx.measureText(word).width);
+    const wordsWidth = widths.reduce((sum, value) => sum + value, 0);
+    const gap = Math.max(0, (width - wordsWidth) / (words.length - 1));
+    let x = left;
+    words.forEach((word, index) => {
+        ctx.fillText(word, x, y);
+        x += widths[index] + gap;
+    });
+}
+
+async function renderBratPng(text) {
+    registerFont();
+    const canvas = createCanvas(SIZE, SIZE);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    const layout = fitText(ctx, text);
+    const centerY = SIZE / 2;
+    const firstBaseline = centerY - layout.totalHeight / 2 + layout.lineHeight * 0.78;
+
+    ctx.save();
+    ctx.scale(SCALE_X, 1);
+    ctx.fillStyle = '#000000';
+    ctx.textBaseline = 'alphabetic';
+    setFont(ctx, layout.size);
+    layout.lines.forEach((line, index) => {
+        drawJustifiedLine(ctx, line, firstBaseline + index * layout.lineHeight, layout.size);
+    });
+    ctx.restore();
+
+    const base = canvas.toBuffer('image/png');
+    return sharp(base)
+        .blur(1.05)
+        .linear(1.08, -10)
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+}
+
+module.exports = { registerBratRoutes, renderBratPng };
