@@ -74,7 +74,7 @@
               <div class="workspace-info"><div class="label">Formato</div><div class="value">900 × 900</div></div>
               <div class="workspace-info"><div class="label">Estilo</div><div class="value">Branco / preto</div></div>
               <div class="workspace-info"><div class="label">Alinhamento</div><div class="value">Justify à esquerda</div></div>
-              <div class="workspace-info"><div class="label">Efeito</div><div class="value">Blur suave</div></div>
+              <div class="workspace-info"><div class="label">Enquadramento</div><div class="value">Adaptativo</div></div>
             </div>
             <div class="brat-workspace-note">
               <span class="brat-workspace-badge">API</span>
@@ -104,7 +104,7 @@
     });
 
     const script = document.createElement('script');
-    script.src = `/brat-generator.js?v=4`;
+    script.src = `/brat-generator.js?v=5`;
     script.dataset.bratRenderer = '1';
     document.head.appendChild(script);
   }
