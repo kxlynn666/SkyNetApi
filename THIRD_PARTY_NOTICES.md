@@ -1,10 +1,10 @@
 # Third-party notices
 
-## OpenMoji
+## Twemoji
 
-Emoji graphics used by the Brat renderer are provided by OpenMoji.
+Emoji graphics used by the Brat renderer are provided by Twemoji.
 
-All emojis designed by OpenMoji – the open-source emoji and icon project.
+Copyright Twitter, Inc. and other contributors.
 
-License: CC BY-SA 4.0
-Project: https://openmoji.org/
+Graphics license: CC-BY 4.0
+Project: https://github.com/twitter/twemoji
