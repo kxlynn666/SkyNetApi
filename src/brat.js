@@ -8,9 +8,10 @@ const S = require('./store');
 const SIZE = 900;
 const TEXT_BOX = { x: 90, y: 95, width: 720, height: 710 };
 const PAD = 10;
-const SCALE_X = 0.72;
 const MAX_FONT = 520;
 const MIN_FONT = 8;
+const SOFT_SIZE = 620;
+const SOFT_BLUR = 0.55;
 const LIMIT_WINDOW_MS = 60_000;
 const LIMIT_MAX = 30;
 const buckets = new Map();
@@ -144,17 +145,18 @@ function cleanText(value, maxLength) {
 }
 
 function setFont(ctx, size) {
+    // A fonte já é naturalmente condensada. Não aplicar scaleX/transform para não deformá-la.
     ctx.font = `${size}px "Brat Sans", Arial, sans-serif`;
 }
 
-function splitLongWord(ctx, word, maxUnscaledWidth, size) {
+function splitLongWord(ctx, word, maxWidth, size) {
     setFont(ctx, size);
-    if (ctx.measureText(word).width <= maxUnscaledWidth) return [word];
+    if (ctx.measureText(word).width <= maxWidth) return [word];
     const chunks = [];
     let current = '';
     for (const char of [...word]) {
         const candidate = current + char;
-        if (current && ctx.measureText(candidate).width > maxUnscaledWidth) {
+        if (current && ctx.measureText(candidate).width > maxWidth) {
             chunks.push(current);
             current = char;
         } else {
@@ -165,16 +167,16 @@ function splitLongWord(ctx, word, maxUnscaledWidth, size) {
     return chunks;
 }
 
-function wrapParagraph(ctx, paragraph, size, maxUnscaledWidth) {
+function wrapParagraph(ctx, paragraph, size, maxWidth) {
     setFont(ctx, size);
     const rawWords = paragraph.trim().split(/\s+/).filter(Boolean);
     if (!rawWords.length) return [''];
-    const words = rawWords.flatMap(word => splitLongWord(ctx, word, maxUnscaledWidth, size));
+    const words = rawWords.flatMap(word => splitLongWord(ctx, word, maxWidth, size));
     const lines = [];
     let line = '';
     for (const word of words) {
         const candidate = line ? `${line} ${word}` : word;
-        if (!line || ctx.measureText(candidate).width <= maxUnscaledWidth) line = candidate;
+        if (!line || ctx.measureText(candidate).width <= maxWidth) line = candidate;
         else {
             lines.push(line);
             line = word;
@@ -185,13 +187,13 @@ function wrapParagraph(ctx, paragraph, size, maxUnscaledWidth) {
 }
 
 function layoutFor(ctx, text, size) {
-    const maxWidth = (TEXT_BOX.width - PAD * 2) / SCALE_X;
+    const maxWidth = TEXT_BOX.width - PAD * 2;
     const lines = [];
     for (const paragraph of text.split('\n')) lines.push(...wrapParagraph(ctx, paragraph, size, maxWidth));
     const lineHeight = size * 0.94;
     const totalHeight = Math.max(lineHeight, lines.length * lineHeight);
     setFont(ctx, size);
-    const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line || ' ').width * SCALE_X), 0);
+    const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line || ' ').width), 0);
     return { lines, lineHeight, totalHeight, widest };
 }
 
@@ -217,16 +219,17 @@ function fitText(ctx, text) {
 function drawJustifiedLine(ctx, line, y, size) {
     const words = String(line || '').trim().split(/\s+/).filter(Boolean);
     if (!words.length) return;
+
     setFont(ctx, size);
-    const visibleLeft = TEXT_BOX.x + PAD;
-    const visibleWidth = TEXT_BOX.width - PAD * 2;
-    const left = visibleLeft / SCALE_X;
-    const width = visibleWidth / SCALE_X;
+    const left = TEXT_BOX.x + PAD;
+    const width = TEXT_BOX.width - PAD * 2;
     ctx.textAlign = 'left';
+
     if (words.length === 1) {
         ctx.fillText(words[0], left, y);
         return;
     }
+
     const widths = words.map(word => ctx.measureText(word).width);
     const wordsWidth = widths.reduce((sum, value) => sum + value, 0);
     const gap = Math.max(0, (width - wordsWidth) / (words.length - 1));
@@ -241,6 +244,7 @@ async function renderBratPng(text) {
     registerFont();
     const canvas = createCanvas(SIZE, SIZE);
     const ctx = canvas.getContext('2d');
+
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, SIZE, SIZE);
 
@@ -248,20 +252,21 @@ async function renderBratPng(text) {
     const centerY = TEXT_BOX.y + TEXT_BOX.height / 2;
     const firstBaseline = centerY - layout.totalHeight / 2 + layout.lineHeight * 0.78;
 
-    ctx.save();
-    ctx.scale(SCALE_X, 1);
     ctx.fillStyle = '#000000';
     ctx.textBaseline = 'alphabetic';
     setFont(ctx, layout.size);
     layout.lines.forEach((line, index) => {
         drawJustifiedLine(ctx, line, firstBaseline + index * layout.lineHeight, layout.size);
     });
-    ctx.restore();
 
+    // Aspecto propositalmente suave/baixa fidelidade do Brat: a imagem inteira é
+    // reduzida e ampliada uniformemente. Isso não deforma nem estica a fonte.
     const base = canvas.toBuffer('image/png');
     return sharp(base)
-        .blur(1.05)
-        .linear(1.08, -10)
+        .resize(SOFT_SIZE, SOFT_SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
+        .blur(SOFT_BLUR)
+        .resize(SIZE, SIZE, { fit: 'fill', kernel: sharp.kernel.cubic })
+        .linear(1.04, -4)
         .png({ compressionLevel: 9 })
         .toBuffer();
 }
