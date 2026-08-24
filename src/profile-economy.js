@@ -78,6 +78,16 @@ const CATALOG = Object.freeze([
     item('frame-ink-registration', 'frame', 'Ink Registration', 5400, 'legendary', ['#22d3ee', '#fb7185'], { collection: 'editorial', animated: true, overlay: true }),
     item('frame-ribbon-fold', 'frame', 'Ribbon Fold', 5700, 'legendary', ['#d4d4d8', '#3f3f46'], { collection: 'textile', overlay: true }),
 
+    // Molduras V7 — peças em camadas / objetos, não apenas contornos
+    item('frame-aperture-rig', 'frame', 'Aperture Rig', 6200, 'legendary', ['#cbd5e1', '#111827'], { collection: 'studio', overlay: true }),
+    item('frame-polaroid-mount', 'frame', 'Polaroid Mount', 6500, 'legendary', ['#f7f3e9', '#665f54'], { collection: 'analog', overlay: true }),
+    item('frame-interface-module', 'frame', 'Interface Module', 6900, 'legendary', ['#67e8f9', '#15202b'], { collection: 'studio', animated: true, overlay: true }),
+    item('frame-carbon-assembly', 'frame', 'Carbon Assembly', 7200, 'legendary', ['#94a3b8', '#16181c'], { collection: 'studio', overlay: true }),
+    item('frame-chrome-shell', 'frame', 'Chrome Shell', 7800, 'legendary', ['#f8fafc', '#475569'], { collection: 'material', animated: true, overlay: true }),
+    item('frame-lacquer-bloom', 'frame', 'Lacquer Bloom', 8100, 'legendary', ['#fbcfe8', '#7f1d3b'], { collection: 'sakura', animated: true, overlay: true }),
+    item('frame-ceramic-inlay', 'frame', 'Ceramic Inlay', 8400, 'legendary', ['#fffdf4', '#315f7d'], { collection: 'material', overlay: true }),
+    item('frame-acrylic-clips', 'frame', 'Acrylic Clips', 8800, 'legendary', ['#ffffff', '#67e8f9'], { collection: 'material', animated: true, overlay: true }),
+
     // Molduras DEV exclusivas
     item('frame-dev-terminal', 'frame', 'Terminal Root', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
     item('frame-dev-debug', 'frame', 'Breakpoint', 0, 'exclusive', ['#ef4444', '#22d3ee'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
@@ -117,6 +127,17 @@ const CATALOG = Object.freeze([
     item('deco-contact-sheet', 'decoration', 'Contact Sheet', 4050, 'legendary', ['#e7e5e4', '#292524'], { collection: 'analog' }),
     item('deco-chrome-reflection', 'decoration', 'Chrome Reflection', 4350, 'legendary', ['#f8fafc', '#64748b'], { collection: 'editorial', animated: true }),
     item('deco-quiet-bloom', 'decoration', 'Quiet Bloom', 4700, 'legendary', ['#bef264', '#d8b4fe'], { collection: 'nature', animated: true }),
+
+    // Stocks V7 — overlays visuais e materiais animados
+    item('deco-stock-light-leak', 'decoration', 'Film Light Leak', 5200, 'legendary', ['#fb923c', '#f43f5e'], { collection: 'stock', animated: true }),
+    item('deco-stock-torn-paper', 'decoration', 'Torn Paper Stock', 5500, 'legendary', ['#ece8df', '#665f54'], { collection: 'stock' }),
+    item('deco-stock-negative-strip', 'decoration', 'Negative Strip', 5800, 'legendary', ['#0e7490', '#581c87'], { collection: 'analog' }),
+    item('deco-stock-shadow-cast', 'decoration', 'Window Shadow Cast', 6100, 'legendary', ['#111827', '#fff4d6'], { collection: 'minimal', animated: true }),
+    item('deco-stock-glass-refraction', 'decoration', 'Glass Refraction', 6400, 'legendary', ['#67e8f9', '#d8b4fe'], { collection: 'material', animated: true }),
+    item('deco-stock-ink-bloom', 'decoration', 'Ink Bloom Stock', 6700, 'legendary', ['#0f172a', '#581c87'], { collection: 'studio', animated: true }),
+    item('deco-stock-blueprint', 'decoration', 'Blueprint Sheet', 6900, 'legendary', ['#7dd3fc', '#0f172a'], { collection: 'studio', animated: true }),
+    item('deco-stock-silk-fold', 'decoration', 'Silk Fold', 7200, 'legendary', ['#e9d5ff', '#521b6b'], { collection: 'textile', animated: true }),
+    item('deco-stock-liquid-chrome', 'decoration', 'Liquid Chrome Stock', 7800, 'legendary', ['#f8fafc', '#64748b'], { collection: 'material', animated: true }),
 
     // Decorações DEV exclusivas
     item('deco-dev-code', 'decoration', 'Source Stream', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true }),
