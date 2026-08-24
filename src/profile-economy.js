@@ -88,6 +88,15 @@ const CATALOG = Object.freeze([
     item('frame-ceramic-inlay', 'frame', 'Ceramic Inlay', 8400, 'legendary', ['#fffdf4', '#315f7d'], { collection: 'material', overlay: true }),
     item('frame-acrylic-clips', 'frame', 'Acrylic Clips', 8800, 'legendary', ['#ffffff', '#67e8f9'], { collection: 'material', animated: true, overlay: true }),
 
+    // Molduras V8
+    item('frame-gallery-mat', 'frame', 'Gallery Mat', 9200, 'legendary', ['#f3efe7', '#38332f'], { collection: 'editorial', overlay: true }),
+    item('frame-kintsugi-panel', 'frame', 'Kintsugi Panel', 9600, 'legendary', ['#f6c453', '#1b1713'], { collection: 'material', overlay: true }),
+    item('frame-techwear-buckle', 'frame', 'Techwear Buckle', 9900, 'legendary', ['#cbd5e1', '#171a20'], { collection: 'studio', overlay: true }),
+    item('frame-botanical-press', 'frame', 'Botanical Press', 10300, 'legendary', ['#b7c18a', '#5c492d'], { collection: 'nature', animated: true, overlay: true }),
+    item('frame-prism-shard', 'frame', 'Prism Shard', 10800, 'legendary', ['#ffffff', '#67e8f9'], { collection: 'material', animated: true, overlay: true }),
+    item('frame-badge-rail', 'frame', 'Badge Rail', 11200, 'legendary', ['#67e8f9', '#20242b'], { collection: 'studio', animated: true, overlay: true }),
+    item('frame-sakura-crest', 'frame', 'Sakura Crest', 11800, 'legendary', ['#f9a8d4', '#7f1d3b'], { collection: 'sakura', animated: true, overlay: true }),
+
     // Molduras DEV exclusivas
     item('frame-dev-terminal', 'frame', 'Terminal Root', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
     item('frame-dev-debug', 'frame', 'Breakpoint', 0, 'exclusive', ['#ef4444', '#22d3ee'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
@@ -128,7 +137,7 @@ const CATALOG = Object.freeze([
     item('deco-chrome-reflection', 'decoration', 'Chrome Reflection', 4350, 'legendary', ['#f8fafc', '#64748b'], { collection: 'editorial', animated: true }),
     item('deco-quiet-bloom', 'decoration', 'Quiet Bloom', 4700, 'legendary', ['#bef264', '#d8b4fe'], { collection: 'nature', animated: true }),
 
-    // Stocks V7 — overlays visuais e materiais animados
+    // Stocks V7
     item('deco-stock-light-leak', 'decoration', 'Film Light Leak', 5200, 'legendary', ['#fb923c', '#f43f5e'], { collection: 'stock', animated: true }),
     item('deco-stock-torn-paper', 'decoration', 'Torn Paper Stock', 5500, 'legendary', ['#ece8df', '#665f54'], { collection: 'stock' }),
     item('deco-stock-negative-strip', 'decoration', 'Negative Strip', 5800, 'legendary', ['#0e7490', '#581c87'], { collection: 'analog' }),
@@ -138,6 +147,18 @@ const CATALOG = Object.freeze([
     item('deco-stock-blueprint', 'decoration', 'Blueprint Sheet', 6900, 'legendary', ['#7dd3fc', '#0f172a'], { collection: 'studio', animated: true }),
     item('deco-stock-silk-fold', 'decoration', 'Silk Fold', 7200, 'legendary', ['#e9d5ff', '#521b6b'], { collection: 'textile', animated: true }),
     item('deco-stock-liquid-chrome', 'decoration', 'Liquid Chrome Stock', 7800, 'legendary', ['#f8fafc', '#64748b'], { collection: 'material', animated: true }),
+
+    // Stocks V8
+    item('deco-stock-lens-dust', 'decoration', 'Lens Dust', 8200, 'legendary', ['#f8fafc', '#64748b'], { collection: 'stock', animated: true }),
+    item('deco-stock-film-burn', 'decoration', 'Film Burn Edge', 8500, 'legendary', ['#fb923c', '#e11d48'], { collection: 'analog', animated: true }),
+    item('deco-stock-folded-poster', 'decoration', 'Folded Poster', 8900, 'legendary', ['#e7e5e4', '#78716c'], { collection: 'editorial' }),
+    item('deco-stock-scanner-glow', 'decoration', 'Scanner Glow', 9300, 'legendary', ['#67e8f9', '#f8fafc'], { collection: 'studio', animated: true }),
+    item('deco-stock-ink-stamp', 'decoration', 'Archive Ink Stamp', 9600, 'legendary', ['#111827', '#d6d3d1'], { collection: 'editorial' }),
+    item('deco-stock-mesh-gradient', 'decoration', 'Mesh Gradient', 9900, 'legendary', ['#38bdf8', '#f472b6'], { collection: 'material', animated: true }),
+    item('deco-stock-leaf-shadow', 'decoration', 'Botanical Shadow', 10300, 'legendary', ['#0f172a', '#84cc16'], { collection: 'nature', animated: true }),
+    item('deco-stock-sakura-drift', 'decoration', 'Sakura Drift', 10900, 'legendary', ['#fce7f3', '#ec4899'], { collection: 'sakura', animated: true }),
+    item('deco-stock-halftone-fold', 'decoration', 'Halftone Fold', 11200, 'legendary', ['#f8fafc', '#64748b'], { collection: 'editorial', animated: true }),
+    item('deco-stock-gloss-tape', 'decoration', 'Gloss Tape', 11600, 'legendary', ['#ffffff', '#d8b4fe'], { collection: 'material', animated: true }),
 
     // Decorações DEV exclusivas
     item('deco-dev-code', 'decoration', 'Source Stream', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true }),
