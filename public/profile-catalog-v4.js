@@ -36,6 +36,7 @@
             tag.dataset.collection = item.collection || 'core';
             tag.dataset.rarity = item.rarity || 'common';
             if (item.grantOnly) tag.dataset.grantOnly = '1';
+            if (item.animated) tag.dataset.animated = '1';
         }
     }
 
