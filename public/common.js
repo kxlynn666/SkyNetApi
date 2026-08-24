@@ -73,6 +73,7 @@ window.SkyNet = (() => {
 (() => {
     const styles = [
         ['/ui-v3.css', 'skynetUiV3'],
+        ['/profile-cosmetics.css', 'profileCosmetics'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
