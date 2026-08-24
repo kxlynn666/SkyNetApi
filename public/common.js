@@ -83,6 +83,22 @@ window.SkyNet = (() => {
 })();
 
 (() => {
+    if (!document.querySelector('link[data-skynet-ui-v3]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/ui-v3.css';
+        link.dataset.skynetUiV3 = '1';
+        document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[data-skynet-site-ui-v3]')) {
+        const script = document.createElement('script');
+        script.src = '/site-ui-v3.js';
+        script.dataset.skynetSiteUiV3 = '1';
+        document.head.appendChild(script);
+    }
+})();
+
+(() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
 
     if (cleanPath.startsWith('/u/')) {
