@@ -1,0 +1,80 @@
+/* Profile Aesthetic V6 — editorial, analog and material-inspired cosmetics. */
+
+/* Give the older basic frames more structure than a plain glowing ring. */
+.cosmetic-avatar[data-frame="frame-violet"]::after,
+.cosmetic-avatar[data-frame="frame-cyan"]::after,
+.cosmetic-avatar[data-frame="frame-rose"]::after,
+.cosmetic-avatar[data-frame="frame-gold"]::after{
+  opacity:1;inset:-7px;border-radius:inherit;
+  background:
+    linear-gradient(currentColor,currentColor) left top/13px 1px no-repeat,
+    linear-gradient(currentColor,currentColor) left top/1px 13px no-repeat,
+    linear-gradient(currentColor,currentColor) right top/13px 1px no-repeat,
+    linear-gradient(currentColor,currentColor) right top/1px 13px no-repeat,
+    linear-gradient(currentColor,currentColor) left bottom/13px 1px no-repeat,
+    linear-gradient(currentColor,currentColor) left bottom/1px 13px no-repeat,
+    linear-gradient(currentColor,currentColor) right bottom/13px 1px no-repeat,
+    linear-gradient(currentColor,currentColor) right bottom/1px 13px no-repeat;
+  filter:none!important;box-shadow:none!important
+}
+.cosmetic-avatar[data-frame="frame-violet"]::after{color:#c4b5fd}.cosmetic-avatar[data-frame="frame-cyan"]::after{color:#67e8f9}.cosmetic-avatar[data-frame="frame-rose"]::after{color:#fda4af}.cosmetic-avatar[data-frame="frame-gold"]::after{color:#fde68a}
+
+/* -------- new frames -------- */
+.cosmetic-avatar[data-frame="frame-editorial-crop"]{padding:5px}
+.cosmetic-avatar[data-frame="frame-editorial-crop"]::before{background:#f4f0e8!important;box-shadow:0 0 0 1px rgba(15,23,42,.24),0 7px 20px rgba(0,0,0,.18)!important}
+.cosmetic-avatar[data-frame="frame-editorial-crop"]::after{content:"";opacity:1;inset:-10px;border-radius:inherit;background:linear-gradient(#111827,#111827) 0 14%/19px 2px no-repeat,linear-gradient(#111827,#111827) 100% 78%/19px 2px no-repeat,linear-gradient(#111827,#111827) 18% 0/2px 17px no-repeat,linear-gradient(#111827,#111827) 76% 100%/2px 17px no-repeat;filter:none!important}
+
+.cosmetic-avatar[data-frame="frame-offset-glass"]::before{inset:-1px!important;background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,255,255,.08) 45%,rgba(103,232,249,.22))!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.38),0 12px 30px rgba(2,6,23,.22)!important;transform:translate(-3px,2px)}
+.cosmetic-avatar[data-frame="frame-offset-glass"]::after{content:"";opacity:1;inset:-5px;transform:translate(4px,-3px);border:1px solid rgba(196,181,253,.58);border-radius:inherit;background:linear-gradient(135deg,rgba(196,181,253,.14),transparent 42%,rgba(103,232,249,.1));filter:none!important}
+
+.cosmetic-avatar[data-frame="frame-chrome-corners"]::before{background:linear-gradient(135deg,#f8fafc,#64748b 24%,#fff 42%,#334155 67%,#e2e8f0)!important;box-shadow:0 0 0 1px rgba(255,255,255,.42),0 12px 28px rgba(15,23,42,.28)!important}
+.cosmetic-avatar[data-frame="frame-chrome-corners"]::after{content:"";opacity:1;inset:-11px;border-radius:inherit;background:linear-gradient(135deg,#fff,#64748b) left top/22px 5px no-repeat,linear-gradient(135deg,#fff,#64748b) left top/5px 22px no-repeat,linear-gradient(225deg,#fff,#64748b) right top/22px 5px no-repeat,linear-gradient(225deg,#fff,#64748b) right top/5px 22px no-repeat,linear-gradient(45deg,#fff,#64748b) left bottom/22px 5px no-repeat,linear-gradient(45deg,#fff,#64748b) left bottom/5px 22px no-repeat,linear-gradient(315deg,#fff,#64748b) right bottom/22px 5px no-repeat,linear-gradient(315deg,#fff,#64748b) right bottom/5px 22px no-repeat;filter:drop-shadow(0 3px 5px rgba(0,0,0,.26))}
+
+.cosmetic-avatar[data-frame="frame-film-gate"]{border-radius:17px!important;padding:6px;background:#111}
+.cosmetic-avatar[data-frame="frame-film-gate"] .cosmetic-avatar-inner{border-radius:11px!important}
+.cosmetic-avatar[data-frame="frame-film-gate"]::before{background:#141414!important;box-shadow:inset 0 0 0 1px #3f3f46,0 8px 22px rgba(0,0,0,.34)!important}
+.cosmetic-avatar[data-frame="frame-film-gate"]::after{content:"";opacity:1;inset:-3px;border-radius:15px;background:repeating-linear-gradient(to bottom,#d4d4d8 0 3px,transparent 3px 10px) left 5px center/3px 86% no-repeat,repeating-linear-gradient(to bottom,#d4d4d8 0 3px,transparent 3px 10px) right 5px center/3px 86% no-repeat;filter:none!important}
+
+.cosmetic-avatar[data-frame="frame-archive-tape"]::before{background:linear-gradient(145deg,#f5e7c8,#c7b48a)!important;box-shadow:0 0 0 1px rgba(120,90,40,.24),0 9px 22px rgba(0,0,0,.18)!important;transform:rotate(-1deg)}
+.cosmetic-avatar[data-frame="frame-archive-tape"]::after{content:"";opacity:.88;inset:-14px;border-radius:inherit;background:linear-gradient(105deg,transparent 0 12%,rgba(245,231,200,.78) 13% 31%,transparent 32% 100%) left top/58px 21px no-repeat,linear-gradient(285deg,transparent 0 12%,rgba(245,231,200,.72) 13% 31%,transparent 32% 100%) right bottom/58px 21px no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.16))}
+
+.cosmetic-avatar[data-frame="frame-porcelain"]::before{background:linear-gradient(145deg,#fffdf8,#dbeafe 46%,#fdf4ff)!important;box-shadow:inset 0 0 0 1px rgba(148,163,184,.32),inset 0 0 0 4px rgba(255,255,255,.54),0 8px 24px rgba(15,23,42,.16)!important}
+.cosmetic-avatar[data-frame="frame-porcelain"]::after{content:"";opacity:.8;inset:-9px;border:1px solid rgba(148,163,184,.32);border-radius:inherit;background:radial-gradient(circle at 16% 20%,rgba(59,130,246,.22) 0 1px,transparent 1.5px),radial-gradient(circle at 82% 76%,rgba(217,70,239,.18) 0 1px,transparent 1.5px);filter:none!important}
+
+.cosmetic-avatar[data-frame="frame-ink-registration"]::before{background:linear-gradient(135deg,#111827,#111827)!important;box-shadow:4px 0 0 rgba(34,211,238,.5),-4px 0 0 rgba(244,63,94,.45),0 8px 20px rgba(0,0,0,.24)!important}
+.cosmetic-avatar[data-frame="frame-ink-registration"]::after{content:"";opacity:1;inset:-10px;border-radius:inherit;background:linear-gradient(#22d3ee,#22d3ee) 7% 50%/1px 68% no-repeat,linear-gradient(#fb7185,#fb7185) 93% 50%/1px 68% no-repeat,linear-gradient(90deg,#22d3ee,#22d3ee) 50% 7%/68% 1px no-repeat,linear-gradient(90deg,#fb7185,#fb7185) 50% 93%/68% 1px no-repeat;mix-blend-mode:screen;animation:v6-registration 4.8s steps(2,end) infinite}
+
+.cosmetic-avatar[data-frame="frame-ribbon-fold"]::before{background:linear-gradient(135deg,#3f3f46,#18181b 54%,#52525b)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 9px 24px rgba(0,0,0,.28)!important}
+.cosmetic-avatar[data-frame="frame-ribbon-fold"]::after{content:"";opacity:1;inset:-15px;border-radius:inherit;background:linear-gradient(135deg,transparent 0 35%,rgba(212,212,216,.9) 36% 47%,rgba(82,82,91,.9) 48% 60%,transparent 61%) left top/44px 44px no-repeat,linear-gradient(315deg,transparent 0 35%,rgba(212,212,216,.86) 36% 47%,rgba(82,82,91,.9) 48% 60%,transparent 61%) right bottom/44px 44px no-repeat;filter:drop-shadow(0 4px 5px rgba(0,0,0,.24))}
+
+/* -------- new decorations -------- */
+.profile-surface[data-decoration="deco-editorial-grain"]::after{content:"";opacity:.22;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.83' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");mix-blend-mode:soft-light;animation:v6-grain .9s steps(2,end) infinite}
+.profile-surface[data-decoration="deco-moire-veil"]::after{content:"";opacity:.34;background:repeating-radial-gradient(ellipse at 15% 120%,transparent 0 8px,rgba(255,255,255,.18) 9px 10px,transparent 11px 19px);background-size:150% 130%;mix-blend-mode:overlay;animation:v6-moire 16s ease-in-out infinite alternate}
+.profile-surface[data-decoration="deco-paper-fibers"]::after{content:"";opacity:.25;background-image:linear-gradient(78deg,transparent 0 47%,rgba(255,255,255,.32) 48% 49%,transparent 50%),linear-gradient(12deg,transparent 0 47%,rgba(226,232,240,.18) 48% 49%,transparent 50%);background-size:47px 31px,61px 43px;mix-blend-mode:soft-light}
+.profile-surface[data-decoration="deco-riso-offset"]::before{content:"";opacity:.28;background:radial-gradient(circle at 24% 30%,rgba(34,211,238,.55),transparent 26%),radial-gradient(circle at 62% 52%,rgba(244,63,94,.46),transparent 30%);transform:translate(-5px,2px);mix-blend-mode:multiply}
+.profile-surface[data-decoration="deco-riso-offset"]::after{content:"";opacity:.26;background:radial-gradient(circle at 24% 30%,rgba(250,204,21,.48),transparent 26%),radial-gradient(circle at 62% 52%,rgba(59,130,246,.42),transparent 30%);transform:translate(5px,-2px);mix-blend-mode:screen;animation:v6-riso 7s ease-in-out infinite alternate}
+.profile-surface[data-decoration="deco-window-light"]::after{content:"";opacity:.48;background:linear-gradient(106deg,transparent 0 24%,rgba(255,248,220,.22) 25% 39%,transparent 40% 52%,rgba(255,248,220,.16) 53% 64%,transparent 65%);transform:translateX(-8%) scale(1.15);animation:v6-window 18s ease-in-out infinite alternate;filter:blur(2px)}
+.profile-surface[data-decoration="deco-velvet-noise"]::before{content:"";opacity:.38;background:radial-gradient(ellipse at 25% 20%,rgba(255,255,255,.12),transparent 36%),linear-gradient(130deg,rgba(120,30,90,.18),transparent 42%,rgba(10,10,20,.18));mix-blend-mode:soft-light}
+.profile-surface[data-decoration="deco-velvet-noise"]::after{content:"";opacity:.16;background:repeating-linear-gradient(96deg,rgba(255,255,255,.16) 0 1px,transparent 1px 4px);filter:blur(.35px);animation:v6-velvet 10s ease-in-out infinite alternate}
+.profile-surface[data-decoration="deco-contact-sheet"]::after{content:"";opacity:.28;background:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px);background-size:25% 50%;mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 92%)}
+.profile-surface[data-decoration="deco-chrome-reflection"]::after{content:"";opacity:.34;background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.46) 29%,rgba(148,163,184,.12) 35%,transparent 44% 61%,rgba(255,255,255,.25) 69%,transparent 78%);background-size:180% 100%;mix-blend-mode:screen;animation:v6-chrome 9s ease-in-out infinite}
+.profile-surface[data-decoration="deco-quiet-bloom"]::before{content:"";opacity:.42;background:radial-gradient(ellipse at 8% 88%,rgba(190,242,100,.16) 0 18%,transparent 19%),radial-gradient(ellipse at 18% 78%,rgba(134,239,172,.13) 0 15%,transparent 16%),radial-gradient(ellipse at 89% 14%,rgba(216,180,254,.12) 0 17%,transparent 18%)}
+.profile-surface[data-decoration="deco-quiet-bloom"]::after{content:"";opacity:.42;background:linear-gradient(24deg,transparent 0 47%,rgba(134,239,172,.22) 48% 49%,transparent 50%) left bottom/46% 72% no-repeat,linear-gradient(202deg,transparent 0 47%,rgba(216,180,254,.18) 48% 49%,transparent 50%) right top/42% 65% no-repeat;animation:v6-bloom 11s ease-in-out infinite alternate}
+
+@keyframes v6-registration{0%,100%{transform:translate(0)}50%{transform:translate(1px,-1px)}}
+@keyframes v6-grain{0%{transform:translate(0)}25%{transform:translate(-1%,1%)}50%{transform:translate(1%,-1%)}75%{transform:translate(.5%,1%)}}
+@keyframes v6-moire{from{transform:translate(-2%,-1%) rotate(-1deg)}to{transform:translate(2%,1%) rotate(1deg)}}
+@keyframes v6-riso{from{transform:translate(5px,-2px)}to{transform:translate(2px,1px)}}
+@keyframes v6-window{from{transform:translateX(-12%) scale(1.15)}to{transform:translateX(9%) scale(1.15)}}
+@keyframes v6-velvet{from{transform:translateX(-1%)}to{transform:translateX(1%)}}
+@keyframes v6-chrome{0%,100%{background-position:110% 0}50%{background-position:-20% 0}}
+@keyframes v6-bloom{from{transform:translateY(2px) scale(1)}to{transform:translateY(-3px) scale(1.02)}}
+
+@media(max-width:620px){
+  .cosmetic-avatar[data-frame="frame-chrome-corners"]::after,.cosmetic-avatar[data-frame="frame-ribbon-fold"]::after{inset:-8px}
+  .profile-surface[data-decoration="deco-editorial-grain"]::after{opacity:.16}
+  .profile-surface[data-decoration="deco-window-light"]::after{filter:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .profile-surface[data-decoration^="deco-"]::before,.profile-surface[data-decoration^="deco-"]::after,.cosmetic-avatar[data-frame^="frame-"]::before,.cosmetic-avatar[data-frame^="frame-"]::after{animation:none!important}
+}
