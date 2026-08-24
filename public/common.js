@@ -79,6 +79,7 @@ window.SkyNet = (() => {
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
         ['/profile-stock-v7.css', 'skynetProfileStockV7'],
         ['/profile-stock-v7-perf.css', 'skynetProfileStockV7Perf'],
+        ['/profile-objects-v8.css', 'skynetProfileObjectsV8'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
         ['/music-icons-v5.css', 'skynetMusicIconsV5']
     ];
@@ -100,7 +101,8 @@ window.SkyNet = (() => {
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
-        ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1']
+        ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
+        ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
