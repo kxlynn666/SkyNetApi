@@ -83,23 +83,30 @@ window.SkyNet = (() => {
 })();
 
 (() => {
-    if (!document.querySelector('link[href="/ui-v3.css"],link[data-skynet-ui-v3]')) {
+    const styles = [
+        ['/ui-v3.css', 'skynetUiV3'],
+        ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
+        ['/mobile-polish-v4.css', 'skynetMobilePolishV4']
+    ];
+    for (const [href, marker] of styles) {
+        if (document.querySelector(`link[href="${href}"],link[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/ui-v3.css';
-        link.dataset.skynetUiV3 = '1';
+        link.href = href;
+        link.dataset[marker] = '1';
         document.head.appendChild(link);
     }
-    if (!document.querySelector('script[src="/site-ui-v3.js"],script[data-skynet-site-ui-v3]')) {
+
+    const scripts = [
+        ['/site-ui-v3.js', 'skynetSiteUiV3'],
+        ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
+        ['/ui-icons-v4.js', 'skynetUiIconsV4']
+    ];
+    for (const [src, marker] of scripts) {
+        if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
         const script = document.createElement('script');
-        script.src = '/site-ui-v3.js';
-        script.dataset.skynetSiteUiV3 = '1';
-        document.head.appendChild(script);
-    }
-    if (!document.querySelector('script[src="/profile-catalog-v4.js"],script[data-skynet-profile-catalog-v4]')) {
-        const script = document.createElement('script');
-        script.src = '/profile-catalog-v4.js';
-        script.dataset.skynetProfileCatalogV4 = '1';
+        script.src = src;
+        script.dataset[marker] = '1';
         document.head.appendChild(script);
     }
 })();
@@ -145,9 +152,16 @@ window.SkyNet = (() => {
 })();
 
 (() => {
-    if (document.querySelector('script[data-skynet-music-player]')) return;
-    const script = document.createElement('script');
-    script.src = '/music-player-v2.js';
-    script.dataset.skynetMusicPlayer = '1';
-    document.head.appendChild(script);
+    if (!document.querySelector('script[data-skynet-music-player]')) {
+        const script = document.createElement('script');
+        script.src = '/music-player-v2.js';
+        script.dataset.skynetMusicPlayer = '1';
+        document.head.appendChild(script);
+    }
+    if (!document.querySelector('script[data-skynet-music-polish-v4]')) {
+        const polish = document.createElement('script');
+        polish.src = '/music-player-polish-v4.js';
+        polish.dataset.skynetMusicPolishV4 = '1';
+        document.head.appendChild(polish);
+    }
 })();
