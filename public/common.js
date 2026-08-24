@@ -78,6 +78,7 @@ window.SkyNet = (() => {
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
         ['/profile-stock-v7.css', 'skynetProfileStockV7'],
+        ['/profile-stock-v7-perf.css', 'skynetProfileStockV7Perf'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
         ['/music-icons-v5.css', 'skynetMusicIconsV5']
     ];
