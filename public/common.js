@@ -86,6 +86,7 @@ window.SkyNet = (() => {
     const styles = [
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
+        ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4']
     ];
     for (const [href, marker] of styles) {
