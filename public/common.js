@@ -100,6 +100,8 @@ window.SkyNet = (() => {
     }
 
     const scripts = [
+        ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
+        ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
@@ -109,6 +111,7 @@ window.SkyNet = (() => {
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
         const script = document.createElement('script');
+        script.async = false;
         script.src = src;
         script.dataset[marker] = '1';
         document.head.appendChild(script);
@@ -121,6 +124,7 @@ window.SkyNet = (() => {
     if (cleanPath.startsWith('/u/')) {
         for (const [src, marker] of [['/community-v2.js', 'communityPublic'], ['/profile-style-v2.js', 'profileStyleV2']]) {
             const script = document.createElement('script');
+            script.async = false;
             script.src = src;
             script.dataset[marker] = '1';
             document.head.appendChild(script);
@@ -142,6 +146,7 @@ window.SkyNet = (() => {
         ]) {
             if (document.querySelector(`script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
             const script = document.createElement('script');
+            script.async = false;
             script.src = src;
             script.dataset[marker] = '1';
             document.head.appendChild(script);
@@ -158,12 +163,14 @@ window.SkyNet = (() => {
 (() => {
     if (!document.querySelector('script[data-skynet-music-player]')) {
         const script = document.createElement('script');
+        script.async = false;
         script.src = '/music-player-v2.js';
         script.dataset.skynetMusicPlayer = '1';
         document.head.appendChild(script);
     }
     if (!document.querySelector('script[data-skynet-music-polish-v4]')) {
         const polish = document.createElement('script');
+        polish.async = false;
         polish.src = '/music-player-polish-v4.js';
         polish.dataset.skynetMusicPolishV4 = '1';
         document.head.appendChild(polish);
