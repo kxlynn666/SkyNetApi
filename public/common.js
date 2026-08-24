@@ -101,7 +101,9 @@ window.SkyNet = (() => {
     const scripts = [
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
-        ['/ui-icons-v4.js', 'skynetUiIconsV4']
+        ['/ui-icons-v4.js', 'skynetUiIconsV4'],
+        ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
+        ['/ui-preferences-v4.js', 'skynetUiPreferencesV4']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
