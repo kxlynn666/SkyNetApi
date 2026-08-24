@@ -1,0 +1,34 @@
+/* Small high-specificity fixes for effects that also exist in the legacy cosmetics sheet. */
+.profile-surface[data-decoration="deco-sakura"]::before{
+  opacity:.66!important;
+  background-image:var(--sakura-branch)!important;
+  background-color:transparent!important;
+  background-repeat:repeat-x!important;
+  background-size:340px 170px!important;
+  background-position:left top!important;
+  filter:drop-shadow(0 3px 5px rgba(126,34,81,.18))!important;
+  animation:profile-v5-branch-sway 9s ease-in-out infinite alternate!important;
+}
+.profile-surface[data-decoration="deco-sakura"]::after{
+  opacity:.82!important;
+  background-image:var(--sakura-blossoms)!important;
+  background-color:transparent!important;
+  background-size:120px 120px!important;
+  animation:profile-v5-sakura-fall 13s linear infinite!important;
+}
+.profile-surface[data-decoration="deco-dev-stacktrace"]::after{
+  content:"at app()\A > trace()\A > render()\A > commit()"!important;
+  white-space:pre!important;
+  opacity:.72!important;
+  color:rgba(134,239,172,.20)!important;
+  text-shadow:0 0 8px rgba(34,197,94,.14);
+}
+/* Keep overlays decorative instead of blocking controls/text. */
+.profile-surface[data-decoration="deco-sakura-garden"]::before,
+.profile-surface[data-decoration="deco-sakura-garden"]::after,
+.profile-surface[data-decoration="deco-fireflies"]::after,
+.profile-surface[data-decoration="deco-cyber-lines"]::after,
+.profile-surface[data-decoration="deco-void"]::after,
+.profile-surface[data-decoration="deco-constellation"]::after,
+.profile-surface[data-decoration="deco-dev-stacktrace"]::after,
+.profile-surface[data-decoration="deco-admin-verdict"]::after{pointer-events:none!important;z-index:1!important}
