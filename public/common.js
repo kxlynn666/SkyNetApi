@@ -77,6 +77,7 @@ window.SkyNet = (() => {
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
+        ['/profile-stock-v7.css', 'skynetProfileStockV7'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
         ['/music-icons-v5.css', 'skynetMusicIconsV5']
     ];
@@ -94,6 +95,7 @@ window.SkyNet = (() => {
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
+        ['/profile-preview-v2.js', 'skynetProfilePreviewV2'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
