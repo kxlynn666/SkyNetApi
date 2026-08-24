@@ -98,6 +98,7 @@ window.SkyNet = (() => {
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
         ['/profile-preview-v2.js', 'skynetProfilePreviewV2'],
+        ['/profile-design-v1.js', 'skynetProfileDesignV1'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
