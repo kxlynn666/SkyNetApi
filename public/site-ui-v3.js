@@ -1,5 +1,7 @@
 (() => {
-    const NS = 'http://www.w3.org/2000/svg';
+    if (window.__SKYNET_SITE_UI_V3__) return;
+    window.__SKYNET_SITE_UI_V3__ = true;
+
     const ICONS = {
         grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
         spark: '<path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/><path d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
@@ -81,6 +83,17 @@
             if (!node) return;
             el.prepend(node);
             el.dataset.uiIconReady = '1';
+        });
+
+        root.querySelectorAll?.('.card-title').forEach(el => {
+            if (el.dataset.uiTitleReady === '1') return;
+            const name = iconNameFor(el.textContent);
+            if (!name) return;
+            const node = makeIcon(name, 'ui-title-icon');
+            if (!node) return;
+            el.classList.add('ui-title-enhanced');
+            el.prepend(node);
+            el.dataset.uiTitleReady = '1';
         });
     }
 
