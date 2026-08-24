@@ -96,6 +96,12 @@ window.SkyNet = (() => {
         script.dataset.skynetSiteUiV3 = '1';
         document.head.appendChild(script);
     }
+    if (!document.querySelector('script[src="/profile-catalog-v4.js"],script[data-skynet-profile-catalog-v4]')) {
+        const script = document.createElement('script');
+        script.src = '/profile-catalog-v4.js';
+        script.dataset.skynetProfileCatalogV4 = '1';
+        document.head.appendChild(script);
+    }
 })();
 
 (() => {
@@ -117,7 +123,12 @@ window.SkyNet = (() => {
         const app = document.getElementById('app');
         if (!app || app.classList.contains('hidden')) return;
         loaded = true;
-        for (const [src, marker] of [['/admin-extended.js', 'adminExtended'], ['/admin-community.js', 'adminCommunity'], ['/admin-music.js', 'adminMusic']]) {
+        for (const [src, marker] of [
+            ['/admin-extended.js', 'adminExtended'],
+            ['/admin-community.js', 'adminCommunity'],
+            ['/admin-music.js', 'adminMusic'],
+            ['/admin-profile-store.js', 'adminProfileStore']
+        ]) {
             if (document.querySelector(`script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
             const script = document.createElement('script');
             script.src = src;
