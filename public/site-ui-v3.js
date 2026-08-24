@@ -13,13 +13,28 @@
         key: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15 12v2"/>',
         code: '<path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/>',
         upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',
+        download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
         image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/>',
         activity: '<path d="M3 12h4l2.5-6 5 12 2.5-6H21"/>',
         clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
         terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/>',
         trash: '<path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/>',
-        refresh: '<path d="M20 6v5h-5M4 18v-5h5"/><path d="M6.1 9A7 7 0 0 1 18.8 6M17.9 15A7 7 0 0 1 5.2 18"/>'
+        refresh: '<path d="M20 6v5h-5M4 18v-5h5"/><path d="M6.1 9A7 7 0 0 1 18.8 6M17.9 15A7 7 0 0 1 5.2 18"/>',
+        copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"/>',
+        plus: '<path d="M12 5v14M5 12h14"/>',
+        edit: '<path d="M4 20h4l11-11-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+        save: '<path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/>',
+        logout: '<path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/>',
+        send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>'
     };
+
+    function installTinyStyles() {
+        if (document.getElementById('siteUiV3TinyStyles')) return;
+        const style = document.createElement('style');
+        style.id = 'siteUiV3TinyStyles';
+        style.textContent = '.card-title.ui-title-enhanced::before{display:none}.card-title.ui-title-enhanced{gap:10px}.card-title.ui-title-enhanced .ui-title-icon{margin-right:1px}@media(max-width:520px){.button>.ui-icon,.nav-link>.ui-icon{flex:none}.button.small>.ui-icon{width:15px;height:15px}}';
+        document.head.appendChild(style);
+    }
 
     function iconNameFor(text, href = '') {
         const value = `${text || ''} ${href || ''}`.toLowerCase();
@@ -32,6 +47,13 @@
         if (value.includes('api key') || value.includes('chave')) return 'key';
         if (value.includes('endpoint') || value.includes('rota') || value.includes('código')) return 'code';
         if (value.includes('upload')) return 'upload';
+        if (value.includes('baixar') || value.includes('download')) return 'download';
+        if (value.includes('copiar')) return 'copy';
+        if (value.includes('criar') || value.includes('gerar')) return 'plus';
+        if (value.includes('salvar')) return 'save';
+        if (value.includes('editar') || value.includes('renomear')) return 'edit';
+        if (value.includes('sair') || value.includes('logout')) return 'logout';
+        if (value.includes('enviar')) return 'send';
         if (value.includes('card')) return 'image';
         if (value.includes('status')) return 'activity';
         if (value.includes('tempo') || value.includes('uptime')) return 'clock';
@@ -97,6 +119,7 @@
         });
     }
 
+    installTinyStyles();
     enhance();
     const observer = new MutationObserver(records => {
         for (const record of records) {
