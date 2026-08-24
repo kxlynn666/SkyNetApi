@@ -13,6 +13,7 @@ const { registerMusicRoutes } = require('./src/music');
 const { registerBratRoutes } = require('./src/brat');
 const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
+const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
 const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
@@ -48,6 +49,7 @@ app.use((req, res, next) => {
                 try {
                     cleanupCommunityAccount(accountId);
                     cleanupProfileEconomyAccount(accountId);
+                    cleanupProfileDesignAccount(accountId);
                 } catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
             }
         });
@@ -64,6 +66,7 @@ registerMusicRoutes(app);
 registerBratRoutes(app);
 registerBotLogRoutes(app);
 registerProfileEconomyRoutes(app);
+registerProfileDesignRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
