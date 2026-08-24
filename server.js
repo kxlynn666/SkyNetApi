@@ -13,12 +13,22 @@ const { registerMusicRoutes } = require('./src/music');
 const { registerBratRoutes } = require('./src/brat');
 const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
+const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
+
+try {
+    const migration = migrateExclusiveProfileItems();
+    if (migration.changedAccounts > 0) {
+        console.log(`Cosméticos exclusivos migrados: ${migration.removedItems} item(ns), ${migration.refundedCoins} moeda(s) reembolsadas.`);
+    }
+} catch (error) {
+    console.error('Falha ao migrar cosméticos exclusivos:', error);
+}
 
 app.use((req, res, next) => {
     if (req.method !== 'DELETE') return next();
