@@ -102,6 +102,7 @@ window.SkyNet = (() => {
         ['/profile-editor-organizer-v2.js', 'skynetProfileEditorOrganizerV2'],
         ['/experience-polish-v10.js', 'skynetExperiencePolishV10'],
         ['/store-layout-hotfix-v11.js', 'skynetStoreLayoutHotfixV11'],
+        ['/stickers-v1.js', 'skynetStickersV1'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
