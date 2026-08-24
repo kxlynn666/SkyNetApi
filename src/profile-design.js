@@ -10,10 +10,18 @@ const DESIGN_FILE = path.join(C.DATA_DIR, 'profile-design.json');
 const DEFAULTS = Object.freeze({
     fontFamily: 'system',
     avatarShape: 'squircle',
+    avatarScale: 'medium',
     bannerFocus: 'center',
+    bannerTreatment: 'natural',
     profileLayout: 'balanced',
+    contentDensity: 'comfortable',
     tagStyle: 'pill',
     nameEffect: 'none',
+    textAlign: 'left',
+    metricStyle: 'cards',
+    bioStyle: 'plain',
+    surfaceStyle: 'layered',
+    profileContrast: 'balanced',
     motionLevel: 'full',
     cornerStyle: 'soft'
 });
@@ -21,10 +29,18 @@ const DEFAULTS = Object.freeze({
 const ALLOWED = Object.freeze({
     fontFamily: new Set(['system', 'mono', 'serif', 'rounded', 'display']),
     avatarShape: new Set(['squircle', 'circle', 'rounded', 'square']),
+    avatarScale: new Set(['small', 'medium', 'large']),
     bannerFocus: new Set(['center', 'top', 'bottom', 'left', 'right']),
+    bannerTreatment: new Set(['natural', 'dim', 'soft', 'mono']),
     profileLayout: new Set(['balanced', 'compact', 'showcase']),
+    contentDensity: new Set(['airy', 'comfortable', 'dense']),
     tagStyle: new Set(['pill', 'badge', 'minimal', 'outline']),
     nameEffect: new Set(['none', 'gradient', 'glow', 'outline']),
+    textAlign: new Set(['left', 'center']),
+    metricStyle: new Set(['cards', 'minimal', 'compact']),
+    bioStyle: new Set(['plain', 'panel', 'quote']),
+    surfaceStyle: new Set(['flat', 'layered', 'outline']),
+    profileContrast: new Set(['soft', 'balanced', 'high']),
     motionLevel: new Set(['full', 'subtle', 'still']),
     cornerStyle: new Set(['soft', 'medium', 'sharp'])
 });
