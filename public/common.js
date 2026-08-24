@@ -102,7 +102,8 @@ window.SkyNet = (() => {
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
         ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
-        ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1']
+        ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
+        ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
