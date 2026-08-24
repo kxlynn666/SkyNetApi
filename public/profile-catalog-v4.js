@@ -6,6 +6,22 @@
     let byName = new Map();
     let loading = false;
 
+    function installStyles() {
+        if (document.getElementById('profileCatalogV4Styles')) return;
+        const style = document.createElement('style');
+        style.id = 'profileCatalogV4Styles';
+        style.textContent = `
+            .profile-tag[data-animated="1"]{background-size:220% 220%;animation:profile-tag-shimmer 3.2s ease-in-out infinite}
+            .profile-tag[data-collection="developer"][data-animated="1"]{animation:profile-tag-dev 2.5s ease-in-out infinite}
+            .profile-tag[data-collection="admin"][data-animated="1"]{animation:profile-tag-admin 2.8s ease-in-out infinite}
+            @keyframes profile-tag-shimmer{0%,100%{background-position:0 50%;filter:brightness(1)}50%{background-position:100% 50%;filter:brightness(1.18)}}
+            @keyframes profile-tag-dev{0%,100%{box-shadow:0 0 10px rgba(34,197,94,.12)}50%{box-shadow:0 0 22px rgba(34,197,94,.34);filter:brightness(1.12)}}
+            @keyframes profile-tag-admin{0%,100%{box-shadow:0 0 11px rgba(250,204,21,.13)}50%{box-shadow:0 0 24px rgba(250,204,21,.36);filter:brightness(1.14)}}
+            @media(prefers-reduced-motion:reduce){.profile-tag{animation:none!important}}
+        `;
+        document.head.appendChild(style);
+    }
+
     async function loadCatalog() {
         if (catalog.length || loading) return;
         loading = true;
@@ -81,5 +97,6 @@
     });
 
     observer.observe(document.documentElement, { childList: true, subtree: true });
+    installStyles();
     loadCatalog();
 })();
