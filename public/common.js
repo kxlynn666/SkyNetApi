@@ -87,7 +87,8 @@ window.SkyNet = (() => {
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
-        ['/mobile-polish-v4.css', 'skynetMobilePolishV4']
+        ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
+        ['/music-icons-v5.css', 'skynetMusicIconsV5']
     ];
     for (const [href, marker] of styles) {
         if (document.querySelector(`link[href="${href}"],link[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
