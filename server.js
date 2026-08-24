@@ -14,6 +14,7 @@ const { registerBratRoutes } = require('./src/brat');
 const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
 const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
+const { registerStickerRoutes, cleanupStickersAccount } = require('./src/stickers');
 const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
@@ -50,6 +51,7 @@ app.use((req, res, next) => {
                     cleanupCommunityAccount(accountId);
                     cleanupProfileEconomyAccount(accountId);
                     cleanupProfileDesignAccount(accountId);
+                    cleanupStickersAccount(accountId);
                 } catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
             }
         });
@@ -67,6 +69,7 @@ registerBratRoutes(app);
 registerBotLogRoutes(app);
 registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
+registerStickerRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
@@ -117,6 +120,7 @@ const workspaceRoutes = [
     '/painel/perfil',
     '/painel/amigos',
     '/painel/chat',
+    '/painel/figurinhas',
     '/painel/grupos',
     '/painel/chaves',
     '/painel/cards',
