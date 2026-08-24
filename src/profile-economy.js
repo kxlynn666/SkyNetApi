@@ -24,6 +24,11 @@ const CATALOG = Object.freeze([
     item('tag-collector', 'tag', 'COLLECTOR', 760, 'epic', ['#b45309', '#fbbf24'], { collection: 'core' }),
     item('tag-og', 'tag', 'OG', 950, 'epic', ['#d97706', '#fbbf24'], { collection: 'core' }),
     item('tag-sakura', 'tag', 'SAKURA', 850, 'legendary', ['#db2777', '#f9a8d4'], { collection: 'sakura', animated: true }),
+    item('tag-cyberpunk', 'tag', 'CYBERPUNK', 1300, 'legendary', ['#06b6d4', '#d946ef'], { collection: 'holo', animated: true }),
+    item('tag-hanami', 'tag', 'HANAMI', 1450, 'legendary', ['#be185d', '#fce7f3'], { collection: 'sakura', animated: true }),
+    item('tag-cosmic', 'tag', 'COSMIC', 1650, 'legendary', ['#4f46e5', '#c084fc'], { collection: 'cosmic', animated: true }),
+    item('tag-glitch', 'tag', 'GLITCH', 1850, 'legendary', ['#22d3ee', '#fb7185'], { collection: 'holo', animated: true }),
+    item('tag-celestial', 'tag', 'CELESTIAL', 2100, 'legendary', ['#93c5fd', '#f5d0fe'], { collection: 'cosmic', animated: true }),
     item('tag-elite', 'tag', 'ELITE', 1600, 'legendary', ['#ca8a04', '#fde047'], { collection: 'core', animated: true }),
 
     // Tags exclusivas DEV — nunca compráveis
@@ -33,11 +38,13 @@ const CATALOG = Object.freeze([
     item('tag-core-dev', 'tag', 'CORE DEV', 0, 'exclusive', ['#22c55e', '#a3e635'], { collection: 'developer', grantOnly: true, animated: true }),
     item('tag-debugger', 'tag', 'DEBUGGER', 0, 'exclusive', ['#ef4444', '#22d3ee'], { collection: 'developer', grantOnly: true }),
     item('tag-maintainer', 'tag', 'MAINTAINER', 0, 'exclusive', ['#10b981', '#60a5fa'], { collection: 'developer', grantOnly: true }),
+    item('tag-architect', 'tag', 'ARCHITECT', 0, 'exclusive', ['#14b8a6', '#a3e635'], { collection: 'developer', grantOnly: true, animated: true }),
 
     // Tags exclusivas ADMIN — nunca compráveis
     item('tag-admin', 'tag', 'ADMIN', 0, 'exclusive', ['#f59e0b', '#fde68a'], { collection: 'admin', grantOnly: true, animated: true }),
     item('tag-staff', 'tag', 'STAFF', 0, 'exclusive', ['#2563eb', '#facc15'], { collection: 'admin', grantOnly: true }),
     item('tag-authority', 'tag', 'AUTHORITY', 0, 'exclusive', ['#eab308', '#ffffff'], { collection: 'admin', grantOnly: true, animated: true }),
+    item('tag-root-admin', 'tag', 'ROOT ADMIN', 0, 'exclusive', ['#facc15', '#f8fafc'], { collection: 'admin', grantOnly: true, animated: true }),
 
     // Molduras da loja
     item('frame-violet', 'frame', 'Violet Pulse', 320, 'common', ['#8b5cf6', '#c084fc'], { collection: 'core' }),
@@ -52,14 +59,21 @@ const CATALOG = Object.freeze([
     item('frame-hologram', 'frame', 'Hologram', 1900, 'legendary', ['#22d3ee', '#a78bfa'], { collection: 'holo', animated: true, overlay: true }),
     item('frame-sakura', 'frame', 'Sakura Bloom', 2000, 'legendary', ['#ec4899', '#fbcfe8'], { collection: 'sakura', animated: true, overlay: true }),
     item('frame-spectrum', 'frame', 'Spectrum', 2200, 'legendary', ['#22d3ee', '#8b5cf6', '#ec4899', '#f59e0b'], { collection: 'core', animated: true }),
+    item('frame-circuit', 'frame', 'Circuit Halo', 2550, 'legendary', ['#22d3ee', '#10b981'], { collection: 'holo', animated: true, overlay: true }),
+    item('frame-sakura-branch', 'frame', 'Sakura Branch', 2850, 'legendary', ['#be185d', '#fce7f3'], { collection: 'sakura', animated: true, overlay: true }),
+    item('frame-crystal', 'frame', 'Crystal Crown', 3150, 'legendary', ['#bae6fd', '#e9d5ff'], { collection: 'winter', animated: true, overlay: true }),
+    item('frame-void', 'frame', 'Void Rift', 3350, 'legendary', ['#020617', '#7c3aed'], { collection: 'cosmic', animated: true, overlay: true }),
+    item('frame-celestial', 'frame', 'Celestial Wings', 3600, 'legendary', ['#93c5fd', '#f5d0fe'], { collection: 'cosmic', animated: true, overlay: true }),
 
     // Molduras DEV exclusivas
     item('frame-dev-terminal', 'frame', 'Terminal Root', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
     item('frame-dev-debug', 'frame', 'Breakpoint', 0, 'exclusive', ['#ef4444', '#22d3ee'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
+    item('frame-dev-console', 'frame', 'Kernel Console', 0, 'exclusive', ['#10b981', '#38bdf8'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
 
     // Molduras ADMIN exclusivas
     item('frame-admin-crown', 'frame', 'Admin Crown', 0, 'exclusive', ['#f59e0b', '#fff7ed'], { collection: 'admin', grantOnly: true, animated: true, overlay: true }),
     item('frame-admin-authority', 'frame', 'Authority Seal', 0, 'exclusive', ['#2563eb', '#facc15'], { collection: 'admin', grantOnly: true, animated: true, overlay: true }),
+    item('frame-admin-orbit', 'frame', 'Sovereign Orbit', 0, 'exclusive', ['#facc15', '#60a5fa'], { collection: 'admin', grantOnly: true, animated: true, overlay: true }),
 
     // Decorações da loja
     item('deco-grid', 'decoration', 'Digital Grid', 380, 'common', ['#8b5cf6', '#312e81'], { collection: 'core' }),
@@ -74,14 +88,21 @@ const CATALOG = Object.freeze([
     item('deco-prism', 'decoration', 'Prism', 1500, 'legendary', ['#22d3ee', '#a855f7', '#f43f5e'], { collection: 'holo', animated: true }),
     item('deco-celestial', 'decoration', 'Celestial Dust', 1800, 'legendary', ['#818cf8', '#f0abfc'], { collection: 'cosmic', animated: true }),
     item('deco-sakura', 'decoration', 'Sakura Petals', 2300, 'legendary', ['#ec4899', '#fbcfe8'], { collection: 'sakura', animated: true }),
+    item('deco-fireflies', 'decoration', 'Fireflies', 2450, 'legendary', ['#fef08a', '#86efac'], { collection: 'nature', animated: true }),
+    item('deco-cyber-lines', 'decoration', 'Cyber Lines', 2650, 'legendary', ['#22d3ee', '#d946ef'], { collection: 'holo', animated: true }),
+    item('deco-sakura-garden', 'decoration', 'Sakura Garden', 3250, 'legendary', ['#be185d', '#fce7f3'], { collection: 'sakura', animated: true }),
+    item('deco-void', 'decoration', 'Void Particles', 3300, 'legendary', ['#020617', '#8b5cf6'], { collection: 'cosmic', animated: true }),
+    item('deco-constellation', 'decoration', 'Constellation', 3550, 'legendary', ['#93c5fd', '#c4b5fd'], { collection: 'cosmic', animated: true }),
 
     // Decorações DEV exclusivas
     item('deco-dev-code', 'decoration', 'Source Stream', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true }),
     item('deco-dev-matrix', 'decoration', 'Root Matrix', 0, 'exclusive', ['#16a34a', '#4ade80'], { collection: 'developer', grantOnly: true, animated: true }),
+    item('deco-dev-stacktrace', 'decoration', 'Stack Trace', 0, 'exclusive', ['#22c55e', '#38bdf8'], { collection: 'developer', grantOnly: true, animated: true }),
 
     // Decorações ADMIN exclusivas
     item('deco-admin-aegis', 'decoration', 'Admin Aegis', 0, 'exclusive', ['#f59e0b', '#fde68a'], { collection: 'admin', grantOnly: true, animated: true }),
-    item('deco-admin-command', 'decoration', 'Command Halo', 0, 'exclusive', ['#2563eb', '#facc15'], { collection: 'admin', grantOnly: true, animated: true })
+    item('deco-admin-command', 'decoration', 'Command Halo', 0, 'exclusive', ['#2563eb', '#facc15'], { collection: 'admin', grantOnly: true, animated: true }),
+    item('deco-admin-verdict', 'decoration', 'Verdict', 0, 'exclusive', ['#facc15', '#f8fafc'], { collection: 'admin', grantOnly: true, animated: true })
 ]);
 
 function item(id, type, name, price, rarity, colors, options = {}) {
@@ -452,7 +473,7 @@ function ensureStorage() {
 function loadStates() { ensureStorage(); return readArray(STORE_FILE); }
 function saveStates(states) { writeJsonAtomic(STORE_FILE, states); }
 function readArray(file) { try { const value = JSON.parse(fs.readFileSync(file, 'utf8')); return Array.isArray(value) ? value : []; } catch { return []; } }
-function writeJsonAtomic(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); fs.renameSync(temp, file); }
+function writeJsonAtomic(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); fs.renameSync(temp, STORE_FILE); }
 function cleanText(value, max) { return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
 function cleanId(value) { return String(value || '').trim().replace(/[^a-z0-9_-]/gi, '').slice(0, 80); }
 function clampInt(value, min, max, fallback) { const number = Math.trunc(Number(value)); return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback; }
