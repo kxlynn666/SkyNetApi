@@ -42,17 +42,20 @@
   .skynet-music-copy{align-self:center;min-width:0}
   .skynet-music-copy strong{font-size:12px!important}.skynet-music-copy span{font-size:9px!important;margin-top:2px}
   .skynet-music-source{display:none!important}
+  .skynet-music-bar.expanded .skynet-music-main{grid-template-rows:auto auto!important}
+  .skynet-music-bar.expanded .skynet-music-source{display:block!important;grid-column:1/-1!important;grid-row:2!important;min-height:38px!important;font-size:11px!important}
   .skynet-music-controls{grid-column:2!important;grid-row:1!important;flex-wrap:nowrap!important;gap:5px!important}
   .skynet-music-controls .button{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;padding:0!important;border-radius:11px!important;font-size:0!important}
   .skynet-music-controls .music-secondary{display:none!important}
   .skynet-music-controls .button::before{margin:0!important}
   .skynet-music-panel{padding:11px!important;gap:11px!important;max-height:min(46vh,330px);overflow:auto}
   .skynet-music-progress-wrap{grid-template-columns:34px minmax(0,1fr) 38px!important;gap:7px!important}
-  .skynet-music-extra{display:grid!important;grid-template-columns:auto auto minmax(100px,1fr) auto!important;gap:7px!important;align-items:center!important}
+  .skynet-music-extra{display:grid!important;grid-template-columns:auto auto 36px minmax(90px,1fr)!important;gap:7px!important;align-items:center!important}
   .skynet-music-extra>.text-faint{display:none!important}
   .skynet-music-volume{width:100%!important;min-width:0!important}
-  .skynet-music-status{min-width:0!important;text-align:right!important;font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .skynet-music-status{grid-column:1/-1!important;min-width:0!important;text-align:left!important;font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .skynet-music-extra .button{min-height:34px!important;padding:7px 9px!important;font-size:10px!important}
+  #musicMute{width:34px!important;min-width:34px!important;padding:0!important}
 
   /* Mini music mode: unobtrusive floating control. */
   .skynet-music-bar.music-ui-mini{left:auto!important;width:118px!important;right:10px!important;border-radius:999px!important}
