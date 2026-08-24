@@ -12,6 +12,7 @@ const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerMusicRoutes } = require('./src/music');
 const { registerBratRoutes } = require('./src/brat');
 const { registerBotLogRoutes } = require('./src/bot-logs');
+const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
@@ -34,8 +35,10 @@ app.use((req, res, next) => {
     if (accountId) {
         res.on('finish', () => {
             if (res.statusCode >= 200 && res.statusCode < 300) {
-                try { cleanupCommunityAccount(accountId); }
-                catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
+                try {
+                    cleanupCommunityAccount(accountId);
+                    cleanupProfileEconomyAccount(accountId);
+                } catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
             }
         });
     }
@@ -50,6 +53,7 @@ registerXpAdminRoutes(app);
 registerMusicRoutes(app);
 registerBratRoutes(app);
 registerBotLogRoutes(app);
+registerProfileEconomyRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
