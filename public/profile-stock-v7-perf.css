@@ -10,6 +10,37 @@
 .profile-preview-mini .profile-surface{
   contain:layout paint;
 }
+.profile-preview-product-visual.decoration .profile-preview-mini-avatar{
+  position:absolute!important;
+  left:10px!important;
+  bottom:8px!important;
+  width:26px!important;
+  height:26px!important;
+  min-width:26px!important;
+  min-height:26px!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:#2b2042!important;
+  box-shadow:none!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  z-index:4!important;
+}
+.profile-preview-product-visual.decoration .profile-preview-mini-avatar img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+}
+.profile-preview-product-visual.tag .profile-tag{
+  width:auto!important;
+  height:auto!important;
+  max-width:94%!important;
+  margin:0!important;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--tag-a) 22%,transparent),color-mix(in srgb,var(--tag-b) 10%,transparent))!important;
+}
 .profile-preview-selected-v2 .profile-preview-mini .cosmetic-avatar::before,
 .profile-preview-selected-v2 .profile-preview-mini .cosmetic-avatar::after,
 .profile-preview-selected-v2 .profile-preview-mini .profile-surface::before,
