@@ -30,6 +30,9 @@ const CATALOG = Object.freeze([
     item('tag-glitch', 'tag', 'GLITCH', 1850, 'legendary', ['#22d3ee', '#fb7185'], { collection: 'holo', animated: true }),
     item('tag-celestial', 'tag', 'CELESTIAL', 2100, 'legendary', ['#93c5fd', '#f5d0fe'], { collection: 'cosmic', animated: true }),
     item('tag-elite', 'tag', 'ELITE', 1600, 'legendary', ['#ca8a04', '#fde047'], { collection: 'core', animated: true }),
+    item('tag-editorial', 'tag', 'EDITORIAL', 2200, 'legendary', ['#d6d3d1', '#57534e'], { collection: 'editorial' }),
+    item('tag-analog', 'tag', 'ANALOG', 2350, 'legendary', ['#f5e7c8', '#78716c'], { collection: 'analog' }),
+    item('tag-atelier', 'tag', 'ATELIER', 2600, 'legendary', ['#e7e5e4', '#a78bfa'], { collection: 'minimal' }),
 
     // Tags exclusivas DEV — nunca compráveis
     item('tag-dev', 'tag', 'DEV', 0, 'exclusive', ['#16a34a', '#86efac'], { collection: 'developer', grantOnly: true, animated: true }),
@@ -65,6 +68,16 @@ const CATALOG = Object.freeze([
     item('frame-void', 'frame', 'Void Rift', 3350, 'legendary', ['#020617', '#7c3aed'], { collection: 'cosmic', animated: true, overlay: true }),
     item('frame-celestial', 'frame', 'Celestial Wings', 3600, 'legendary', ['#93c5fd', '#f5d0fe'], { collection: 'cosmic', animated: true, overlay: true }),
 
+    // Molduras V6 — editorial / analógico / material
+    item('frame-editorial-crop', 'frame', 'Editorial Crop', 3900, 'legendary', ['#f4f0e8', '#111827'], { collection: 'editorial', overlay: true }),
+    item('frame-offset-glass', 'frame', 'Offset Glass', 4200, 'legendary', ['#e9d5ff', '#67e8f9'], { collection: 'minimal', overlay: true }),
+    item('frame-chrome-corners', 'frame', 'Chrome Corners', 4500, 'legendary', ['#f8fafc', '#64748b'], { collection: 'editorial', overlay: true }),
+    item('frame-film-gate', 'frame', 'Film Gate', 4700, 'legendary', ['#18181b', '#d4d4d8'], { collection: 'analog', overlay: true }),
+    item('frame-archive-tape', 'frame', 'Archive Tape', 4900, 'legendary', ['#f5e7c8', '#a88f61'], { collection: 'analog', overlay: true }),
+    item('frame-porcelain', 'frame', 'Porcelain Edge', 5200, 'legendary', ['#fffdf8', '#dbeafe'], { collection: 'minimal', overlay: true }),
+    item('frame-ink-registration', 'frame', 'Ink Registration', 5400, 'legendary', ['#22d3ee', '#fb7185'], { collection: 'editorial', animated: true, overlay: true }),
+    item('frame-ribbon-fold', 'frame', 'Ribbon Fold', 5700, 'legendary', ['#d4d4d8', '#3f3f46'], { collection: 'textile', overlay: true }),
+
     // Molduras DEV exclusivas
     item('frame-dev-terminal', 'frame', 'Terminal Root', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
     item('frame-dev-debug', 'frame', 'Breakpoint', 0, 'exclusive', ['#ef4444', '#22d3ee'], { collection: 'developer', grantOnly: true, animated: true, overlay: true }),
@@ -93,6 +106,17 @@ const CATALOG = Object.freeze([
     item('deco-sakura-garden', 'decoration', 'Sakura Garden', 3250, 'legendary', ['#be185d', '#fce7f3'], { collection: 'sakura', animated: true }),
     item('deco-void', 'decoration', 'Void Particles', 3300, 'legendary', ['#020617', '#8b5cf6'], { collection: 'cosmic', animated: true }),
     item('deco-constellation', 'decoration', 'Constellation', 3550, 'legendary', ['#93c5fd', '#c4b5fd'], { collection: 'cosmic', animated: true }),
+
+    // Decorações V6 — menos clichê, mais editoriais / materiais
+    item('deco-editorial-grain', 'decoration', 'Editorial Grain', 2800, 'legendary', ['#d6d3d1', '#57534e'], { collection: 'editorial', animated: true }),
+    item('deco-moire-veil', 'decoration', 'Moiré Veil', 3000, 'legendary', ['#e7e5e4', '#78716c'], { collection: 'editorial', animated: true }),
+    item('deco-paper-fibers', 'decoration', 'Paper Fibers', 3100, 'legendary', ['#f5f5f4', '#a8a29e'], { collection: 'analog' }),
+    item('deco-riso-offset', 'decoration', 'Riso Offset', 3450, 'legendary', ['#22d3ee', '#fb7185'], { collection: 'editorial', animated: true }),
+    item('deco-window-light', 'decoration', 'Window Light', 3650, 'legendary', ['#fff7d6', '#d6d3d1'], { collection: 'minimal', animated: true }),
+    item('deco-velvet-noise', 'decoration', 'Velvet Noise', 3850, 'legendary', ['#701a75', '#27272a'], { collection: 'textile', animated: true }),
+    item('deco-contact-sheet', 'decoration', 'Contact Sheet', 4050, 'legendary', ['#e7e5e4', '#292524'], { collection: 'analog' }),
+    item('deco-chrome-reflection', 'decoration', 'Chrome Reflection', 4350, 'legendary', ['#f8fafc', '#64748b'], { collection: 'editorial', animated: true }),
+    item('deco-quiet-bloom', 'decoration', 'Quiet Bloom', 4700, 'legendary', ['#bef264', '#d8b4fe'], { collection: 'nature', animated: true }),
 
     // Decorações DEV exclusivas
     item('deco-dev-code', 'decoration', 'Source Stream', 0, 'exclusive', ['#22c55e', '#86efac'], { collection: 'developer', grantOnly: true, animated: true }),
@@ -140,17 +164,11 @@ function registerProfileEconomyRoutes(app) {
     app.post('/api/profile-store/buy/:itemId', requireTrustedOrigin, requireSession, (req, res) => {
         const product = catalogItem(req.params.itemId);
         if (!product) return res.status(404).json({ ok: false, error: 'Item não encontrado.' });
-        if (product.grantOnly) {
-            return res.status(403).json({ ok: false, error: 'Este item é exclusivo e só pode ser concedido por um administrador.' });
-        }
+        if (product.grantOnly) return res.status(403).json({ ok: false, error: 'Este item é exclusivo e só pode ser concedido por um administrador.' });
         const state = getState(req.account.id);
-        if (state.ownedItems.some(entry => entry.itemId === product.id)) {
-            return res.status(409).json({ ok: false, error: 'Este item já pertence à sua conta.' });
-        }
+        if (state.ownedItems.some(entry => entry.itemId === product.id)) return res.status(409).json({ ok: false, error: 'Este item já pertence à sua conta.' });
         const wallet = getWalletView(req.account.id, state);
-        if (wallet.balance < product.price) {
-            return res.status(409).json({ ok: false, error: `Saldo insuficiente. Faltam ${product.price - wallet.balance} moedas.` });
-        }
+        if (wallet.balance < product.price) return res.status(409).json({ ok: false, error: `Saldo insuficiente. Faltam ${product.price - wallet.balance} moedas.` });
         state.ownedItems.push({ itemId: product.id, price: product.price, purchasedAt: new Date().toISOString(), source: 'store' });
         state.spentCoins = Number(state.spentCoins || 0) + product.price;
         state.updatedAt = new Date().toISOString();
@@ -281,14 +299,7 @@ function registerProfileEconomyRoutes(app) {
         if (!product) return res.status(404).json({ ok: false, error: 'Item não encontrado.' });
         const state = getState(account.id);
         if (!state.ownedItems.some(entry => entry.itemId === product.id)) {
-            state.ownedItems.push({
-                itemId: product.id,
-                price: 0,
-                purchasedAt: new Date().toISOString(),
-                granted: true,
-                source: 'admin',
-                grantedBy: req.account.id
-            });
+            state.ownedItems.push({ itemId: product.id, price: 0, purchasedAt: new Date().toISOString(), granted: true, source: 'admin', grantedBy: req.account.id });
             state.updatedAt = new Date().toISOString();
             saveState(state);
         }
@@ -304,7 +315,6 @@ function registerProfileEconomyRoutes(app) {
         const before = state.ownedItems.length;
         state.ownedItems = state.ownedItems.filter(entry => entry.itemId !== product.id);
         if (state.ownedItems.length === before) return res.status(404).json({ ok: false, error: 'A conta não possui este item.' });
-
         state.equipped.tagIds = state.equipped.tagIds.filter(id => id !== product.id);
         if (state.equipped.frameId === product.id) state.equipped.frameId = '';
         if (state.equipped.decorationId === product.id) state.equipped.decorationId = '';
@@ -473,7 +483,7 @@ function ensureStorage() {
 function loadStates() { ensureStorage(); return readArray(STORE_FILE); }
 function saveStates(states) { writeJsonAtomic(STORE_FILE, states); }
 function readArray(file) { try { const value = JSON.parse(fs.readFileSync(file, 'utf8')); return Array.isArray(value) ? value : []; } catch { return []; } }
-function writeJsonAtomic(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); fs.renameSync(temp, STORE_FILE); }
+function writeJsonAtomic(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); fs.renameSync(temp, file); }
 function cleanText(value, max) { return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
 function cleanId(value) { return String(value || '').trim().replace(/[^a-z0-9_-]/gi, '').slice(0, 80); }
 function clampInt(value, min, max, fallback) { const number = Math.trunc(Number(value)); return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback; }
