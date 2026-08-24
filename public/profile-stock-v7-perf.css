@@ -1,0 +1,37 @@
+/* Keep store/inventory thumbnails cheap on mobile: full animation runs only on the live profile preview. */
+.profile-preview-mini .cosmetic-avatar::before,
+.profile-preview-mini .cosmetic-avatar::after,
+.profile-preview-mini .profile-surface::before,
+.profile-preview-mini .profile-surface::after,
+.profile-preview-mini .profile-tag{
+  animation-play-state:paused!important;
+}
+.profile-preview-mini .cosmetic-avatar,
+.profile-preview-mini .profile-surface{
+  contain:layout paint;
+}
+.profile-preview-selected-v2 .profile-preview-mini .cosmetic-avatar::before,
+.profile-preview-selected-v2 .profile-preview-mini .cosmetic-avatar::after,
+.profile-preview-selected-v2 .profile-preview-mini .profile-surface::before,
+.profile-preview-selected-v2 .profile-preview-mini .profile-surface::after,
+.profile-preview-selected-v2 .profile-preview-mini .profile-tag{
+  animation-play-state:paused!important;
+}
+.profile-preview-live-v2 .cosmetic-avatar::before,
+.profile-preview-live-v2 .cosmetic-avatar::after,
+.profile-preview-live-v2.profile-surface::before,
+.profile-preview-live-v2.profile-surface::after,
+.profile-preview-live-v2 .profile-tag{
+  animation-play-state:running!important;
+}
+@media(max-width:620px){
+  .profile-preview-product-visual{min-height:68px}
+  .profile-preview-mini{transform:translateZ(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .profile-preview-live-v2 .cosmetic-avatar::before,
+  .profile-preview-live-v2 .cosmetic-avatar::after,
+  .profile-preview-live-v2.profile-surface::before,
+  .profile-preview-live-v2.profile-surface::after,
+  .profile-preview-live-v2 .profile-tag{animation:none!important}
+}
