@@ -6,6 +6,8 @@
     const LABELS = {
         core:'Core', sakura:'Sakura', cosmic:'Cosmic', holo:'Hologram', winter:'Winter', ember:'Ember', night:'Night', nature:'Nature', developer:'DEV', admin:'ADMIN'
     };
+    const observedStores = new WeakSet();
+    let scheduled = false;
 
     function owned(card) {
         const button = card.querySelector('.button');
@@ -45,18 +47,57 @@
         const select = tools.querySelector('select');
         const check = tools.querySelector('input[type="checkbox"]');
         const apply = () => applyFilter(store, search.value, select.value, check.checked, tools);
-        search.addEventListener('input', apply);
+        search.addEventListener('input', debounce(apply, 80));
         select.addEventListener('change', apply);
         check.addEventListener('change', apply);
         refreshCollections(store, select);
         apply();
+        observeStore(store);
+    }
+
+    function observeStore(store) {
+        if (observedStores.has(store)) return;
+        observedStores.add(store);
+        const observer = new MutationObserver(records => {
+            let relevant = false;
+            for (const record of records) {
+                for (const node of record.addedNodes || []) {
+                    if (node.nodeType !== 1) continue;
+                    if (node.matches?.('.profile-v3-product') || node.querySelector?.('.profile-v3-product')) {
+                        relevant = true;
+                        break;
+                    }
+                }
+                if (relevant) break;
+            }
+            if (relevant) scheduleRefresh(store);
+        });
+        observer.observe(store, { childList:true, subtree:true });
+    }
+
+    function scheduleRefresh(store) {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+            scheduled = false;
+            if (!store?.isConnected) return;
+            enhance(store);
+            const tools = store.parentElement?.querySelector('.profile-store-tools-v5');
+            if (!tools) return;
+            const select = tools.querySelector('select');
+            const current = select.value;
+            refreshCollections(store, select);
+            if ([...select.options].some(option => option.value === current)) select.value = current;
+            applyFilter(store, tools.querySelector('input[type="search"]').value, select.value, tools.querySelector('input[type="checkbox"]').checked, tools);
+        });
     }
 
     function refreshCollections(store, select) {
         const before = select.value || 'all';
         const collections = [...new Set([...store.querySelectorAll('.profile-v3-product')].map(card => card.dataset.collection).filter(Boolean))]
             .sort((a,b) => (LABELS[a] || a).localeCompare(LABELS[b] || b));
-        select.innerHTML = '<option value="all">Todas as coleções</option>' + collections.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(LABELS[value] || value)}</option>`).join('');
+        const html = '<option value="all">Todas as coleções</option>' + collections.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(LABELS[value] || value)}</option>`).join('');
+        if (select.innerHTML !== html) select.innerHTML = html;
         select.value = collections.includes(before) ? before : 'all';
     }
 
@@ -67,11 +108,8 @@
         for (const card of cards) {
             decorateCard(card);
             const text = String(card.textContent || '').toLowerCase();
-            const matchText = !term || text.includes(term);
-            const matchCollection = collection === 'all' || card.dataset.collection === collection;
-            const matchOwned = !onlyOwned || owned(card);
-            const show = matchText && matchCollection && matchOwned;
-            card.hidden = !show;
+            const show = (!term || text.includes(term)) && (collection === 'all' || card.dataset.collection === collection) && (!onlyOwned || owned(card));
+            if (card.hidden === show) card.hidden = !show;
             if (show) visible++;
         }
         const count = tools.querySelector('.profile-store-count-v5');
@@ -88,6 +126,14 @@
         if (root.matches?.('.profile-v3-product')) cards.push(root);
         cards.push(...(root.querySelectorAll?.('.profile-v3-product') || []));
         for (const card of cards) decorateCard(card);
+    }
+
+    function debounce(fn, delay) {
+        let timer = 0;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
     }
 
     function escapeHtml(value) {
@@ -112,22 +158,14 @@
     document.head.appendChild(style);
 
     enhance();
+    const root = document.getElementById('workspaceContent') || document.body;
     const observer = new MutationObserver(records => {
-        let needsRefresh = false;
+        const roots = new Set();
         for (const record of records) {
-            if (record.type === 'attributes') needsRefresh = true;
-            for (const node of record.addedNodes || []) if (node.nodeType === 1) { enhance(node); needsRefresh = true; }
+            for (const node of record.addedNodes || []) if (node.nodeType === 1) roots.add(node);
         }
-        if (!needsRefresh) return;
-        document.querySelectorAll('.profile-v3-store').forEach(store => {
-            const tools = store.parentElement?.querySelector('.profile-store-tools-v5');
-            if (!tools) return;
-            const select = tools.querySelector('select');
-            const current = select.value;
-            refreshCollections(store, select);
-            if ([...select.options].some(option => option.value === current)) select.value = current;
-            applyFilter(store, tools.querySelector('input[type="search"]').value, select.value, tools.querySelector('input[type="checkbox"]').checked, tools);
-        });
+        if (!roots.size) return;
+        requestAnimationFrame(() => roots.forEach(enhance));
     });
-    observer.observe(document.documentElement, { childList:true, subtree:true, attributes:true, attributeFilter:['data-collection','data-grant-only'] });
+    observer.observe(root, { childList:true, subtree:true });
 })();
