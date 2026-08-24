@@ -15,6 +15,7 @@ bin/yt-dlp*
 data/*.json
 data/.key-vault-secret
 data/music/*
+data/sticker-files/*
 public/uploads/*
 public/generated/*
 
