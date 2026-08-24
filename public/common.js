@@ -10,11 +10,8 @@ window.SkyNet = (() => {
         const response = await fetch(url, opts);
         const type = response.headers.get('content-type') || '';
         let data = null;
-        if (type.includes('application/json')) {
-            data = await response.json().catch(() => null);
-        } else {
-            data = await response.text().catch(() => null);
-        }
+        if (type.includes('application/json')) data = await response.json().catch(() => null);
+        else data = await response.text().catch(() => null);
         if (!response.ok) {
             const error = new Error(data?.error || data?.message || `Erro HTTP ${response.status}`);
             error.status = response.status;
@@ -50,13 +47,8 @@ window.SkyNet = (() => {
     }
 
     async function session() {
-        try {
-            const data = await api('/api/auth/me');
-            return data.account;
-        } catch (error) {
-            if (error.status === 401) return null;
-            throw error;
-        }
+        try { return (await api('/api/auth/me')).account; }
+        catch (error) { if (error.status === 401) return null; throw error; }
     }
 
     async function logout() {
@@ -64,19 +56,15 @@ window.SkyNet = (() => {
         location.href = '/painel/login';
     }
 
-    async function copy(text) {
-        await navigator.clipboard.writeText(text);
-    }
+    async function copy(text) { await navigator.clipboard.writeText(text); }
 
     function setTabs(root = document) {
         const buttons = [...root.querySelectorAll('[data-tab]')];
-        buttons.forEach(button => {
-            button.addEventListener('click', () => {
-                const target = button.dataset.tab;
-                buttons.forEach(b => b.classList.toggle('active', b === button));
-                root.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === target));
-            });
-        });
+        buttons.forEach(button => button.addEventListener('click', () => {
+            const target = button.dataset.tab;
+            buttons.forEach(b => b.classList.toggle('active', b === button));
+            root.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === target));
+        }));
     }
 
     return { api, escapeHtml, formatDate, formatSize, message, session, logout, copy, setTabs };
@@ -87,6 +75,7 @@ window.SkyNet = (() => {
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
+        ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
         ['/music-icons-v5.css', 'skynetMusicIconsV5']
     ];
@@ -106,7 +95,8 @@ window.SkyNet = (() => {
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
-        ['/ui-preferences-v4.js', 'skynetUiPreferencesV4']
+        ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
+        ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
@@ -142,7 +132,8 @@ window.SkyNet = (() => {
             ['/admin-extended.js', 'adminExtended'],
             ['/admin-community.js', 'adminCommunity'],
             ['/admin-music.js', 'adminMusic'],
-            ['/admin-profile-store.js', 'adminProfileStore']
+            ['/admin-profile-store.js', 'adminProfileStore'],
+            ['/admin-coins-editor-v1.js', 'adminCoinsEditorV1']
         ]) {
             if (document.querySelector(`script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
             const script = document.createElement('script');
