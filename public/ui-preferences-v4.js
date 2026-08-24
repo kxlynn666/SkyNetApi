@@ -4,6 +4,11 @@
 
     const KEY = 'skynet_ui_preferences_v4';
     const MUSIC_KEY = 'skynet_music_ui_v4';
+    const ICONS = {
+        spark:'<path d="m12 3 1.4 4.1 4.1 1.4-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/><path d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+        music:'<path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>',
+        grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'
+    };
 
     function read() {
         const defaults = {
@@ -59,17 +64,18 @@
         }));
     }
 
-    function toggle(name,title,description,checked,icon) {
-        return `<label class="ui-preference-item"><input type="checkbox" data-ui-pref="${name}" ${checked ? 'checked' : ''}><span class="ui-preference-symbol" data-pref-symbol="${icon}" aria-hidden="true"></span><span class="ui-preference-copy"><strong>${title}</strong><span>${description}</span></span><span class="ui-preference-switch" aria-hidden="true"></span></label>`;
+    function toggle(name,title,description,checked,iconName) {
+        const paths = ICONS[iconName] || ICONS.grid;
+        return `<label class="ui-preference-item"><input type="checkbox" data-ui-pref="${name}" ${checked ? 'checked' : ''}><span class="ui-preference-symbol" aria-hidden="true"><svg viewBox="0 0 24 24">${paths}</svg></span><span class="ui-preference-copy"><strong>${title}</strong><span>${description}</span></span><span class="ui-preference-switch" aria-hidden="true"></span></label>`;
     }
 
     const style = document.createElement('style');
     style.id = 'uiPreferencesV4Styles';
     style.textContent = `
-      .ui-preferences-v4{margin-top:16px}.ui-preferences-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ui-preferences-head h3{margin:0 0 4px}.ui-preferences-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}.ui-preference-item{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:9px;align-items:center;padding:11px;border:1px solid var(--border-soft);border-radius:13px;background:rgba(30,22,56,.38);cursor:pointer}.ui-preference-item>input{position:absolute;opacity:0;pointer-events:none}.ui-preference-symbol{width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,rgba(139,92,246,.15),rgba(34,211,238,.06));border:1px solid rgba(139,92,246,.16)}.ui-preference-copy strong,.ui-preference-copy span{display:block}.ui-preference-copy strong{font-size:11px}.ui-preference-copy span{font-size:9px;line-height:1.4;color:var(--text-faint);margin-top:2px}.ui-preference-switch{width:32px;height:18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);position:relative}.ui-preference-switch::after{content:"";position:absolute;width:12px;height:12px;left:2px;top:2px;border-radius:50%;background:#8f82a8;transition:.16s ease}.ui-preference-item:has(input:checked){border-color:rgba(139,92,246,.30);background:rgba(139,92,246,.07)}.ui-preference-item:has(input:checked) .ui-preference-switch{background:linear-gradient(90deg,#7c3aed,#38bdf8)}.ui-preference-item:has(input:checked) .ui-preference-switch::after{transform:translateX(14px);background:white}
+      .ui-preferences-v4{margin-top:16px}.ui-preferences-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ui-preferences-head h3{margin:0 0 4px}.ui-preferences-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}.ui-preference-item{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:9px;align-items:center;padding:11px;border:1px solid var(--border-soft);border-radius:13px;background:rgba(30,22,56,.38);cursor:pointer}.ui-preference-item>input{position:absolute;opacity:0;pointer-events:none}.ui-preference-symbol{width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,rgba(139,92,246,.15),rgba(34,211,238,.06));border:1px solid rgba(139,92,246,.16);display:grid;place-items:center;color:#c4b5fd}.ui-preference-symbol svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ui-preference-copy strong,.ui-preference-copy span{display:block}.ui-preference-copy strong{font-size:11px}.ui-preference-copy span{font-size:9px;line-height:1.4;color:var(--text-faint);margin-top:2px}.ui-preference-switch{width:32px;height:18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);position:relative}.ui-preference-switch::after{content:"";position:absolute;width:12px;height:12px;left:2px;top:2px;border-radius:50%;background:#8f82a8;transition:.16s ease}.ui-preference-item:has(input:checked){border-color:rgba(139,92,246,.30);background:rgba(139,92,246,.07)}.ui-preference-item:has(input:checked) .ui-preference-symbol{color:#fff;border-color:rgba(167,139,250,.26);box-shadow:0 0 18px rgba(139,92,246,.09)}.ui-preference-item:has(input:checked) .ui-preference-switch{background:linear-gradient(90deg,#7c3aed,#38bdf8)}.ui-preference-item:has(input:checked) .ui-preference-switch::after{transform:translateX(14px);background:white}
       html.skynet-reduce-effects .profile-surface::before,html.skynet-reduce-effects .profile-surface::after,html.skynet-reduce-effects .cosmetic-avatar::before,html.skynet-reduce-effects .cosmetic-avatar::after,html.skynet-reduce-effects .profile-tag{animation:none!important;transition:none!important}html.skynet-reduce-effects .profile-surface::before,html.skynet-reduce-effects .profile-surface::after{filter:none!important}html.skynet-reduce-effects .workspace-card,html.skynet-reduce-effects .skynet-music-bar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
       @media(max-width:760px){.ui-preferences-grid{grid-template-columns:1fr}}
-      @media(max-width:520px){html.skynet-icon-dock .workspace-mobile-dock-item span{display:none!important}html.skynet-icon-dock .workspace-mobile-dock-item svg{width:22px!important;height:22px!important}.ui-preferences-v4{margin-top:12px}.ui-preference-item{grid-template-columns:32px minmax(0,1fr) 34px;padding:10px}}
+      @media(max-width:520px){html.skynet-icon-dock .workspace-mobile-dock-item span{display:none!important}html.skynet-icon-dock .workspace-mobile-dock-item svg{width:22px!important;height:22px!important}.ui-preferences-v4{margin-top:12px}.ui-preference-item{grid-template-columns:32px minmax(0,1fr) 34px;padding:10px}.ui-preference-symbol{width:32px;height:32px}}
     `;
     document.head.appendChild(style);
 
