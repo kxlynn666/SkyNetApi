@@ -11,6 +11,8 @@
   let social = null;
   let scheduled = false;
   let previewItem = null;
+  let baseline = null;
+  let refreshTimer = 0;
 
   const byId = new Map();
   const byName = new Map();
@@ -19,29 +21,43 @@
 
   async function boot() {
     try {
-      const [catalogData, storeData, socialData] = await Promise.all([
-        S.api('/api/profile-store/catalog'),
+      const [storeData, socialData] = await Promise.all([
         S.api('/api/profile-store/me'),
         S.api('/api/social/me')
       ]);
-      catalog = Array.isArray(catalogData.catalog) ? catalogData.catalog : [];
-      store = storeData;
+      setStore(storeData);
       social = socialData;
-      for (const item of catalog) {
-        byId.set(item.id, item);
-        byName.set(String(item.name || '').trim().toLowerCase(), item);
-      }
       enhance();
       observe();
     } catch {}
+  }
+
+  function setStore(data) {
+    store = data || store;
+    catalog = Array.isArray(store?.catalog) ? store.catalog : catalog;
+    byId.clear();
+    byName.clear();
+    for (const item of catalog) {
+      byId.set(item.id, item);
+      byName.set(String(item.name || '').trim().toLowerCase(), item);
+    }
   }
 
   function observe() {
     const root = document.getElementById('workspaceContent');
     if (!root) return;
     const observer = new MutationObserver(records => {
-      if (!records.some(record => [...record.addedNodes].some(node => node.nodeType === 1))) return;
-      scheduleEnhance();
+      let hasElements = false;
+      let inventoryChanged = false;
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          hasElements = true;
+          if (node.matches?.('#profileV3EquipForm option,.profile-v3-choice') || node.querySelector?.('#profileV3EquipForm option,.profile-v3-choice')) inventoryChanged = true;
+        }
+      }
+      if (hasElements) scheduleEnhance();
+      if (inventoryChanged) scheduleStoreRefresh();
     });
     observer.observe(root, { childList: true, subtree: true });
   }
@@ -53,6 +69,17 @@
       scheduled = false;
       enhance();
     });
+  }
+
+  function scheduleStoreRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async () => {
+      try {
+        setStore(await S.api('/api/profile-store/me'));
+        document.getElementById('profileInventoryShowroomV2')?.remove();
+        enhanceInventory();
+      } catch {}
+    }, 260);
   }
 
   function enhance() {
@@ -151,8 +178,18 @@
     preview.appendChild(bar);
   }
 
-  function currentCosmetics() {
-    return store?.cosmetics || { tags: [], frame: null, decoration: null };
+  function readVisual() {
+    const preview = document.querySelector('.profile-v3-preview');
+    const avatar = preview?.querySelector('.cosmetic-avatar');
+    const tags = [...(preview?.querySelectorAll('.profile-tags .profile-tag') || [])].map(element => {
+      const known = byName.get(String(element.textContent || '').trim().toLowerCase());
+      if (known) return known;
+      return {
+        id: '', type: 'tag', name: element.textContent || '', collection: element.dataset.collection || 'core', animated: element.dataset.animated === '1',
+        colors: [element.style.getPropertyValue('--tag-a') || '#7c3aed', element.style.getPropertyValue('--tag-b') || '#a78bfa']
+      };
+    });
+    return { decorationId: preview?.dataset.decoration || '', frameId: avatar?.dataset.frame || '', tags };
   }
 
   function renderTags(tags) {
@@ -177,21 +214,31 @@
     copy.appendChild(holder);
   }
 
+  function applyVisual(state) {
+    const preview = document.querySelector('.profile-v3-preview');
+    if (!preview || !state) return;
+    preview.dataset.decoration = state.decorationId || '';
+    const avatar = preview.querySelector('.cosmetic-avatar');
+    if (avatar) avatar.dataset.frame = state.frameId || '';
+    renderTags(state.tags || []);
+  }
+
   function applyPreview(item) {
     const preview = document.querySelector('.profile-v3-preview');
     if (!preview || !item) return;
-    const equipped = currentCosmetics();
+    if (!baseline) baseline = readVisual();
     previewItem = item;
 
-    preview.dataset.decoration = item.type === 'decoration' ? item.id : (equipped.decoration?.id || '');
-    const avatar = preview.querySelector('.cosmetic-avatar');
-    if (avatar) avatar.dataset.frame = item.type === 'frame' ? item.id : (equipped.frame?.id || '');
-
-    const tags = [...(equipped.tags || [])];
+    const state = {
+      decorationId: item.type === 'decoration' ? item.id : baseline.decorationId,
+      frameId: item.type === 'frame' ? item.id : baseline.frameId,
+      tags: baseline.tags
+    };
     if (item.type === 'tag') {
-      const without = tags.filter(tag => tag.id !== item.id);
-      renderTags([item, ...without].slice(0, 3));
-    } else renderTags(tags);
+      const without = baseline.tags.filter(tag => tag.id !== item.id && String(tag.name || '').toLowerCase() !== String(item.name || '').toLowerCase());
+      state.tags = [item, ...without].slice(0, 3);
+    }
+    applyVisual(state);
 
     preview.classList.add('profile-preview-live-v2');
     const bar = preview.querySelector('.profile-preview-livebar-v2');
@@ -211,16 +258,13 @@
   function resetPreview() {
     const preview = document.querySelector('.profile-v3-preview');
     if (!preview) return;
-    const equipped = currentCosmetics();
-    preview.dataset.decoration = equipped.decoration?.id || '';
-    const avatar = preview.querySelector('.cosmetic-avatar');
-    if (avatar) avatar.dataset.frame = equipped.frame?.id || '';
-    renderTags(equipped.tags || []);
+    if (baseline) applyVisual(baseline);
     preview.classList.remove('profile-preview-live-v2');
     const bar = preview.querySelector('.profile-preview-livebar-v2');
     if (bar) bar.hidden = true;
     document.querySelectorAll('.profile-preview-selected-v2').forEach(card => card.classList.remove('profile-preview-selected-v2'));
     previewItem = null;
+    baseline = null;
   }
 
   document.addEventListener('click', event => {
@@ -241,6 +285,7 @@
   window.SkyNetProfilePreview = {
     preview(id) { const item = byId.get(id); if (item) applyPreview(item); },
     reset: resetPreview,
+    refresh: scheduleStoreRefresh,
     get activeItem() { return previewItem; }
   };
 
