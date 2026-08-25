@@ -110,6 +110,7 @@ window.SkyNet = (() => {
         ['/profile-editor-organizer-v2.js', 'skynetProfileEditorOrganizerV2'],
         ['/experience-polish-v10.js', 'skynetExperiencePolishV10'],
         ['/store-layout-hotfix-v11.js', 'skynetStoreLayoutHotfixV11'],
+        ['/store-compact-v13.js', 'skynetStoreCompactV13'],
         ['/stickers-v1.js', 'skynetStickersV1'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
@@ -117,7 +118,8 @@ window.SkyNet = (() => {
         ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
         ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
         ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1'],
-        ['/motion-v12.js', 'skynetMotionV12']
+        ['/auth-experience-v13.js', 'skynetAuthExperienceV13'],
+        ['/motion-v13.js', 'skynetMotionV13']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
@@ -172,19 +174,21 @@ window.SkyNet = (() => {
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 
+/* Music is intentionally page-scoped. It no longer injects a fixed player into every page. */
 (() => {
-    if (!document.querySelector('script[data-skynet-music-player]')) {
+    const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
+    if (cleanPath !== '/painel/musica') return;
+    const ordered = [
+        ['/music-player-v2.js', 'skynetMusicPlayer'],
+        ['/music-player-polish-v4.js', 'skynetMusicPolishV4'],
+        ['/music-hub-v13.js', 'skynetMusicHubV13']
+    ];
+    for (const [src, marker] of ordered) {
+        if (document.querySelector(`script[src="${src}"]`)) continue;
         const script = document.createElement('script');
         script.async = false;
-        script.src = '/music-player-v2.js';
-        script.dataset.skynetMusicPlayer = '1';
+        script.src = src;
+        script.dataset[marker] = '1';
         document.head.appendChild(script);
-    }
-    if (!document.querySelector('script[data-skynet-music-polish-v4]')) {
-        const polish = document.createElement('script');
-        polish.async = false;
-        polish.src = '/music-player-polish-v4.js';
-        polish.dataset.skynetMusicPolishV4 = '1';
-        document.head.appendChild(polish);
     }
 })();
