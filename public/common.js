@@ -133,6 +133,7 @@ window.SkyNet = (() => {
         ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
         ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1'],
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
+        ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/motion-v14.js', 'skynetMotionV14']
     ];
     for (const [src, marker] of scripts) {
