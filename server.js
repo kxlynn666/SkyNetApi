@@ -125,6 +125,7 @@ const workspaceRoutes = [
     '/painel/figurinhas',
     '/painel/grupos',
     '/painel/musica',
+    '/painel/visual',
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
@@ -146,6 +147,7 @@ app.get('/brat-generator', (req, res) => res.redirect(302, '/painel/brat'));
 app.get('/brat.html', (req, res) => res.redirect(302, '/painel/brat'));
 
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
+app.get('/painel/cadastro', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'register.html')));
 app.get('/u/:username', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'public-profile.html')));
 app.get('/painel/youtube', (req, res) => res.redirect(302, '/painel/card2'));
 
