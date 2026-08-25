@@ -7,6 +7,7 @@
     ['/painel','Visão geral','Painel, resumo, pódio'],
     ['/painel/perfil','Perfil e personalização','Avatar, capa, loja, molduras'],
     ['/painel/visual','Visual Lab','Stocks, decorações, perspectiva'],
+    ['/painel/upscale','AI Upscaler','Super-resolution neural 4x e 6x'],
     ['/painel/chaves','API Keys','Criar e gerenciar chaves'],
     ['/painel/api','Documentação da API','Rotas e integração'],
     ['/painel/cards','Card Studio','Criar cards'],
