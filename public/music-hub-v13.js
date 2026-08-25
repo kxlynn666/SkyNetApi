@@ -3,7 +3,6 @@
   window.__SKYNET_MUSIC_HUB_V13__ = true;
   if ((location.pathname.replace(/\/+$/, '') || '/') !== '/painel/musica') return;
 
-  const S = window.SkyNet;
   const style = document.createElement('style');
   style.id = 'musicHubV13Styles';
   style.textContent = `
@@ -26,15 +25,20 @@
   `;
   document.head.appendChild(style);
 
+  let mounted = false;
   function addNav(){
     const nav = document.querySelector('#workspaceSidebar .workspace-nav');
-    if (!nav || document.getElementById('musicNavV13')) return;
+    if (!nav) return;
     document.querySelectorAll('.workspace-nav-link').forEach(link=>link.classList.remove('active'));
-    const group = document.createElement('div');
-    group.className='workspace-nav-group';
-    group.id='musicNavV13';
-    group.innerHTML='<div class="workspace-nav-label">Mídia</div><a class="workspace-nav-link active" href="/painel/musica"><span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M16 6v7.5a2.5 2.5 0 1 1-2-2.45"/></svg></span><span>Música</span></a>';
-    nav.appendChild(group);
+    let group = document.getElementById('musicNavV13');
+    if (!group) {
+      group = document.createElement('div');
+      group.className='workspace-nav-group';
+      group.id='musicNavV13';
+      group.innerHTML='<div class="workspace-nav-label">Mídia</div><a class="workspace-nav-link active" href="/painel/musica"><span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M16 6v7.5a2.5 2.5 0 1 1-2-2.45"/></svg></span><span>Música</span></a>';
+      nav.appendChild(group);
+    }
+    group.querySelector('a')?.classList.add('active');
   }
 
   function render(){
@@ -46,7 +50,10 @@
     document.getElementById('workspaceDescription').textContent='Seu player fica isolado aqui, sem ocupar espaço ou interferir nas outras páginas.';
     document.title='Música - SkyNetApi';
     addNav();
-    root.innerHTML=`<section class="music-hub-v13"><div class="music-hub-hero-v13"><div class="music-hub-copy-v13"><div class="workspace-kicker">Player dedicado</div><h2>Som sem atrapalhar o resto.</h2><p>Escolha uma faixa da biblioteca ou use o Lo-fi local. O player agora existe somente nesta página e mantém seus controles juntos, sem cobrir Chat, Loja, Perfil ou o mobile.</p></div><div class="music-hub-visual-v13" aria-hidden="true"><div class="music-hub-disc-v13"></div><div class="music-hub-wave-v13">${Array.from({length:22},()=>'<i></i>').join('')}</div></div></div><div class="music-hub-player-v13" id="musicPlayerMountV13"><div class="empty">Preparando player...</div></div><div class="music-hub-notes-v13"><div class="music-hub-note-v13"><strong>Sem sobreposição</strong><span>Nenhuma barra fixa aparece fora desta página.</span></div><div class="music-hub-note-v13"><strong>Estado preservado</strong><span>Fonte, volume e posição continuam salvos localmente.</span></div><div class="music-hub-note-v13"><strong>Mobile primeiro</strong><span>Controles reorganizam sem cobrir o dock ou o conteúdo.</span></div></div></section>`;
+    if (!mounted || !root.querySelector('.music-hub-v13')) {
+      root.innerHTML=`<section class="music-hub-v13"><div class="music-hub-hero-v13"><div class="music-hub-copy-v13"><div class="workspace-kicker">Player dedicado</div><h2>Som sem atrapalhar o resto.</h2><p>Escolha uma faixa da biblioteca ou use o Lo-fi local. O player agora existe somente nesta página e mantém seus controles juntos, sem cobrir Chat, Loja, Perfil ou o mobile.</p></div><div class="music-hub-visual-v13" aria-hidden="true"><div class="music-hub-disc-v13"></div><div class="music-hub-wave-v13">${Array.from({length:22},()=>'<i></i>').join('')}</div></div></div><div class="music-hub-player-v13" id="musicPlayerMountV13"><div class="empty">Preparando player...</div></div><div class="music-hub-notes-v13"><div class="music-hub-note-v13"><strong>Sem sobreposição</strong><span>Nenhuma barra fixa aparece fora desta página.</span></div><div class="music-hub-note-v13"><strong>Estado preservado</strong><span>Fonte, volume e posição continuam salvos localmente.</span></div><div class="music-hub-note-v13"><strong>Mobile primeiro</strong><span>Controles reorganizam sem cobrir o dock ou o conteúdo.</span></div></div></section>`;
+      mounted = true;
+    }
     movePlayer();
     return true;
   }
@@ -55,14 +62,23 @@
     const mount=document.getElementById('musicPlayerMountV13');
     const bar=document.getElementById('skynetMusicBar');
     if(!mount) return;
-    if(bar){mount.innerHTML='';mount.appendChild(bar);return;}
+    if(bar && bar.parentElement !== mount){mount.innerHTML='';mount.appendChild(bar);return;}
+    if(bar) return;
     const observer=new MutationObserver(()=>{const player=document.getElementById('skynetMusicBar');if(player){observer.disconnect();mount.innerHTML='';mount.appendChild(player)}});
     observer.observe(document.body,{childList:true,subtree:true});
     setTimeout(()=>observer.disconnect(),12000);
   }
 
-  if(render()) return;
-  const observer=new MutationObserver(()=>{if(render())observer.disconnect()});
-  observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-  setTimeout(()=>observer.disconnect(),12000);
+  let timer = 0;
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(()=>render(),120);
+  }
+  const shellObserver=new MutationObserver(()=>{
+    const shell=document.getElementById('workspaceShell');
+    if(shell && !shell.classList.contains('hidden')) schedule();
+  });
+  shellObserver.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  schedule();
+  setTimeout(()=>{render();shellObserver.disconnect()},900);
 })();
