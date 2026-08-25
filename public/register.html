@@ -34,24 +34,64 @@
       <div class="register-v14-form-head">
         <div class="workspace-kicker">Nova conta</div>
         <h2>Comece do zero.</h2>
-        <p>Sem configuração desnecessária. Crie a conta e entre direto no workspace.</p>
+        <p>Crie a conta, personalize o perfil inicial e escolha como quer entrar no workspace.</p>
       </div>
-      <div class="message" id="registerMessage"></div>
+      <div class="message" id="registerMessage" role="status" aria-live="polite"></div>
       <form id="registerForm" novalidate>
         <div class="form-group register-v14-field" data-step="01">
           <label for="registerUsername">Usuário</label>
-          <input id="registerUsername" autocomplete="username" minlength="3" maxlength="30" required placeholder="seu_usuario">
-          <span>3–30 caracteres · letras, números, _ ou -</span>
+          <input id="registerUsername" autocomplete="username" minlength="3" maxlength="30" required placeholder="seu_usuario" spellcheck="false" autocapitalize="none">
+          <span id="registerUsernameHint">3–30 caracteres · letras, números, _ ou -</span>
         </div>
+
         <div class="form-group register-v14-field" data-step="02">
-          <label for="registerPassword">Senha</label>
-          <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="mínimo 8 caracteres">
+          <label for="registerDisplayName">Nome de exibição <em>opcional</em></label>
+          <input id="registerDisplayName" autocomplete="nickname" maxlength="50" placeholder="Como você quer aparecer">
+          <span>Você pode mudar isso depois nas configurações do perfil.</span>
         </div>
+
         <div class="form-group register-v14-field" data-step="03">
+          <div class="register-v14-label-row">
+            <label for="registerPassword">Senha</label>
+            <button type="button" class="register-v14-text-action" id="registerGeneratePassword">Gerar senha</button>
+          </div>
+          <div class="register-v14-input-wrap">
+            <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="mínimo 8 caracteres">
+            <button type="button" class="register-v14-eye" id="registerTogglePassword" aria-pressed="false" aria-label="Mostrar senha">Mostrar</button>
+          </div>
+          <span id="registerCapsWarning" class="register-v14-warning" hidden>Caps Lock está ativado.</span>
+        </div>
+
+        <div class="form-group register-v14-field" data-step="04">
           <label for="registerConfirm">Confirmar senha</label>
           <input id="registerConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="repita a senha">
+          <span id="registerConfirmHint">Repita exatamente a senha acima.</span>
         </div>
+
         <div class="register-v14-meter" aria-hidden="true"><i id="registerMeterV14"></i></div>
+        <div class="register-v14-password-notes" id="registerPasswordNotes">
+          <span data-rule="length">8+ caracteres</span>
+          <span data-rule="mixed">maiúscula + minúscula</span>
+          <span data-rule="number">número</span>
+          <span data-rule="symbol">símbolo</span>
+        </div>
+
+        <fieldset class="register-v14-options">
+          <legend>Preferências iniciais</legend>
+          <label class="register-v14-check">
+            <input type="checkbox" id="registerShowOnPodium" checked>
+            <span><b>Aparecer no ranking</b><small>Seu perfil pode aparecer no pódio da comunidade.</small></span>
+          </label>
+          <label class="register-v14-check">
+            <input type="checkbox" id="registerShowOnline" checked>
+            <span><b>Mostrar status online</b><small>Amigos poderão ver quando você estiver usando a plataforma.</small></span>
+          </label>
+          <label class="register-v14-check">
+            <input type="checkbox" id="registerAutoLogin" checked>
+            <span><b>Entrar automaticamente</b><small>Quando a conta estiver ativa, abrir o workspace após o cadastro.</small></span>
+          </label>
+        </fieldset>
+
         <button class="button primary register-v14-submit" id="registerSubmit" type="submit"><span>Criar workspace</span><b>↗</b></button>
       </form>
       <p class="register-v14-login-link">Já tem conta? <a href="/painel/login">Entrar</a></p>

@@ -30,6 +30,8 @@ Em produção, defina `ADMIN_PASSWORD` com 12 a 128 caracteres antes do primeiro
 
 - `/` - início e status do serviço
 - `/painel` - conta, API keys, editor e histórico
+- `/painel/login` - login
+- `/painel/cadastro` - criação de conta e preferências iniciais de perfil
 - `/upload` - biblioteca de imagens
 - `/admin` - administração
 
@@ -86,8 +88,9 @@ O painel usa `POST /painel/gerar`, autenticado pela sessão.
 
 ## Segurança
 
-- senhas são armazenadas com hash;
-- API keys são armazenadas apenas como hash;
+- senhas são armazenadas com hash usando `scrypt` e salt aleatório;
+- API keys usam hash para autenticação e, nas chaves compatíveis com o recurso de revelar/copiar novamente, uma cópia cifrada com AES-256-GCM;
+- o segredo local usado para cifrar API keys fica em `data/.key-vault-secret` e precisa permanecer persistente entre deploys;
 - sessões usam cookies `HttpOnly`;
 - há rate limit para autenticação e geração;
 - imagens remotas passam por validação e bloqueio de destinos de rede privada;
@@ -104,11 +107,12 @@ data/apikeys.json
 data/sessions.json
 data/uploads.json
 data/generations.json
+data/.key-vault-secret
 public/uploads/
 public/generated/
 ```
 
-Em serviços com filesystem efêmero, monte volumes persistentes para `data/`, `public/uploads/` e `public/generated/`.
+Em serviços com filesystem efêmero, monte volumes persistentes para `data/`, `public/uploads/` e `public/generated/`. Se `data/.key-vault-secret` for perdido, chaves já cifradas para o recurso de revelação não poderão mais ser recuperadas e deverão ser rotacionadas.
 
 ## Estrutura
 
