@@ -152,7 +152,7 @@ async function runUpscale(buffer, options) {
     let alpha = null;
     try {
         if (metadata.hasAlpha) {
-            alpha = await sharp(buffer).ensureAlpha().extractChannel('alpha').toBuffer();
+            alpha = await sharp(buffer).ensureAlpha().extractChannel('alpha').raw().toBuffer();
         }
         await sharp(buffer).removeAlpha().toColourspace('srgb').png().toFile(inputPath);
 
