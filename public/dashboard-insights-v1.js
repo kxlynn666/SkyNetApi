@@ -10,9 +10,9 @@
     const el = document.createElement('style');
     el.id = 'dashboardInsightsV1Styles';
     el.textContent = `
-      .dash-insights{margin-top:16px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}.dash-insight-card{grid-column:span 3;padding:15px;border:1px solid rgba(139,92,246,.14);border-radius:16px;background:linear-gradient(180deg,rgba(25,17,45,.88),rgba(15,10,27,.9));min-width:0}.dash-insight-card.wide{grid-column:span 6}.dash-insight-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.dash-insight-title{font-size:12px;font-weight:800}.dash-insight-icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;border:1px solid rgba(167,139,250,.18);background:rgba(139,92,246,.08);color:#c4b5fd}.dash-insight-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.dash-insight-value{font-size:24px;font-weight:900;line-height:1}.dash-insight-sub{font-size:9px;color:var(--text-faint);margin-top:5px;line-height:1.45}.dash-insight-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.055);font-size:10px}.dash-insight-row:first-of-type{border-top:0}.dash-insight-row span{color:var(--text-faint)}.dash-progress{height:7px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:10px}.dash-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8b5cf6,#22d3ee)}.dash-health{display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:800}.dash-health i{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px rgba(74,222,128,.4)}.dash-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}.dash-action{display:flex;align-items:center;gap:8px;min-height:38px;padding:8px 10px;border:1px solid var(--border-soft);border-radius:11px;background:rgba(255,255,255,.02);color:inherit;text-decoration:none;font-size:10px}.dash-action:hover{border-color:rgba(167,139,250,.24);background:rgba(139,92,246,.045)}.dash-profile-check{display:grid;gap:7px}.dash-profile-item{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--text-faint)}.dash-profile-item b{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;background:rgba(74,222,128,.09);color:#86efac;font-size:10px}.dash-profile-item.missing b{background:rgba(251,113,133,.08);color:#fda4af}.dash-recent{display:grid;gap:7px}.dash-recent-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border:1px solid rgba(255,255,255,.055);border-radius:10px;background:rgba(255,255,255,.018)}.dash-recent-dot{width:7px;height:7px;border-radius:50%;background:#a78bfa}.dash-recent-copy{min-width:0}.dash-recent-copy strong,.dash-recent-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-recent-copy strong{font-size:9px}.dash-recent-copy span{font-size:8px;color:var(--text-faint);margin-top:2px}.dash-recent-item time{font-size:8px;color:var(--text-faint);white-space:nowrap}
+      .dash-insights{margin-top:18px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px}.dash-insight-card{grid-column:span 3;padding:16px;border:1px solid var(--border-soft);border-radius:12px;background:#141416;min-width:0}.dash-insight-card.wide{grid-column:span 6}.dash-insight-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.dash-insight-title{font-size:12px;font-weight:650;color:#e9e9e6}.dash-insight-icon{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;border:1px solid #2b2b30;background:#19191c;color:#aaa2df}.dash-insight-icon svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.dash-insight-value{font-size:25px;font-weight:650;line-height:1;letter-spacing:-.035em}.dash-insight-sub{font-size:10px;color:var(--text-faint);margin-top:6px;line-height:1.45}.dash-insight-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #242428;font-size:10px}.dash-insight-row:first-of-type{border-top:0}.dash-insight-row span{color:var(--text-faint)}.dash-progress{height:5px;border-radius:999px;background:#232327;overflow:hidden;margin:11px 0 4px}.dash-progress i{display:block;height:100%;border-radius:inherit;background:#9589ea}.dash-health{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:650;color:#d8d8d5}.dash-health i{width:7px;height:7px;border-radius:50%;background:#75b889}.dash-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.dash-action{display:flex;align-items:center;gap:8px;min-height:36px;padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px;background:#171719;color:#aaaab0;text-decoration:none;font-size:10px;transition:.16s ease}.dash-action:hover{border-color:#39393f;background:#1c1c1f;color:#efefec;transform:translateY(-1px)}.dash-profile-check{display:grid;gap:7px;margin-top:9px}.dash-profile-item{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--text-faint)}.dash-profile-item b{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;background:#18221c;color:#92c6a0;font-size:10px}.dash-profile-item.missing b{background:#24191c;color:#d49aa5}.dash-recent{display:grid;gap:6px}.dash-recent-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #232327}.dash-recent-item:last-child{border-bottom:0}.dash-recent-dot{width:6px;height:6px;border-radius:50%;background:#9589ea}.dash-recent-copy{min-width:0}.dash-recent-copy strong,.dash-recent-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-recent-copy strong{font-size:10px;font-weight:600}.dash-recent-copy span{font-size:8px;color:var(--text-faint);margin-top:2px}.dash-recent-item time{font-size:8px;color:var(--text-faint);white-space:nowrap}
       @media(max-width:900px){.dash-insight-card{grid-column:span 6}.dash-insight-card.wide{grid-column:1/-1}}
-      @media(max-width:560px){.dash-insights{grid-template-columns:1fr;gap:9px}.dash-insight-card,.dash-insight-card.wide{grid-column:1/-1;padding:13px}.dash-insight-value{font-size:21px}.dash-actions{grid-template-columns:1fr 1fr}.dash-recent-item{grid-template-columns:auto minmax(0,1fr)}.dash-recent-item time{display:none}}
+      @media(max-width:560px){.dash-insights{grid-template-columns:1fr;gap:8px}.dash-insight-card,.dash-insight-card.wide{grid-column:1/-1;padding:14px}.dash-insight-value{font-size:22px}.dash-actions{grid-template-columns:1fr 1fr}.dash-recent-item{grid-template-columns:auto minmax(0,1fr)}.dash-recent-item time{display:none}}
     `;
     document.head.appendChild(el);
   }
@@ -42,23 +42,21 @@
     style();
     const results = await Promise.allSettled([
       S.api('/api/profile-store/me'),
-      S.api('/api/keys'),
+      S.api('/api/workspace/bootstrap'),
       S.api('/api/social/me'),
       S.api('/api/community/profile/me'),
-      S.api('/api/uploads'),
-      S.api('/api/generations'),
       S.api('/health')
     ]);
     const value = i => results[i].status === 'fulfilled' ? results[i].value : {};
-    render(value(0),value(1),value(2),value(3),value(4),value(5),value(6));
+    render(value(0),value(1),value(2),value(3),value(4));
   }
 
-  function render(store,keysData,social,community,uploadsData,generationsData,health) {
+  function render(store,bootstrap,social,community,health) {
     const anchor = document.getElementById('panelMiniPodium') || document.getElementById('workspaceXpCard') || document.getElementById('overviewStats');
     if (!anchor || document.getElementById('dashboardInsightsV1')) return;
-    const keys = keysData.keys || [];
-    const activeKeys = keys.filter(k => k.active);
-    const requests = keys.reduce((sum,k) => sum + Number(k.requestCount || 0),0);
+    const keySummary = bootstrap.summary?.keys || {};
+    const uploadSummary = bootstrap.summary?.uploads || {};
+    const generationSummary = bootstrap.summary?.generations || {};
     const wallet = store.wallet || {};
     const profile = social.account?.profile || {};
     const custom = community.custom || {};
@@ -72,11 +70,9 @@
     ];
     const complete = checks.filter(([,ok]) => ok).length;
     const percent = Math.round(complete / checks.length * 100);
-    const uploads = uploadsData.uploads || [];
-    const generations = generationsData.generations || [];
     const recent = [
-      ...uploads.slice(-3).map(x => ({type:'Upload',name:x.originalName || x.name || 'Imagem enviada',date:x.createdAt || x.uploadedAt})),
-      ...generations.slice(-3).map(x => ({type:'Card',name:x.title || x.name || 'Card gerado',date:x.createdAt || x.generatedAt}))
+      ...(uploadSummary.recent || []).map(x => ({type:'Upload',name:x.originalName || x.name || 'Imagem enviada',date:x.createdAt || x.uploadedAt})),
+      ...(generationSummary.recent || []).map(x => ({type:'Card',name:x.title || x.name || 'Card gerado',date:x.createdAt || x.generatedAt}))
     ].sort((a,b) => new Date(b.date || 0)-new Date(a.date || 0)).slice(0,4);
 
     const root = document.createElement('section');
@@ -84,17 +80,17 @@
     root.className = 'dash-insights';
     root.innerHTML = `
       <article class="dash-insight-card">${head('Carteira','wallet')}<div class="dash-insight-value">${n(wallet.balance)}</div><div class="dash-insight-sub">moedas disponíveis</div><div class="dash-insight-row"><span>Ganhos</span><strong>${n(wallet.earnedCoins)}</strong></div><div class="dash-insight-row"><span>Gastos</span><strong>${n(wallet.spentCoins)}</strong></div><div class="dash-actions"><a class="dash-action" href="/painel/perfil">Abrir loja</a><a class="dash-action" href="/painel/perfil">Inventário</a></div></article>
-      <article class="dash-insight-card">${head('API Keys','key')}<div class="dash-insight-value">${n(activeKeys.length)}</div><div class="dash-insight-sub">chaves ativas · ${n(requests)} requisições</div><div class="dash-insight-row"><span>Total de chaves</span><strong>${n(keys.length)}</strong></div><div class="dash-insight-row"><span>Última atividade</span><strong>${lastKeyUse(keys)}</strong></div><div class="dash-actions"><a class="dash-action" href="/painel/chaves">Gerenciar</a><a class="dash-action" href="/painel/api">Documentação</a></div></article>
-      <article class="dash-insight-card">${head('Sistema','pulse')}<div class="dash-health"><i></i>${health?.status === 'OK' ? 'Online' : 'Disponível'}</div><div class="dash-insight-sub">Resumo da sessão e serviços</div><div class="dash-insight-row"><span>Uploads</span><strong>${n(uploads.length)}</strong></div><div class="dash-insight-row"><span>Cards</span><strong>${n(generations.length)}</strong></div><div class="dash-actions"><a class="dash-action" href="/painel/uploads">Uploads</a><a class="dash-action" href="/painel/historico">Histórico</a></div></article>
+      <article class="dash-insight-card">${head('API Keys','key')}<div class="dash-insight-value">${n(keySummary.active)}</div><div class="dash-insight-sub">chaves ativas · ${n(keySummary.requests)} requisições</div><div class="dash-insight-row"><span>Total de chaves</span><strong>${n(keySummary.total)}</strong></div><div class="dash-insight-row"><span>Última atividade</span><strong>${formatDateShort(keySummary.lastUsedAt)}</strong></div><div class="dash-actions"><a class="dash-action" href="/painel/chaves">Gerenciar</a><a class="dash-action" href="/painel/api">Documentação</a></div></article>
+      <article class="dash-insight-card">${head('Sistema','pulse')}<div class="dash-health"><i></i>${health?.status === 'OK' ? 'Online' : 'Disponível'}</div><div class="dash-insight-sub">Resumo da sessão e serviços</div><div class="dash-insight-row"><span>Uploads</span><strong>${n(uploadSummary.total)}</strong></div><div class="dash-insight-row"><span>Cards</span><strong>${n(generationSummary.total)}</strong></div><div class="dash-actions"><a class="dash-action" href="/painel/uploads">Uploads</a><a class="dash-action" href="/painel/historico">Histórico</a></div></article>
       <article class="dash-insight-card">${head('Perfil','user')}<div class="dash-insight-value">${percent}%</div><div class="dash-insight-sub">personalização concluída</div><div class="dash-progress"><i style="width:${percent}%"></i></div><div class="dash-profile-check">${checks.slice(0,3).map(checkItem).join('')}</div><div class="dash-actions"><a class="dash-action" href="/painel/perfil">Personalizar</a><a class="dash-action" href="/u/${encodeURIComponent(social.account?.username || '')}">Ver público</a></div></article>
       <article class="dash-insight-card wide">${head('Atividade recente','clock')}<div class="dash-recent">${recent.length ? recent.map(recentItem).join('') : '<div class="dash-insight-sub">Sua atividade recente aparecerá aqui.</div>'}</div></article>
-      <article class="dash-insight-card wide">${head('Atalhos úteis','spark')}<div class="dash-actions"><a class="dash-action" href="/painel/cards">Criar card</a><a class="dash-action" href="/painel/brat">Brat Generator</a><a class="dash-action" href="/painel/chat">Abrir chat</a><a class="dash-action" href="/painel/perfil">Editar perfil</a><a class="dash-action" href="/painel/media">Baixar mídia</a><a class="dash-action" href="/painel/chaves">Nova API key</a></div></article>`;
+      <article class="dash-insight-card wide">${head('Atalhos úteis','spark')}<div class="dash-actions"><a class="dash-action" href="/painel/cards">Criar card</a><a class="dash-action" href="/painel/brat">Brat Generator</a><a class="dash-action" href="/painel/chat">Abrir chat</a><a class="dash-action" href="/painel/figurinhas">Figurinhas</a><a class="dash-action" href="/painel/media">Baixar mídia</a><a class="dash-action" href="/painel/chaves">API Keys</a></div></article>`;
     anchor.insertAdjacentElement('afterend',root);
   }
 
   function head(title,name){return `<div class="dash-insight-head"><div class="dash-insight-title">${S.escapeHtml(title)}</div>${icon(name)}</div>`}
   function checkItem([label,ok]){return `<div class="dash-profile-item ${ok?'':'missing'}"><b>${ok?'✓':'·'}</b><span>${S.escapeHtml(label)}</span></div>`}
-  function lastKeyUse(keys){const dates=keys.map(k=>k.lastUsedAt).filter(Boolean).sort().reverse();return dates[0]?new Date(dates[0]).toLocaleDateString('pt-BR'):'Nunca'}
+  function formatDateShort(value){if(!value)return'Nunca';const date=new Date(value);return Number.isNaN(date.getTime())?'Nunca':date.toLocaleDateString('pt-BR')}
   function recentItem(item){const date=item.date?new Date(item.date):null;return `<div class="dash-recent-item"><i class="dash-recent-dot"></i><div class="dash-recent-copy"><strong>${S.escapeHtml(item.name)}</strong><span>${S.escapeHtml(item.type)}</span></div><time>${date&&!Number.isNaN(date.getTime())?date.toLocaleDateString('pt-BR'):'—'}</time></div>`}
 
   wait();
