@@ -81,7 +81,8 @@ window.SkyNet = (() => {
         ['/profile-stock-v7-perf.css', 'skynetProfileStockV7Perf'],
         ['/profile-objects-v8.css', 'skynetProfileObjectsV8'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
-        ['/music-icons-v5.css', 'skynetMusicIconsV5']
+        ['/music-icons-v5.css', 'skynetMusicIconsV5'],
+        ['/design-system-v12.css', 'skynetDesignSystemV12']
     ];
     for (const [href, marker] of styles) {
         if (document.querySelector(`link[href="${href}"],link[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
@@ -108,7 +109,8 @@ window.SkyNet = (() => {
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
         ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
         ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
-        ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1']
+        ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1'],
+        ['/motion-v12.js', 'skynetMotionV12']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
