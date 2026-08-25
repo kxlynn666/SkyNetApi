@@ -16,6 +16,7 @@ const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('
 const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
 const { registerStickerRoutes, cleanupStickersAccount } = require('./src/stickers');
 const { registerWorkspaceBootstrapRoutes } = require('./src/workspace-bootstrap');
+const { registerUpscaleRoutes } = require('./src/upscale-ai');
 const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
@@ -72,6 +73,7 @@ registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
 registerWorkspaceBootstrapRoutes(app);
+registerUpscaleRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
@@ -126,6 +128,7 @@ const workspaceRoutes = [
     '/painel/grupos',
     '/painel/musica',
     '/painel/visual',
+    '/painel/upscale',
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
