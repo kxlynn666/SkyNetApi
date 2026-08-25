@@ -124,6 +124,7 @@ const workspaceRoutes = [
     '/painel/chat',
     '/painel/figurinhas',
     '/painel/grupos',
+    '/painel/musica',
     '/painel/chaves',
     '/painel/cards',
     '/painel/card2',
