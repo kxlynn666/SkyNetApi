@@ -93,6 +93,13 @@ window.SkyNet = (() => {
         document.head.appendChild(link);
     }
 
+    const pinThemeLast = () => {
+        const theme = document.querySelector('link[href="/design-system-v12.css"]');
+        if (theme) document.head.appendChild(theme);
+    };
+    pinThemeLast();
+    window.addEventListener('load', pinThemeLast, { once: true });
+
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
