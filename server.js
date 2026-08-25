@@ -15,6 +15,7 @@ const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
 const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
 const { registerStickerRoutes, cleanupStickersAccount } = require('./src/stickers');
+const { registerWorkspaceBootstrapRoutes } = require('./src/workspace-bootstrap');
 const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
@@ -70,6 +71,7 @@ registerBotLogRoutes(app);
 registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
+registerWorkspaceBootstrapRoutes(app);
 registerCommunityV2Routes(app);
 
 app.delete('/api/social/account', (req, res, next) => {
