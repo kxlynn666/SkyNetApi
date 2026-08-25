@@ -96,10 +96,23 @@ window.SkyNet = (() => {
 
     const pinThemeLast = () => {
         const theme = document.querySelector('link[href="/design-system-v14.css"]');
-        if (theme) document.head.appendChild(theme);
+        if (theme && document.head.lastElementChild !== theme) document.head.appendChild(theme);
     };
     pinThemeLast();
-    window.addEventListener('load', pinThemeLast, { once: true });
+    let repinScheduled = false;
+    const headObserver = new MutationObserver(() => {
+        if (repinScheduled) return;
+        repinScheduled = true;
+        queueMicrotask(() => {
+            repinScheduled = false;
+            pinThemeLast();
+        });
+    });
+    headObserver.observe(document.head, { childList: true });
+    window.addEventListener('load', () => {
+        pinThemeLast();
+        setTimeout(() => headObserver.disconnect(), 15000);
+    }, { once: true });
 
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
