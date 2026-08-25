@@ -1,26 +1,26 @@
-const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const sharp = require('sharp');
 const C = require('./config');
 const S = require('./store');
 
-const MODEL_ID = 'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr';
-const CACHE_DIR = path.join(C.DATA_DIR, 'ai-model-cache');
-const TMP_DIR = path.join(C.DATA_DIR, 'upscale-tmp');
+const PROVIDER = 'Replicate';
+const MODEL_ID = 'nightmareai/real-esrgan';
+const CREATE_URL = `https://api.replicate.com/v1/models/${MODEL_ID}/predictions`;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_INPUT_PIXELS = 1_800_000;
-const MAX_OUTPUT_PIXELS = 25_000_000;
-const MAX_WAITING_JOBS = 2;
+const MAX_INPUT_PIXELS = 4_000_000;
+const MAX_OUTPUT_PIXELS = 90_000_000;
+const MAX_RESULT_BYTES = 50 * 1024 * 1024;
+const MAX_ACTIVE_JOBS = 2;
+const MAX_WAITING_JOBS = 4;
+const PREDICTION_TIMEOUT_MS = 125_000;
 
-let runtimePromise = null;
-let modelLoaded = false;
-let running = false;
+let activeJobs = 0;
 const queue = [];
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 8 }
+    limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 10 }
 });
 
 function clientError(message, statusCode = 400) {
@@ -76,30 +76,38 @@ function requireTrustedOrigin(req, res, next) {
     return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
 }
 
-async function getRuntime() {
-    if (runtimePromise) return runtimePromise;
-    runtimePromise = (async () => {
-        fs.mkdirSync(CACHE_DIR, { recursive: true });
-        fs.mkdirSync(TMP_DIR, { recursive: true });
-        const transformers = await import('@huggingface/transformers');
-        transformers.env.cacheDir = CACHE_DIR;
-        transformers.env.allowRemoteModels = true;
-        transformers.env.allowLocalModels = true;
-        const upscaler = await transformers.pipeline('image-to-image', MODEL_ID, { dtype: 'q8' });
-        modelLoaded = true;
-        return { upscaler, RawImage: transformers.RawImage };
-    })().catch(error => {
-        runtimePromise = null;
-        modelLoaded = false;
+function getProviderToken() {
+    return String(process.env.REPLICATE_API_TOKEN || '').trim();
+}
+
+function mimeFor(format) {
+    if (format === 'jpeg') return 'image/jpeg';
+    if (format === 'png') return 'image/png';
+    if (format === 'webp') return 'image/webp';
+    return '';
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 65_000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } catch (error) {
+        if (error?.name === 'AbortError') throw clientError('O provedor de upscale demorou além do limite.', 504);
         throw error;
-    });
-    return runtimePromise;
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 function enqueue(task) {
     return new Promise((resolve, reject) => {
-        if (running && queue.length >= MAX_WAITING_JOBS) {
-            reject(clientError('O AI Upscaler está ocupado. Tente novamente quando uma tarefa terminar.', 429));
+        if (activeJobs >= MAX_ACTIVE_JOBS && queue.length >= MAX_WAITING_JOBS) {
+            reject(clientError('O AI Upscaler está com muitas tarefas. Tente novamente quando uma delas terminar.', 429));
             return;
         }
         queue.push({ task, resolve, reject });
@@ -107,16 +115,17 @@ function enqueue(task) {
     });
 }
 
-async function drainQueue() {
-    if (running) return;
-    const job = queue.shift();
-    if (!job) return;
-    running = true;
-    try { job.resolve(await job.task()); }
-    catch (error) { job.reject(error); }
-    finally {
-        running = false;
-        setImmediate(drainQueue);
+function drainQueue() {
+    while (activeJobs < MAX_ACTIVE_JOBS && queue.length) {
+        const job = queue.shift();
+        activeJobs += 1;
+        Promise.resolve()
+            .then(job.task)
+            .then(job.resolve, job.reject)
+            .finally(() => {
+                activeJobs -= 1;
+                setImmediate(drainQueue);
+            });
     }
 }
 
@@ -127,78 +136,169 @@ async function validateInput(buffer, scale) {
 
     if (!metadata.width || !metadata.height) throw clientError('Não foi possível identificar as dimensões da imagem.');
     if (!['jpeg', 'png', 'webp'].includes(metadata.format)) throw clientError('Use PNG, JPG/JPEG ou WebP.');
+
     const inputPixels = metadata.width * metadata.height;
     const outputPixels = inputPixels * scale * scale;
     if (inputPixels > MAX_INPUT_PIXELS) {
-        throw clientError(`Imagem grande demais para super-resolution local. Limite atual: ${MAX_INPUT_PIXELS.toLocaleString('pt-BR')} pixels de entrada.`, 413);
+        throw clientError(`Imagem grande demais. Limite atual: ${MAX_INPUT_PIXELS.toLocaleString('pt-BR')} pixels de entrada.`, 413);
     }
     if (outputPixels > MAX_OUTPUT_PIXELS) {
         throw clientError(`O resultado ${scale}x ultrapassaria o limite seguro de ${MAX_OUTPUT_PIXELS.toLocaleString('pt-BR')} pixels. Use uma imagem menor ou 4x.`, 413);
     }
+
     return metadata;
 }
 
+function providerError(payload, fallback) {
+    const detail = payload?.detail || payload?.error || payload?.message;
+    if (typeof detail === 'string' && detail.trim()) return detail.trim();
+    if (Array.isArray(detail) && detail.length) return detail.map(item => item?.msg || String(item)).join('; ');
+    return fallback;
+}
+
+function validPredictionUrl(value) {
+    try {
+        const url = new URL(String(value || ''));
+        return url.protocol === 'https:' && url.hostname === 'api.replicate.com' ? url : null;
+    } catch { return null; }
+}
+
+function validOutputUrl(value) {
+    try {
+        const url = new URL(String(value || ''));
+        const host = url.hostname.toLowerCase();
+        if (url.protocol !== 'https:') return null;
+        if (host !== 'replicate.delivery' && !host.endsWith('.replicate.delivery')) return null;
+        return url;
+    } catch { return null; }
+}
+
+async function readPrediction(response) {
+    let payload = null;
+    try { payload = await response.json(); } catch {}
+    if (!response.ok) {
+        const status = response.status === 401 || response.status === 403 ? 502 : response.status;
+        throw clientError(providerError(payload, `Falha no provedor de upscale (${response.status}).`), status || 502);
+    }
+    return payload || {};
+}
+
+async function waitForPrediction(initial, token) {
+    let prediction = initial;
+    const deadline = Date.now() + PREDICTION_TIMEOUT_MS;
+
+    while (prediction?.status === 'starting' || prediction?.status === 'processing') {
+        if (Date.now() >= deadline) throw clientError('O upscale ultrapassou o tempo máximo de processamento.', 504);
+        const pollUrl = validPredictionUrl(prediction?.urls?.get);
+        if (!pollUrl) throw clientError('O provedor retornou uma URL de acompanhamento inválida.', 502);
+        await sleep(1400);
+        const response = await fetchWithTimeout(pollUrl, {
+            headers: { Authorization: `Bearer ${token}` }
+        }, 20_000);
+        prediction = await readPrediction(response);
+    }
+
+    if (prediction?.status !== 'succeeded') {
+        const reason = typeof prediction?.error === 'string' ? prediction.error : 'O provedor não conseguiu concluir o upscale.';
+        throw clientError(reason, prediction?.status === 'canceled' ? 504 : 502);
+    }
+    return prediction;
+}
+
+function extractOutputUrl(output) {
+    if (typeof output === 'string') return validOutputUrl(output);
+    if (Array.isArray(output)) {
+        for (const item of output) {
+            const url = extractOutputUrl(item);
+            if (url) return url;
+        }
+    }
+    if (output && typeof output === 'object') {
+        for (const key of ['url', 'href', 'uri']) {
+            const url = validOutputUrl(output[key]);
+            if (url) return url;
+        }
+    }
+    return null;
+}
+
+async function downloadResult(url) {
+    const response = await fetchWithTimeout(url, { redirect: 'follow' }, 35_000);
+    if (!response.ok) throw clientError(`Não foi possível baixar o resultado do upscale (${response.status}).`, 502);
+
+    const declared = Number(response.headers.get('content-length') || 0);
+    if (declared > MAX_RESULT_BYTES) throw clientError('O arquivo resultante ultrapassou o limite seguro do SkyNetApi.', 413);
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (!buffer.length) throw clientError('O provedor devolveu um resultado vazio.', 502);
+    if (buffer.length > MAX_RESULT_BYTES) throw clientError('O arquivo resultante ultrapassou o limite seguro do SkyNetApi.', 413);
+    return buffer;
+}
+
 async function runUpscale(buffer, options) {
+    const token = getProviderToken();
+    if (!token) {
+        throw clientError('AI Upscaler ainda não está configurado no servidor. Defina REPLICATE_API_TOKEN no ambiente do Railway.', 503);
+    }
+
     const scale = options.scale === 6 ? 6 : 4;
     const format = ['png', 'jpeg', 'webp'].includes(options.format) ? options.format : 'webp';
     const quality = Math.max(70, Math.min(100, Number(options.quality) || 94));
+    const faceEnhance = options.faceEnhance === true;
     const metadata = await validateInput(buffer, scale);
-    const targetWidth = metadata.width * scale;
-    const targetHeight = metadata.height * scale;
-    const id = `${Date.now()}-${S.randomId(6)}`;
-    const inputPath = path.join(TMP_DIR, `${id}-input.png`);
+    const sourceMime = mimeFor(metadata.format);
+    const imageData = `data:${sourceMime};base64,${buffer.toString('base64')}`;
 
-    fs.mkdirSync(TMP_DIR, { recursive: true });
-    let alpha = null;
+    const createResponse = await fetchWithTimeout(CREATE_URL, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'wait=60',
+            'Cancel-After': '2m'
+        },
+        body: JSON.stringify({
+            input: {
+                image: imageData,
+                scale,
+                face_enhance: faceEnhance
+            }
+        })
+    }, 65_000);
+
+    const created = await readPrediction(createResponse);
+    const prediction = await waitForPrediction(created, token);
+    const outputUrl = extractOutputUrl(prediction.output);
+    if (!outputUrl) throw clientError('O provedor concluiu a tarefa, mas não devolveu uma imagem válida.', 502);
+
+    const providerBuffer = await downloadResult(outputUrl);
+    let image;
+    let providerMetadata;
     try {
-        if (metadata.hasAlpha) {
-            alpha = await sharp(buffer).ensureAlpha().extractChannel('alpha').raw().toBuffer();
-        }
-        await sharp(buffer).removeAlpha().toColourspace('srgb').png().toFile(inputPath);
-
-        const { upscaler, RawImage } = await getRuntime();
-        const input = await RawImage.read(inputPath);
-        const output = await upscaler(input);
-        if (!output?.data || !output.width || !output.height) throw new Error('O modelo não retornou uma imagem válida.');
-
-        let image = sharp(Buffer.from(output.data), {
-            raw: { width: output.width, height: output.height, channels: output.channels || 3 }
-        }).toColourspace('srgb');
-
-        if (output.width !== targetWidth || output.height !== targetHeight) {
-            image = image.resize(targetWidth, targetHeight, {
-                fit: 'fill',
-                kernel: sharp.kernel.lanczos3,
-                withoutEnlargement: false
-            });
-        }
-
-        if (alpha) {
-            const alphaResized = await sharp(alpha, {
-                raw: { width: metadata.width, height: metadata.height, channels: 1 }
-            }).resize(targetWidth, targetHeight, { kernel: sharp.kernel.lanczos3 }).raw().toBuffer();
-            image = image.joinChannel(alphaResized, {
-                raw: { width: targetWidth, height: targetHeight, channels: 1 }
-            });
-        }
-
-        if (format === 'png') image = image.png({ compressionLevel: 8, adaptiveFiltering: true });
-        else if (format === 'jpeg') image = image.jpeg({ quality, mozjpeg: true });
-        else image = image.webp({ quality, effort: 5, smartSubsample: true });
-
-        const result = await image.toBuffer();
-        return {
-            buffer: result,
-            format,
-            width: targetWidth,
-            height: targetHeight,
-            scale,
-            nativeScale: 4,
-            pipeline: scale === 4 ? 'Swin2SR x4 neural' : 'Swin2SR x4 neural + Lanczos final 1.5x'
-        };
-    } finally {
-        try { fs.unlinkSync(inputPath); } catch {}
+        image = sharp(providerBuffer, { failOn: 'error' });
+        providerMetadata = await image.metadata();
+    } catch {
+        throw clientError('O resultado do provedor não pôde ser lido como imagem.', 502);
     }
+
+    if (format === 'png') image = image.png({ compressionLevel: 8, adaptiveFiltering: true });
+    else if (format === 'jpeg') image = image.jpeg({ quality, mozjpeg: true });
+    else image = image.webp({ quality, effort: 5, smartSubsample: true });
+
+    const resultBuffer = await image.toBuffer();
+    const resultMetadata = await sharp(resultBuffer).metadata();
+
+    return {
+        buffer: resultBuffer,
+        format,
+        width: resultMetadata.width || providerMetadata.width || metadata.width * scale,
+        height: resultMetadata.height || providerMetadata.height || metadata.height * scale,
+        scale,
+        faceEnhance,
+        provider: PROVIDER,
+        model: MODEL_ID,
+        pipeline: `Real-ESRGAN ${scale}x hospedado no Replicate${faceEnhance ? ' + GFPGAN' : ''}`
+    };
 }
 
 function sendResult(res, result, originalName) {
@@ -207,9 +307,10 @@ function sendResult(res, result, originalName) {
     res.setHeader('Content-Type', result.format === 'jpeg' ? 'image/jpeg' : `image/${result.format}`);
     res.setHeader('Content-Disposition', `attachment; filename="${stem}-ai-${result.scale}x.${extension}"`);
     res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('X-Upscale-Model', MODEL_ID);
+    res.setHeader('X-Upscale-Provider', result.provider);
+    res.setHeader('X-Upscale-Model', result.model);
     res.setHeader('X-Upscale-Scale', String(result.scale));
-    res.setHeader('X-Upscale-Native-Scale', String(result.nativeScale));
+    res.setHeader('X-Upscale-Face-Enhance', result.faceEnhance ? '1' : '0');
     res.setHeader('X-Upscale-Pipeline', result.pipeline);
     res.setHeader('X-Upscale-Width', String(result.width));
     res.setHeader('X-Upscale-Height', String(result.height));
@@ -221,27 +322,35 @@ function processUpload(req, res, next) {
     const scale = Number(req.body?.scale) === 6 ? 6 : 4;
     const format = String(req.body?.format || 'webp').toLowerCase();
     const quality = Number(req.body?.quality || 94);
+    const faceEnhance = ['1', 'true', 'yes', 'on'].includes(String(req.body?.faceEnhance ?? req.body?.face_enhance ?? '').toLowerCase());
 
-    enqueue(() => runUpscale(req.file.buffer, { scale, format, quality }))
+    enqueue(() => runUpscale(req.file.buffer, { scale, format, quality, faceEnhance }))
         .then(result => sendResult(res, result, req.file.originalname))
         .catch(next);
 }
 
 function registerUpscaleRoutes(app) {
-    app.get('/api/upscale/info', requireSession, (req, res) => res.json({
-        ok: true,
-        engine: 'Swin2SR',
-        model: MODEL_ID,
-        nativeScale: 4,
-        supportedScales: [4, 6],
-        sixXPipeline: 'Swin2SR x4 neural + Lanczos final 1.5x',
-        modelLoaded,
-        busy: running,
-        queued: queue.length,
-        maxInputPixels: MAX_INPUT_PIXELS,
-        maxOutputPixels: MAX_OUTPUT_PIXELS,
-        maxFileMb: MAX_FILE_BYTES / 1024 / 1024
-    }));
+    app.get('/api/upscale/info', requireSession, (req, res) => {
+        const configured = Boolean(getProviderToken());
+        return res.json({
+            ok: true,
+            engine: 'Real-ESRGAN Cloud',
+            provider: PROVIDER,
+            model: MODEL_ID,
+            configured,
+            modelLoaded: configured,
+            nativeScale: 'adjustable',
+            supportedScales: [4, 6],
+            sixXPipeline: 'Real-ESRGAN direct scale=6',
+            faceEnhance: true,
+            busy: activeJobs >= MAX_ACTIVE_JOBS,
+            active: activeJobs,
+            queued: queue.length,
+            maxInputPixels: MAX_INPUT_PIXELS,
+            maxOutputPixels: MAX_OUTPUT_PIXELS,
+            maxFileMb: MAX_FILE_BYTES / 1024 / 1024
+        });
+    });
 
     app.post('/api/upscale', requireTrustedOrigin, requireSession, upload.single('file'), processUpload);
     app.post('/api/v1/image/upscale', requireApiKey, upload.single('file'), processUpload);
