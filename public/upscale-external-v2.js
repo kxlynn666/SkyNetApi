@@ -29,7 +29,7 @@
       const response = await fetch('/api/upscale/info', { credentials: 'same-origin' });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || 'Falha ao consultar serviço.');
-      state.textContent = data.busy ? 'público · fila ativa' : 'público · sem token';
+      state.textContent = data.busy ? 'público · fila ativa' : 'público · zero token';
       state.classList.toggle('busy', Boolean(data.busy));
       state.title = `${data.provider || 'Hugging Face Spaces'} · ${Array.isArray(data.publicSpaces) ? data.publicSpaces.length : 0} fallback(s)`;
     } catch {
@@ -41,7 +41,7 @@
   function updateApiExample() {
     const code = document.querySelector('.upscale-code-v1');
     if (!code) return;
-    code.textContent = `POST /api/v1/image/upscale\nx-api-key: SUA_API_KEY_DO_SKYNET\nContent-Type: multipart/form-data\n\nfile: imagem.jpg\nscale: 4 | 6\nformat: webp | png | jpeg\n\nNenhum token de provedor externo é necessário.`;
+    code.textContent = `POST /api/v1/image/upscale\nContent-Type: multipart/form-data\n\nfile: imagem.jpg\nscale: 4 | 6\nformat: webp | png | jpeg\n\nSem token. Sem API key obrigatória.\nLimite público: 6 upscales por hora por IP.`;
   }
 
   function enhance() {
@@ -53,9 +53,9 @@
     document.getElementById('upscaleFaceEnhanceV2')?.closest('.upscale-face-v2')?.remove();
     setText('.upscale-hero-copy-v1 .workspace-kicker', 'REAL-ESRGAN / PUBLIC CLOUD');
     const title = document.querySelector('.upscale-hero-copy-v1 h2');
-    if (title) title.innerHTML = 'Super-resolution real.<br>Sem token externo.';
+    if (title) title.innerHTML = 'Super-resolution real.<br>Zero token.';
     const copy = document.querySelector('.upscale-hero-copy-v1 p');
-    if (copy) copy.innerHTML = 'O SkyNet envia a imagem para <b>Spaces públicos de Real-ESRGAN</b> no Hugging Face. O Railway não carrega modelo de IA e você não precisa configurar token de Replicate, Hugging Face ou outro provedor.';
+    if (copy) copy.innerHTML = 'O SkyNet envia a imagem para <b>Spaces públicos de Real-ESRGAN</b> no Hugging Face. O Railway não executa o modelo e o recurso não exige token de Replicate, Hugging Face nem API key do próprio SkyNet para o endpoint público.';
 
     const rows = [...document.querySelectorAll('.upscale-engine-row-v1')];
     if (rows[0]) rows[0].innerHTML = '<span>MODELO</span><strong>Real-ESRGAN x4</strong>';
@@ -68,13 +68,13 @@
     });
 
     const note = document.querySelector('.upscale-note-v1');
-    if (note) note.textContent = 'O processamento pesado acontece em servidores públicos externos. Por serem gratuitos, eles podem entrar em fila, dormir ou aplicar limite temporário; o SkyNet tenta outros Spaces automaticamente quando um falha.';
+    if (note) note.textContent = 'O processamento pesado acontece em servidores públicos externos. Como são gratuitos, podem entrar em fila, dormir ou aplicar limite temporário; o SkyNet tenta outros Spaces automaticamente quando um falha.';
 
     const run = document.getElementById('upscaleRunV1');
     if (run && !document.querySelector('.upscale-public-note-v2')) {
       const info = document.createElement('div');
       info.className = 'upscale-public-note-v2';
-      info.innerHTML = '<strong>Sem token externo.</strong> A API key mostrada abaixo é somente a chave normal do próprio SkyNetApi para bots e integrações.';
+      info.innerHTML = '<strong>Zero token.</strong> A rota pública funciona sem login técnico, sem API key e sem segredo de provedor. Para evitar abuso, ela é limitada por IP.';
       run.after(info);
     }
 
