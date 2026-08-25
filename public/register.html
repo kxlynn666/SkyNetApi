@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#050506">
+  <meta name="description" content="Crie sua conta SkyNetApi e monte seu workspace.">
+  <title>Criar conta - SkyNetApi</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/dashboard.css">
+  <link rel="stylesheet" href="/design-system-v14.css">
+</head>
+<body class="register-v14-body">
+  <main class="register-v14-shell">
+    <section class="register-v14-stage" id="registerStageV14">
+      <a class="workspace-logo register-v14-logo" href="/"><span>S</span><strong>SkyNetApi</strong></a>
+      <div class="register-v14-copy">
+        <div class="workspace-kicker">SkyNetApi 2.0.3</div>
+        <h1>Monte seu<br>workspace.</h1>
+        <p>Uma conta conecta API, criação, perfil, chat, biblioteca, stocks e ferramentas em um único espaço.</p>
+      </div>
+      <div class="register-v14-assembly" aria-hidden="true">
+        <div class="register-v14-plane register-v14-plane-a"><span>01</span><b>IDENTIDADE</b><i>perfil / social</i></div>
+        <div class="register-v14-plane register-v14-plane-b"><span>02</span><b>FERRAMENTAS</b><i>cards / media</i></div>
+        <div class="register-v14-plane register-v14-plane-c"><span>03</span><b>API</b><i>keys / requests</i></div>
+        <div class="register-v14-core"><i></i><i></i><i></i></div>
+        <div class="register-v14-scan"></div>
+      </div>
+      <div class="register-v14-footer"><span>CREATE / CONNECT / CUSTOMIZE</span><b>→</b></div>
+    </section>
+
+    <section class="register-v14-form-panel">
+      <div class="register-v14-form-head">
+        <div class="workspace-kicker">Nova conta</div>
+        <h2>Comece do zero.</h2>
+        <p>Sem configuração desnecessária. Crie a conta e entre direto no workspace.</p>
+      </div>
+      <div class="message" id="registerMessage"></div>
+      <form id="registerForm" novalidate>
+        <div class="form-group register-v14-field" data-step="01">
+          <label for="registerUsername">Usuário</label>
+          <input id="registerUsername" autocomplete="username" minlength="3" maxlength="30" required placeholder="seu_usuario">
+          <span>3–30 caracteres · letras, números, _ ou -</span>
+        </div>
+        <div class="form-group register-v14-field" data-step="02">
+          <label for="registerPassword">Senha</label>
+          <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="mínimo 8 caracteres">
+        </div>
+        <div class="form-group register-v14-field" data-step="03">
+          <label for="registerConfirm">Confirmar senha</label>
+          <input id="registerConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="repita a senha">
+        </div>
+        <div class="register-v14-meter" aria-hidden="true"><i id="registerMeterV14"></i></div>
+        <button class="button primary register-v14-submit" id="registerSubmit" type="submit"><span>Criar workspace</span><b>↗</b></button>
+      </form>
+      <p class="register-v14-login-link">Já tem conta? <a href="/painel/login">Entrar</a></p>
+    </section>
+  </main>
+  <script src="/common.js"></script>
+  <script src="/auth-register-v14.js"></script>
+</body>
+</html>
