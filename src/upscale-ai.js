@@ -4,23 +4,28 @@ const sharp = require('sharp');
 const C = require('./config');
 const S = require('./store');
 
-const PROVIDER = 'Replicate';
-const MODEL_ID = 'nightmareai/real-esrgan';
-const CREATE_URL = `https://api.replicate.com/v1/models/${MODEL_ID}/predictions`;
+const PROVIDER = 'Hugging Face Spaces';
+const PUBLIC_SPACES = [
+    { id: 'onebitss/Real-ESRGAN', label: 'Real-ESRGAN Public #1' },
+    { id: 'Hockman/real-esrgan-upscaler', label: 'Real-ESRGAN Public #2' },
+    { id: 'Fabrice-TIERCELIN/RealESRGAN', label: 'Real-ESRGAN Public #3' }
+];
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_INPUT_PIXELS = 4_000_000;
-const MAX_OUTPUT_PIXELS = 90_000_000;
-const MAX_RESULT_BYTES = 50 * 1024 * 1024;
-const MAX_ACTIVE_JOBS = 2;
-const MAX_WAITING_JOBS = 4;
-const PREDICTION_TIMEOUT_MS = 125_000;
+const MAX_INPUT_PIXELS = 2_000_000;
+const MAX_OUTPUT_PIXELS = 60_000_000;
+const MAX_RESULT_BYTES = 55 * 1024 * 1024;
+const MAX_ACTIVE_JOBS = 1;
+const MAX_WAITING_JOBS = 3;
+const PROVIDER_TIMEOUT_MS = 150_000;
 
 let activeJobs = 0;
 const queue = [];
+const clientCache = new Map();
+const apiCache = new Map();
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 10 }
+    limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 8 }
 });
 
 function clientError(message, statusCode = 400) {
@@ -76,34 +81,6 @@ function requireTrustedOrigin(req, res, next) {
     return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
 }
 
-function getProviderToken() {
-    return String(process.env.REPLICATE_API_TOKEN || '').trim();
-}
-
-function mimeFor(format) {
-    if (format === 'jpeg') return 'image/jpeg';
-    if (format === 'png') return 'image/png';
-    if (format === 'webp') return 'image/webp';
-    return '';
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 65_000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        return await fetch(url, { ...options, signal: controller.signal });
-    } catch (error) {
-        if (error?.name === 'AbortError') throw clientError('O provedor de upscale demorou além do limite.', 504);
-        throw error;
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
 function enqueue(task) {
     return new Promise((resolve, reject) => {
         if (activeJobs >= MAX_ACTIVE_JOBS && queue.length >= MAX_WAITING_JOBS) {
@@ -129,6 +106,16 @@ function drainQueue() {
     }
 }
 
+function withTimeout(promise, timeoutMs, message) {
+    let timer;
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            timer = setTimeout(() => reject(clientError(message, 504)), timeoutMs);
+        })
+    ]).finally(() => clearTimeout(timer));
+}
+
 async function validateInput(buffer, scale) {
     let metadata;
     try { metadata = await sharp(buffer, { failOn: 'error', animated: false }).metadata(); }
@@ -140,145 +127,221 @@ async function validateInput(buffer, scale) {
     const inputPixels = metadata.width * metadata.height;
     const outputPixels = inputPixels * scale * scale;
     if (inputPixels > MAX_INPUT_PIXELS) {
-        throw clientError(`Imagem grande demais. Limite atual: ${MAX_INPUT_PIXELS.toLocaleString('pt-BR')} pixels de entrada.`, 413);
+        throw clientError(`Imagem grande demais para o serviço público. Limite atual: ${MAX_INPUT_PIXELS.toLocaleString('pt-BR')} pixels de entrada.`, 413);
     }
     if (outputPixels > MAX_OUTPUT_PIXELS) {
         throw clientError(`O resultado ${scale}x ultrapassaria o limite seguro de ${MAX_OUTPUT_PIXELS.toLocaleString('pt-BR')} pixels. Use uma imagem menor ou 4x.`, 413);
     }
-
     return metadata;
 }
 
-function providerError(payload, fallback) {
-    const detail = payload?.detail || payload?.error || payload?.message;
-    if (typeof detail === 'string' && detail.trim()) return detail.trim();
-    if (Array.isArray(detail) && detail.length) return detail.map(item => item?.msg || String(item)).join('; ');
-    return fallback;
+async function getGradioModule() {
+    return import('@gradio/client');
 }
 
-function validPredictionUrl(value) {
-    try {
-        const url = new URL(String(value || ''));
-        return url.protocol === 'https:' && url.hostname === 'api.replicate.com' ? url : null;
-    } catch { return null; }
+async function getClient(spaceId) {
+    if (clientCache.has(spaceId)) return clientCache.get(spaceId);
+    const { Client } = await getGradioModule();
+    const pending = withTimeout(
+        Client.connect(spaceId),
+        35_000,
+        `O Space público ${spaceId} não respondeu a tempo.`
+    ).catch(error => {
+        clientCache.delete(spaceId);
+        throw error;
+    });
+    clientCache.set(spaceId, pending);
+    return pending;
 }
 
-function validOutputUrl(value) {
-    try {
-        const url = new URL(String(value || ''));
-        const host = url.hostname.toLowerCase();
-        if (url.protocol !== 'https:') return null;
-        if (host !== 'replicate.delivery' && !host.endsWith('.replicate.delivery')) return null;
-        return url;
-    } catch { return null; }
+async function getApiInfo(spaceId, client) {
+    if (apiCache.has(spaceId)) return apiCache.get(spaceId);
+    const pending = withTimeout(client.view_api(), 20_000, 'Não foi possível consultar a API pública do upscaler.')
+        .catch(() => ({ named_endpoints: {} }));
+    apiCache.set(spaceId, pending);
+    return pending;
 }
 
-async function readPrediction(response) {
-    let payload = null;
-    try { payload = await response.json(); } catch {}
-    if (!response.ok) {
-        const status = response.status === 401 || response.status === 403 ? 502 : response.status;
-        throw clientError(providerError(payload, `Falha no provedor de upscale (${response.status}).`), status || 502);
+function endpointCandidates(apiInfo) {
+    const names = Object.keys(apiInfo?.named_endpoints || {});
+    const score = name => {
+        const value = String(name).toLowerCase();
+        if (value.includes('image') || value.includes('upscale') || value.includes('infer')) return 0;
+        if (value.includes('predict')) return 1;
+        return 2;
+    };
+    names.sort((a, b) => score(a) - score(b));
+    for (const fallback of ['/predict', '/infer_image', '/upscale_image']) {
+        if (!names.includes(fallback)) names.push(fallback);
     }
-    return payload || {};
+    return names.slice(0, 8);
 }
 
-async function waitForPrediction(initial, token) {
-    let prediction = initial;
-    const deadline = Date.now() + PREDICTION_TIMEOUT_MS;
+function payloadFromSchema(schema, fileRef, scale) {
+    const params = Array.isArray(schema?.parameters) ? schema.parameters : [];
+    if (!params.length) return null;
+    const payload = {};
+    let usedFile = false;
+    let usedScale = false;
 
-    while (prediction?.status === 'starting' || prediction?.status === 'processing') {
-        if (Date.now() >= deadline) throw clientError('O upscale ultrapassou o tempo máximo de processamento.', 504);
-        const pollUrl = validPredictionUrl(prediction?.urls?.get);
-        if (!pollUrl) throw clientError('O provedor retornou uma URL de acompanhamento inválida.', 502);
-        await sleep(1400);
-        const response = await fetchWithTimeout(pollUrl, {
-            headers: { Authorization: `Bearer ${token}` }
-        }, 20_000);
-        prediction = await readPrediction(response);
-    }
-
-    if (prediction?.status !== 'succeeded') {
-        const reason = typeof prediction?.error === 'string' ? prediction.error : 'O provedor não conseguiu concluir o upscale.';
-        throw clientError(reason, prediction?.status === 'canceled' ? 504 : 502);
-    }
-    return prediction;
-}
-
-function extractOutputUrl(output) {
-    if (typeof output === 'string') return validOutputUrl(output);
-    if (Array.isArray(output)) {
-        for (const item of output) {
-            const url = extractOutputUrl(item);
-            if (url) return url;
+    for (const param of params) {
+        const key = String(param?.parameter_name || param?.name || '').trim();
+        if (!key) continue;
+        const hint = `${key} ${param?.label || ''} ${param?.component || ''}`.toLowerCase();
+        if (!usedFile && /(image|file|input)/.test(hint)) {
+            payload[key] = fileRef;
+            usedFile = true;
+            continue;
+        }
+        if (!usedScale && /(scale|model|upscale|factor)/.test(hint)) {
+            payload[key] = scale;
+            usedScale = true;
         }
     }
-    if (output && typeof output === 'object') {
+
+    if (!usedFile) {
+        const first = String(params[0]?.parameter_name || params[0]?.name || '').trim();
+        if (first) {
+            payload[first] = fileRef;
+            usedFile = true;
+        }
+    }
+    if (!usedScale && params[1]) {
+        const second = String(params[1]?.parameter_name || params[1]?.name || '').trim();
+        if (second) payload[second] = scale;
+    }
+    return usedFile ? payload : null;
+}
+
+function findOutputSource(value) {
+    if (!value) return null;
+    if (Buffer.isBuffer(value)) return { type: 'buffer', value };
+    if (typeof Blob !== 'undefined' && value instanceof Blob) return { type: 'blob', value };
+    if (typeof value === 'string') {
+        if (/^https:\/\//i.test(value)) return { type: 'url', value };
+        return null;
+    }
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const found = findOutputSource(item);
+            if (found) return found;
+        }
+        return null;
+    }
+    if (typeof value === 'object') {
         for (const key of ['url', 'href', 'uri']) {
-            const url = validOutputUrl(output[key]);
-            if (url) return url;
+            const found = findOutputSource(value[key]);
+            if (found) return found;
+        }
+        for (const nested of Object.values(value)) {
+            const found = findOutputSource(nested);
+            if (found) return found;
         }
     }
     return null;
 }
 
-async function downloadResult(url) {
-    const response = await fetchWithTimeout(url, { redirect: 'follow' }, 35_000);
-    if (!response.ok) throw clientError(`Não foi possível baixar o resultado do upscale (${response.status}).`, 502);
+function validHuggingFaceUrl(value) {
+    try {
+        const url = new URL(String(value || ''));
+        if (url.protocol !== 'https:') return null;
+        const host = url.hostname.toLowerCase();
+        if (host === 'huggingface.co' || host.endsWith('.huggingface.co') || host === 'hf.co' || host.endsWith('.hf.co') || host === 'hf.space' || host.endsWith('.hf.space')) return url;
+        return null;
+    } catch { return null; }
+}
 
+async function sourceToBuffer(source) {
+    if (source.type === 'buffer') return source.value;
+    if (source.type === 'blob') return Buffer.from(await source.value.arrayBuffer());
+    const url = validHuggingFaceUrl(source.value);
+    if (!url) throw clientError('O Space público devolveu uma URL de resultado não permitida.', 502);
+    const response = await withTimeout(fetch(url, { redirect: 'follow' }), 45_000, 'O resultado do Space público demorou demais para baixar.');
+    if (!response.ok) throw clientError(`Não foi possível baixar o resultado público (${response.status}).`, 502);
     const declared = Number(response.headers.get('content-length') || 0);
-    if (declared > MAX_RESULT_BYTES) throw clientError('O arquivo resultante ultrapassou o limite seguro do SkyNetApi.', 413);
-
+    if (declared > MAX_RESULT_BYTES) throw clientError('O resultado ultrapassou o limite seguro do SkyNetApi.', 413);
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (!buffer.length) throw clientError('O provedor devolveu um resultado vazio.', 502);
-    if (buffer.length > MAX_RESULT_BYTES) throw clientError('O arquivo resultante ultrapassou o limite seguro do SkyNetApi.', 413);
+    if (!buffer.length) throw clientError('O Space público devolveu um arquivo vazio.', 502);
+    if (buffer.length > MAX_RESULT_BYTES) throw clientError('O resultado ultrapassou o limite seguro do SkyNetApi.', 413);
     return buffer;
 }
 
-async function runUpscale(buffer, options) {
-    const token = getProviderToken();
-    if (!token) {
-        throw clientError('AI Upscaler ainda não está configurado no servidor. Defina REPLICATE_API_TOKEN no ambiente do Railway.', 503);
-    }
+async function callPublicSpace(space, buffer, modelScale) {
+    const { handle_file } = await getGradioModule();
+    const client = await getClient(space.id);
+    const info = await getApiInfo(space.id, client);
+    const endpoints = endpointCandidates(info);
+    let lastError = null;
 
+    for (const endpoint of endpoints) {
+        const schema = info?.named_endpoints?.[endpoint];
+        const attempts = [];
+        const fileRef = handle_file(buffer);
+        const objectPayload = payloadFromSchema(schema, fileRef, modelScale);
+        if (objectPayload) attempts.push(objectPayload);
+        attempts.push([fileRef, modelScale], [fileRef]);
+
+        for (const payload of attempts) {
+            try {
+                const result = await withTimeout(
+                    client.predict(endpoint, payload),
+                    PROVIDER_TIMEOUT_MS,
+                    `${space.label} demorou além do limite.`
+                );
+                const source = findOutputSource(result?.data ?? result);
+                if (!source) throw new Error('resultado sem arquivo de imagem');
+                const outputBuffer = await sourceToBuffer(source);
+                return { buffer: outputBuffer, space: space.id, endpoint };
+            } catch (error) {
+                lastError = error;
+            }
+        }
+    }
+    throw lastError || new Error(`${space.label} não possui endpoint de imagem compatível.`);
+}
+
+async function runHostedUpscale(buffer, modelScale) {
+    const failures = [];
+    for (const space of PUBLIC_SPACES) {
+        try {
+            return await callPublicSpace(space, buffer, modelScale);
+        } catch (error) {
+            clientCache.delete(space.id);
+            apiCache.delete(space.id);
+            failures.push(`${space.id}: ${error?.message || 'falhou'}`);
+        }
+    }
+    const error = clientError('Os servidores públicos de Real-ESRGAN estão temporariamente indisponíveis ou limitados. Tente novamente mais tarde.', 503);
+    error.providerFailures = failures;
+    throw error;
+}
+
+async function runUpscale(buffer, options) {
     const scale = options.scale === 6 ? 6 : 4;
     const format = ['png', 'jpeg', 'webp'].includes(options.format) ? options.format : 'webp';
     const quality = Math.max(70, Math.min(100, Number(options.quality) || 94));
-    const faceEnhance = options.faceEnhance === true;
     const metadata = await validateInput(buffer, scale);
-    const sourceMime = mimeFor(metadata.format);
-    const imageData = `data:${sourceMime};base64,${buffer.toString('base64')}`;
 
-    const createResponse = await fetchWithTimeout(CREATE_URL, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Prefer: 'wait=60',
-            'Cancel-After': '2m'
-        },
-        body: JSON.stringify({
-            input: {
-                image: imageData,
-                scale,
-                face_enhance: faceEnhance
-            }
-        })
-    }, 65_000);
-
-    const created = await readPrediction(createResponse);
-    const prediction = await waitForPrediction(created, token);
-    const outputUrl = extractOutputUrl(prediction.output);
-    if (!outputUrl) throw clientError('O provedor concluiu a tarefa, mas não devolveu uma imagem válida.', 502);
-
-    const providerBuffer = await downloadResult(outputUrl);
+    // Public Spaces are asked for their x4 Real-ESRGAN model. The optional 6x mode
+    // keeps the AI reconstruction and only performs the final 4x -> 6x resize locally.
+    const hosted = await runHostedUpscale(buffer, 4);
     let image;
     let providerMetadata;
     try {
-        image = sharp(providerBuffer, { failOn: 'error' });
+        image = sharp(hosted.buffer, { failOn: 'error' });
         providerMetadata = await image.metadata();
     } catch {
-        throw clientError('O resultado do provedor não pôde ser lido como imagem.', 502);
+        throw clientError('O resultado do Space público não pôde ser lido como imagem.', 502);
+    }
+
+    const targetWidth = metadata.width * scale;
+    const targetHeight = metadata.height * scale;
+    if (providerMetadata.width !== targetWidth || providerMetadata.height !== targetHeight) {
+        image = image.resize(targetWidth, targetHeight, {
+            fit: 'fill',
+            kernel: sharp.kernel.lanczos3,
+            withoutEnlargement: false
+        });
     }
 
     if (format === 'png') image = image.png({ compressionLevel: 8, adaptiveFiltering: true });
@@ -287,17 +350,16 @@ async function runUpscale(buffer, options) {
 
     const resultBuffer = await image.toBuffer();
     const resultMetadata = await sharp(resultBuffer).metadata();
-
     return {
         buffer: resultBuffer,
         format,
-        width: resultMetadata.width || providerMetadata.width || metadata.width * scale,
-        height: resultMetadata.height || providerMetadata.height || metadata.height * scale,
+        width: resultMetadata.width || targetWidth,
+        height: resultMetadata.height || targetHeight,
         scale,
-        faceEnhance,
         provider: PROVIDER,
-        model: MODEL_ID,
-        pipeline: `Real-ESRGAN ${scale}x hospedado no Replicate${faceEnhance ? ' + GFPGAN' : ''}`
+        model: 'Real-ESRGAN x4 (public Space)',
+        space: hosted.space,
+        pipeline: scale === 4 ? 'Real-ESRGAN x4 em Hugging Face Space público' : 'Real-ESRGAN x4 em Hugging Face Space público + Lanczos final 1.5x'
     };
 }
 
@@ -309,8 +371,8 @@ function sendResult(res, result, originalName) {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Upscale-Provider', result.provider);
     res.setHeader('X-Upscale-Model', result.model);
+    res.setHeader('X-Upscale-Space', result.space);
     res.setHeader('X-Upscale-Scale', String(result.scale));
-    res.setHeader('X-Upscale-Face-Enhance', result.faceEnhance ? '1' : '0');
     res.setHeader('X-Upscale-Pipeline', result.pipeline);
     res.setHeader('X-Upscale-Width', String(result.width));
     res.setHeader('X-Upscale-Height', String(result.height));
@@ -322,35 +384,31 @@ function processUpload(req, res, next) {
     const scale = Number(req.body?.scale) === 6 ? 6 : 4;
     const format = String(req.body?.format || 'webp').toLowerCase();
     const quality = Number(req.body?.quality || 94);
-    const faceEnhance = ['1', 'true', 'yes', 'on'].includes(String(req.body?.faceEnhance ?? req.body?.face_enhance ?? '').toLowerCase());
 
-    enqueue(() => runUpscale(req.file.buffer, { scale, format, quality, faceEnhance }))
+    enqueue(() => runUpscale(req.file.buffer, { scale, format, quality }))
         .then(result => sendResult(res, result, req.file.originalname))
         .catch(next);
 }
 
 function registerUpscaleRoutes(app) {
-    app.get('/api/upscale/info', requireSession, (req, res) => {
-        const configured = Boolean(getProviderToken());
-        return res.json({
-            ok: true,
-            engine: 'Real-ESRGAN Cloud',
-            provider: PROVIDER,
-            model: MODEL_ID,
-            configured,
-            modelLoaded: configured,
-            nativeScale: 'adjustable',
-            supportedScales: [4, 6],
-            sixXPipeline: 'Real-ESRGAN direct scale=6',
-            faceEnhance: true,
-            busy: activeJobs >= MAX_ACTIVE_JOBS,
-            active: activeJobs,
-            queued: queue.length,
-            maxInputPixels: MAX_INPUT_PIXELS,
-            maxOutputPixels: MAX_OUTPUT_PIXELS,
-            maxFileMb: MAX_FILE_BYTES / 1024 / 1024
-        });
-    });
+    app.get('/api/upscale/info', requireSession, (req, res) => res.json({
+        ok: true,
+        engine: 'Real-ESRGAN Public Cloud',
+        provider: PROVIDER,
+        model: 'Real-ESRGAN x4',
+        configured: true,
+        requiresProviderToken: false,
+        supportedScales: [4, 6],
+        sixXPipeline: 'Real-ESRGAN x4 público + Lanczos final 1.5x',
+        publicSpaces: PUBLIC_SPACES.map(space => space.id),
+        busy: activeJobs >= MAX_ACTIVE_JOBS,
+        active: activeJobs,
+        queued: queue.length,
+        maxInputPixels: MAX_INPUT_PIXELS,
+        maxOutputPixels: MAX_OUTPUT_PIXELS,
+        maxFileMb: MAX_FILE_BYTES / 1024 / 1024,
+        note: 'Serviço baseado em Hugging Face Spaces públicos; pode haver fila, sleep ou rate limit do provedor.'
+    }));
 
     app.post('/api/upscale', requireTrustedOrigin, requireSession, upload.single('file'), processUpload);
     app.post('/api/v1/image/upscale', requireApiKey, upload.single('file'), processUpload);
