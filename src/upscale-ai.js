@@ -17,11 +17,14 @@ const MAX_RESULT_BYTES = 55 * 1024 * 1024;
 const MAX_ACTIVE_JOBS = 1;
 const MAX_WAITING_JOBS = 3;
 const PROVIDER_TIMEOUT_MS = 150_000;
+const PUBLIC_RATE_WINDOW_MS = 60 * 60 * 1000;
+const PUBLIC_RATE_LIMIT = 6;
 
 let activeJobs = 0;
 const queue = [];
 const clientCache = new Map();
 const apiCache = new Map();
+const publicRateBuckets = new Map();
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -58,17 +61,47 @@ function requireSession(req, res, next) {
     } catch (error) { return next(error); }
 }
 
-function requireApiKey(req, res, next) {
+function optionalApiIdentity(req, res, next) {
     try {
         const authorization = String(req.headers.authorization || '');
         const bearer = authorization.toLowerCase().startsWith('bearer ') ? authorization.slice(7).trim() : '';
         const apiKey = String(req.headers['x-api-key'] || bearer || '').trim();
+        if (!apiKey) return next();
         const auth = S.authenticateApiKey(apiKey);
         if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou inativa.' });
         req.account = auth.account;
         req.apiKeyRecord = auth.record;
         return next();
     } catch (error) { return next(error); }
+}
+
+function publicRateLimit(req, res, next) {
+    const now = Date.now();
+    const key = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    const current = publicRateBuckets.get(key);
+    const bucket = !current || now - current.startedAt >= PUBLIC_RATE_WINDOW_MS
+        ? { startedAt: now, count: 0 }
+        : current;
+
+    if (bucket.count >= PUBLIC_RATE_LIMIT) {
+        const retrySeconds = Math.max(1, Math.ceil((bucket.startedAt + PUBLIC_RATE_WINDOW_MS - now) / 1000));
+        res.setHeader('Retry-After', String(retrySeconds));
+        return res.status(429).json({
+            ok: false,
+            error: `Limite público de ${PUBLIC_RATE_LIMIT} upscales por hora atingido para este endereço.`,
+            retryAfter: retrySeconds
+        });
+    }
+    bucket.count += 1;
+    publicRateBuckets.set(key, bucket);
+    if (publicRateBuckets.size > 5000) {
+        for (const [bucketKey, value] of publicRateBuckets) {
+            if (now - value.startedAt >= PUBLIC_RATE_WINDOW_MS) publicRateBuckets.delete(bucketKey);
+        }
+    }
+    res.setHeader('X-RateLimit-Limit', String(PUBLIC_RATE_LIMIT));
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, PUBLIC_RATE_LIMIT - bucket.count)));
+    return next();
 }
 
 function requireTrustedOrigin(req, res, next) {
@@ -322,8 +355,6 @@ async function runUpscale(buffer, options) {
     const quality = Math.max(70, Math.min(100, Number(options.quality) || 94));
     const metadata = await validateInput(buffer, scale);
 
-    // Public Spaces are asked for their x4 Real-ESRGAN model. The optional 6x mode
-    // keeps the AI reconstruction and only performs the final 4x -> 6x resize locally.
     const hosted = await runHostedUpscale(buffer, 4);
     let image;
     let providerMetadata;
@@ -398,6 +429,7 @@ function registerUpscaleRoutes(app) {
         model: 'Real-ESRGAN x4',
         configured: true,
         requiresProviderToken: false,
+        apiKeyOptional: true,
         supportedScales: [4, 6],
         sixXPipeline: 'Real-ESRGAN x4 público + Lanczos final 1.5x',
         publicSpaces: PUBLIC_SPACES.map(space => space.id),
@@ -407,11 +439,12 @@ function registerUpscaleRoutes(app) {
         maxInputPixels: MAX_INPUT_PIXELS,
         maxOutputPixels: MAX_OUTPUT_PIXELS,
         maxFileMb: MAX_FILE_BYTES / 1024 / 1024,
-        note: 'Serviço baseado em Hugging Face Spaces públicos; pode haver fila, sleep ou rate limit do provedor.'
+        publicRateLimitPerHour: PUBLIC_RATE_LIMIT,
+        note: 'Hugging Face Spaces públicos podem entrar em fila, sleep ou rate limit. Nenhum token externo é necessário.'
     }));
 
     app.post('/api/upscale', requireTrustedOrigin, requireSession, upload.single('file'), processUpload);
-    app.post('/api/v1/image/upscale', requireApiKey, upload.single('file'), processUpload);
+    app.post('/api/v1/image/upscale', optionalApiIdentity, publicRateLimit, upload.single('file'), processUpload);
 }
 
 module.exports = { registerUpscaleRoutes };
