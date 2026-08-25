@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/dashboard.css">
     <link rel="stylesheet" href="/design-system-v12.css">
 </head>
-<body class="workspace-login-body">
+<body class="workspace-login-body" data-auth-mode="login">
     <main class="workspace-login-shell">
         <section class="workspace-login-brand">
             <a class="workspace-logo" href="/"><span>S</span><strong>SkyNetApi</strong></a>
@@ -56,6 +56,7 @@
 
         function applyMode() {
             const register = mode === 'register';
+            document.body.dataset.authMode = register ? 'register' : 'login';
             document.getElementById('loginTitle').textContent = register ? 'Criar sua conta' : 'Entrar na sua conta';
             document.getElementById('loginSubtitle').textContent = register ? 'Crie uma conta para acessar o workspace.' : 'Use suas credenciais do SkyNetApi.';
             button.textContent = register ? 'Criar conta' : 'Entrar';
@@ -63,6 +64,7 @@
             document.getElementById('loginSwitch').textContent = register ? 'Entrar' : 'Criar conta';
             password.autocomplete = register ? 'new-password' : 'current-password';
             S.message(message, '');
+            document.dispatchEvent(new CustomEvent('skynet:auth-mode', { detail: { mode } }));
         }
 
         document.getElementById('loginSwitch').addEventListener('click', () => {
@@ -92,6 +94,7 @@
             }
         });
 
+        applyMode();
         S.session().then(user => { if (user) location.replace(safeNext()); }).catch(() => {});
     })();
     </script>
