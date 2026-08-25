@@ -24,6 +24,7 @@
     .motion-v13-stagger>*{opacity:0;transform:translateY(9px);animation:motion-v13-child-in .5s cubic-bezier(.2,.72,.2,1) forwards}.motion-v13-stagger>*:nth-child(2){animation-delay:.06s}.motion-v13-stagger>*:nth-child(3){animation-delay:.12s}.motion-v13-stagger>*:nth-child(4){animation-delay:.18s}.motion-v13-stagger>*:nth-child(5){animation-delay:.24s}.motion-v13-stagger>*:nth-child(6){animation-delay:.3s}
     .profile-preview-live-v2,.profile-preview-selected-v2{animation:motion-v13-preview-pulse 3.6s ease-in-out infinite}
     .profile-preview-live-v2 .profile-preview-mini-surface::after{content:'';position:absolute;inset:-20% -40%;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.12) 50%,transparent 60%);transform:translateX(-35%);animation:motion-v13-preview-scan 4.5s ease-in-out infinite;pointer-events:none}
+    .profile-surface[data-decoration]:not([data-decoration=""]){will-change:transform,opacity;transform:translateZ(0)}
     .chat-bubble{transition:transform .22s ease,opacity .22s ease}.chat-bubble:last-child{animation:motion-v13-message-in .34s cubic-bezier(.16,.75,.24,1)}
     .sticker-item-v1 img,.sticker-item-v1 svg{transition:transform .28s cubic-bezier(.2,.75,.2,1)}.sticker-item-v1:hover img,.sticker-item-v1:hover svg{transform:scale(1.06) rotate(-1deg)}
     @keyframes motion-v13-sheen{0%,52%{background-position:130% 0}72%,100%{background-position:-130% 0}}
@@ -63,6 +64,7 @@
   ].join(',');
   const surfaceSelector = '.workspace-card,.profile-v3-card,.chat-layout,.sticker-page-v1>section,.home-feature,.file-card';
   const depthSelector = '.workspace-card,.workspace-quick,.profile-v3-product,.file-card,.sticker-item-v1';
+  const focusSelector = '.workspace-card,.workspace-quick,.file-card';
 
   function enhance(root=document){
     const reveal = [];
@@ -76,7 +78,8 @@
       if (reduce.matches) node.classList.add('is-visible'); else observer.observe(node);
     });
     (root.querySelectorAll?.(surfaceSelector)||[]).forEach(node=>node.classList.add('motion-v13-surface'));
-    (root.querySelectorAll?.(depthSelector)||[]).forEach(node=>node.classList.add('motion-v13-depth','motion-v13-focus'));
+    (root.querySelectorAll?.(depthSelector)||[]).forEach(node=>node.classList.add('motion-v13-depth'));
+    (root.querySelectorAll?.(focusSelector)||[]).forEach(node=>node.classList.add('motion-v13-focus'));
     (root.querySelectorAll?.('.workspace-quick-grid,.workspace-stat-grid,.home-feature-grid,.profile-inventory-showroom-grid')||[]).forEach(node=>node.classList.add('motion-v13-stagger'));
   }
 
