@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --v15-bg:#050506;
+  --v15-bg-2:#09090b;
+  --v15-panel:#0b0b0d;
+  --v15-panel-2:#101012;
+  --v15-panel-3:#151518;
+  --v15-line:#252529;
+  --v15-line-strong:#3a3a40;
+  --v15-text:#f4f4f0;
+  --v15-muted:#97979d;
+  --v15-faint:#67676e;
+  --v15-purple:#8e82e8;
+  --v15-purple-soft:#b7aff4;
+  --v15-purple-dim:rgba(142,130,232,.10);
+  --v15-shadow:0 24px 70px rgba(0,0,0,.26);
+}
+
+html,body{background:var(--v15-bg)!important;color:var(--v15-text)!important}
+body{background-image:none!important;font-family:'IBM Plex Sans',Inter,system-ui,sans-serif!important}
+body::before{content:'';position:fixed;inset:0;z-index:-20;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,#000 0 68%,transparent)}
+body::after{content:'';position:fixed;inset:0;z-index:-19;pointer-events:none;background:radial-gradient(42vw 32vw at 76% 10%,rgba(142,130,232,.052),transparent 70%),radial-gradient(30vw 22vw at 14% 82%,rgba(255,255,255,.025),transparent 72%)}
+
+/* One visual language everywhere. */
+.card,.stat,.workspace-card,.workspace-stat,.workspace-info,.workspace-quick,.list-item,.file-card,.endpoint,.profile-v3-card,.profile-v3-product,.profile-design-v1-card,.profile-store-tools-v5,.chat-layout,.sticker-item-v1,.sticker-page-card-v1,.sticker-create-v1,.sticker-library-v1,.upscale-controls-v1,.upscale-preview-v1,.upscale-api-v1,.visual-lab-panel-v14,.music-hub-panel-v13{
+  background:linear-gradient(180deg,#0d0d0f,#09090b)!important;
+  border-color:var(--v15-line)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.025) inset,0 18px 50px rgba(0,0,0,.13)!important;
+  border-radius:4px!important;
+}
+.workspace-info,.workspace-stat,.list-item,.file-card{background:#101012!important}
+
+input,textarea,select,.button,.nav-link,.workspace-menu-button,.workspace-user-chip,.workspace-nav-link,.tab,.profile-v3-tab,.profile-editor-tab-v2,.profile-design-tab-v1{border-radius:3px!important}
+.badge,.profile-tag,.profile-store-collection-v5,.chat-unread{border-radius:999px!important}
+
+/* Purple is detail, never the whole surface. */
+.tabs,.profile-v3-tabs,.profile-editor-tabs-v2,.profile-design-tabs-v1,.sticker-picker-tabs-v1,.sticker-page-tabs-v1{background:transparent!important;border:0!important;border-bottom:1px solid #29292e!important;box-shadow:none!important}
+.tab,.profile-v3-tab,.profile-editor-tab-v2,.profile-design-tab-v1,.sticker-picker-tabs-v1 button,.sticker-page-tabs-v1 button,.sticker-pack-chip-v1{
+  background:transparent!important;border:0!important;border-bottom:1px solid transparent!important;color:#77777e!important;box-shadow:none!important;text-shadow:none!important
+}
+.tab.active,.profile-v3-tab.active,.profile-editor-tab-v2.active,.profile-design-tab-v1.active,.sticker-picker-tabs-v1 button.active,.sticker-page-tabs-v1 button.active,.sticker-pack-chip-v1.active{
+  background:transparent!important;color:#f4f4f0!important;border-bottom-color:#f1f1ed!important;box-shadow:none!important
+}
+
+.button,.nav-link{background:#111113!important;border-color:#303035!important;color:#b7b7bc!important;box-shadow:none!important}
+.button:hover,.nav-link:hover{background:#18181b!important;border-color:#484850!important;color:#fff!important}
+.button.primary{background:#f1f1ed!important;border-color:#f1f1ed!important;color:#070708!important;font-weight:650!important}
+.button.primary:hover{background:#fff!important;border-color:#fff!important}
+.button.danger{background:#141012!important;border-color:#4b292f!important;color:#e8b9c1!important}
+.button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:1px solid var(--v15-purple-soft)!important;outline-offset:3px!important}
+input,textarea,select{background:#0e0e10!important;border-color:#303035!important;color:#efefec!important;box-shadow:0 1px 0 rgba(255,255,255,.02) inset!important}
+input:focus,textarea:focus,select:focus{border-color:#686272!important;box-shadow:0 0 0 2px rgba(142,130,232,.08)!important}
+
+.workspace-sidebar{background:#070708!important;border-right:1px solid #202024!important;box-shadow:none!important}
+.workspace-topbar{background:rgba(5,5,6,.91)!important;border-bottom:1px solid #202024!important;backdrop-filter:blur(14px) saturate(90%)!important;box-shadow:none!important}
+.workspace-nav-link{background:transparent!important;border-color:transparent!important;color:#85858c!important;box-shadow:none!important}
+.workspace-nav-link:hover{background:#101012!important;color:#deded9!important}
+.workspace-nav-link.active{background:#141416!important;color:#fff!important;border-color:#252529!important;box-shadow:inset 2px 0 0 #f0f0ed!important}
+.workspace-nav-link.active .workspace-nav-icon{color:var(--v15-purple-soft)!important}
+.workspace-content{perspective:1300px;transform-style:preserve-3d}
+
+/* Chat palette + shape reset. */
+.chat-layout{background:#08080a!important;border-color:#26262b!important;border-radius:4px!important;box-shadow:var(--v15-shadow)!important}
+.chat-sidebar,.chat-main{background:#09090b!important}
+.chat-side-head,.chat-header,.chat-compose{background:rgba(8,8,10,.96)!important;border-color:#252529!important;backdrop-filter:blur(12px)!important}
+.chat-conversation{border-radius:2px!important;border-color:transparent!important;background:transparent!important}
+.chat-conversation:hover{background:#111113!important}
+.chat-conversation.active{background:#151517!important;border-color:#2d2d32!important;box-shadow:inset 2px 0 0 #efefeb!important}
+.chat-bubble{background:#121214!important;border:1px solid #27272c!important;border-radius:5px 5px 5px 2px!important;box-shadow:0 8px 22px rgba(0,0,0,.10)!important}
+.chat-bubble.mine{background:#18181b!important;border-color:#393646!important;border-radius:5px 5px 2px 5px!important}
+.chat-bubble.pending{opacity:.62}
+.chat-bubble.failed{border-color:#6a343c!important;background:#181113!important}
+.chat-presence-v15{display:inline-flex;align-items:center;gap:5px}.chat-presence-v15::before{content:'';width:5px;height:5px;border-radius:50%;background:#626269}.chat-presence-v15.online::before{background:#d8d8d4;box-shadow:0 0 0 3px rgba(142,130,232,.08)}
+.chat-compose textarea{background:#0e0e10!important;border-radius:3px!important}
+.chat-compose .button{border-radius:3px!important}
+.chat-retry-v15{border:0;background:transparent;color:#dca5ae;padding:0;font:600 8px 'IBM Plex Mono',monospace;cursor:pointer}
+
+/* Stickers follow the same palette. */
+.sticker-picker-v1{background:#0b0b0d!important;border-color:#303035!important;border-radius:4px!important;box-shadow:0 28px 80px rgba(0,0,0,.48)!important;backdrop-filter:blur(14px)!important}
+.sticker-picker-head-v1,.sticker-picker-tabs-v1{border-color:#252529!important}
+.sticker-picker-close-v1,.sticker-fav-v1{background:#111113!important;color:#c4c4c0!important;border-radius:3px!important}
+.sticker-item-v1,.sticker-page-card-v1{background:#0e0e10!important;border-color:#27272c!important;border-radius:4px!important}
+.sticker-item-v1:hover,.sticker-page-card-v1:hover{background:#141416!important;border-color:#44444b!important}
+.stickers-hero-v1{background:#09090b!important;border-color:#29292e!important;border-radius:4px!important}
+.sticker-create-preview-v1{background:#0b0b0d!important;border-color:#333339!important;border-radius:4px!important}
+
+/* Profile/store/admin/media keep neutral chrome so the content itself is the accent. */
+.profile-media-card-v10,.profile-v3-product,.profile-v3-card{background:#0b0b0d!important;border-color:#29292e!important}
+.profile-media-card-v10::after{background:none!important}
+.profile-media-card-v10 .profile-v3-upload,.profile-media-card-v10 input[type="file"]{background:#0e0e10!important;border-color:#303035!important;border-radius:4px!important}
+.profile-media-card-v10 .profile-v3-upload-preview{border-radius:4px!important;background:#0b0b0d!important;border-color:#34343a!important;box-shadow:none!important}
+.profile-media-card-v10 input[type="file"]::file-selector-button{background:#171719!important;color:#efefeb!important;border-radius:2px!important}
+
+/* Login / register / landing / admin. */
+.workspace-login-body,.register-v14-body{background:#050506!important;background-image:none!important}
+.workspace-login-shell,.register-v14-shell{background:#08080a!important;border-color:#29292e!important;border-radius:4px!important;box-shadow:0 42px 120px rgba(0,0,0,.5)!important}
+.workspace-login-brand,.register-v14-stage{background:#070709!important;border-color:#252529!important}
+.workspace-login-card,.register-v14-form-panel{background:#0b0b0d!important}
+.topbar{background:rgba(5,5,6,.93)!important;border-bottom-color:#232327!important}
+.hero h1{background:none!important;color:#f5f5f2!important}
+.home-status-strip{background:#08080a!important;border-radius:3px!important}
+#app,.admin-shell,.admin-card{color:var(--v15-text)}
+
+/* Generic depth chrome, excluding cosmetic surfaces that own their pseudo-elements. */
+.workspace-card:not(.profile-v3-product),.card:not(.profile-surface),.home-feature,.workspace-quick,.file-card,.endpoint{
+  position:relative;isolation:isolate;overflow:hidden
+}
+.workspace-card:not(.profile-v3-product)::before,.card:not(.profile-surface)::before,.home-feature::before,.workspace-quick::before,.file-card::before,.endpoint::before{
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(110deg,transparent 28%,rgba(255,255,255,.035) 44%,rgba(142,130,232,.022) 50%,transparent 64%);transform:translate3d(-52%,0,0);opacity:.55
+}
+
+@media(max-width:820px){
+  body::before{background-size:32px 32px;opacity:.72}
+  .workspace-content{perspective:850px}
+  .workspace-topbar{background:#060607!important}
+  .chat-layout{border-radius:3px!important}
+  .chat-bubble{border-radius:4px 4px 4px 2px!important}
+  .chat-bubble.mine{border-radius:4px 4px 2px 4px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .workspace-card:not(.profile-v3-product)::before,.card:not(.profile-surface)::before,.home-feature::before,.workspace-quick::before,.file-card::before,.endpoint::before{transform:none!important;opacity:.18!important}
+}
