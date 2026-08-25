@@ -82,7 +82,8 @@ window.SkyNet = (() => {
         ['/profile-objects-v8.css', 'skynetProfileObjectsV8'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
         ['/music-icons-v5.css', 'skynetMusicIconsV5'],
-        ['/design-system-v12.css', 'skynetDesignSystemV12']
+        ['/design-system-v12.css', 'skynetDesignSystemV12'],
+        ['/design-system-v14.css', 'skynetDesignSystemV14']
     ];
     for (const [href, marker] of styles) {
         if (document.querySelector(`link[href="${href}"],link[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
@@ -94,7 +95,7 @@ window.SkyNet = (() => {
     }
 
     const pinThemeLast = () => {
-        const theme = document.querySelector('link[href="/design-system-v12.css"]');
+        const theme = document.querySelector('link[href="/design-system-v14.css"]');
         if (theme) document.head.appendChild(theme);
     };
     pinThemeLast();
@@ -110,7 +111,7 @@ window.SkyNet = (() => {
         ['/profile-editor-organizer-v2.js', 'skynetProfileEditorOrganizerV2'],
         ['/experience-polish-v10.js', 'skynetExperiencePolishV10'],
         ['/store-layout-hotfix-v11.js', 'skynetStoreLayoutHotfixV11'],
-        ['/store-compact-v13.js', 'skynetStoreCompactV13'],
+        ['/store-experience-v14.js', 'skynetStoreExperienceV14'],
         ['/stickers-v1.js', 'skynetStickersV1'],
         ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
@@ -118,8 +119,8 @@ window.SkyNet = (() => {
         ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
         ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
         ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1'],
-        ['/auth-experience-v13.js', 'skynetAuthExperienceV13'],
-        ['/motion-v13.js', 'skynetMotionV13']
+        ['/visual-lab-v14.js', 'skynetVisualLabV14'],
+        ['/motion-v14.js', 'skynetMotionV14']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
@@ -174,7 +175,7 @@ window.SkyNet = (() => {
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 
-/* Music is intentionally page-scoped. It no longer injects a fixed player into every page. */
+/* Music remains page-scoped so it never covers other tools. */
 (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
     if (cleanPath !== '/painel/musica') return;
