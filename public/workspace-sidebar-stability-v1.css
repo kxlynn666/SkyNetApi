@@ -1,0 +1,22 @@
+.workspace-sidebar{box-sizing:border-box;overflow:hidden;min-height:0;height:100vh}
+@supports(height:100dvh){.workspace-sidebar{height:100dvh}}
+.workspace-logo{flex:0 0 auto}
+.workspace-nav{flex:1 1 auto;min-height:0;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-right:6px;padding-bottom:14px;scroll-padding-block:18px;align-content:start}
+.workspace-sidebar-footer{flex:0 0 auto;margin-top:0!important;padding-top:14px;background:inherit;position:relative;z-index:2}
+.workspace-nav-group{min-width:0}
+.workspace-nav-link{min-width:0}
+.workspace-nav-link>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-nav::-webkit-scrollbar{width:8px}
+.workspace-nav::-webkit-scrollbar-track{background:transparent}
+.workspace-nav::-webkit-scrollbar-thumb{background:rgba(142,130,232,.22);border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+.workspace-nav:hover::-webkit-scrollbar-thumb{background:rgba(142,130,232,.42);border:2px solid transparent;background-clip:padding-box}
+.workspace-nav{scrollbar-width:thin;scrollbar-color:rgba(142,130,232,.34) transparent}
+@media(min-width:821px){
+  .workspace-sidebar{padding-bottom:16px}
+  .workspace-nav{margin-bottom:10px}
+  .workspace-sidebar-footer::before{content:'';position:absolute;left:0;right:0;top:-14px;height:14px;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(5,5,6,.72))}
+}
+@media(max-width:820px){
+  .workspace-nav{padding-bottom:max(18px,env(safe-area-inset-bottom));scroll-padding-bottom:72px}
+  .workspace-sidebar-footer{padding-bottom:env(safe-area-inset-bottom)}
+}
