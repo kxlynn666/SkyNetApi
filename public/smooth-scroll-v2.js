@@ -6,7 +6,6 @@
   const softMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const states = new Map();
   let lastWheelAt = 0;
-  let lastDirection = 0;
 
   const style = document.createElement('style');
   style.id = 'skynetSmoothScrollV2Styles';
@@ -53,26 +52,21 @@
     const now = performance.now();
     const interval = now - lastWheelAt;
     lastWheelAt = now;
-
-    if (amount < 12) return true;
-    if (amount < 34 && interval > 0 && interval < 45) return true;
+    if (amount < 10) return true;
+    if (amount < 30 && interval > 0 && interval < 38) return true;
     return false;
   }
 
   function normalizedDelta(event) {
     let delta = event.deltaY;
-    if (event.deltaMode === 1) delta *= 42;
-    else if (event.deltaMode === 2) delta *= innerHeight * 0.86;
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) delta *= 46;
+    else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) delta *= innerHeight * .84;
 
     const sign = Math.sign(delta) || 1;
     const magnitude = Math.abs(delta);
-
-    // Discrete mouse wheels commonly report ~100px per notch. Keep the
-    // distance natural while smoothing the movement over several frames.
-    const adjusted = event.deltaMode === 0
-      ? Math.max(52, Math.min(230, magnitude))
-      : Math.max(70, Math.min(260, magnitude));
-
+    const adjusted = event.deltaMode === WheelEvent.DOM_DELTA_PIXEL
+      ? Math.max(92, Math.min(235, magnitude * 1.05))
+      : Math.max(105, Math.min(270, magnitude));
     return adjusted * sign;
   }
 
@@ -99,13 +93,12 @@
       const current = states.get(element);
       if (!current) return;
 
-      const dt = Math.min(34, Math.max(1, now - lastFrame));
+      const dt = Math.min(36, Math.max(1, now - lastFrame));
       lastFrame = now;
-
       const position = element.scrollTop;
       const diff = current.target - position;
 
-      if (Math.abs(diff) < 0.45) {
+      if (Math.abs(diff) < .32) {
         element.scrollTop = current.target;
         current.raf = 0;
         element.classList?.remove('skynet-inertial-active');
@@ -113,11 +106,14 @@
         return;
       }
 
-      // 170ms gives a soft, visibly eased wheel motion without feeling slow.
-      // Reduced-motion keeps the easing but shortens it instead of disabling it.
-      const timeConstant = softMotion.matches ? 105 : 170;
+      // Intentionally long easing: discrete wheel notches melt into one glide.
+      // A little faster under reduced-motion, but never a hard step.
+      const timeConstant = softMotion.matches ? 245 : 335;
       const factor = 1 - Math.exp(-dt / timeConstant);
       let next = position + diff * factor;
+
+      // Tiny minimum progress prevents the very end from feeling sticky.
+      if (Math.abs(next - position) < .08) next = position + Math.sign(diff) * Math.min(.08, Math.abs(diff));
 
       const max = maxScroll(element);
       if (next < 0) next = 0;
@@ -135,10 +131,7 @@
     if (!event.deltaY || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     if (looksLikeTrackpad(event)) return;
-
-    if (event.target instanceof Element && event.target.closest(
-      'textarea,select,input[type="number"],input[type="range"],[contenteditable="true"],[data-native-scroll]'
-    )) return;
+    if (event.target instanceof Element && event.target.closest('textarea,select,input[type="number"],input[type="range"],[contenteditable="true"],[data-native-scroll]')) return;
 
     const delta = normalizedDelta(event);
     const element = findScroller(event.target, delta);
@@ -147,21 +140,15 @@
     const direction = Math.sign(delta);
     const max = maxScroll(element);
     let state = states.get(element);
-
     if (!state) {
       state = { target: element.scrollTop, raf: 0, direction };
       states.set(element, state);
     }
 
-    // Reversing the wheel should react immediately rather than finishing the
-    // previous glide in the opposite direction.
-    if (state.direction && direction !== state.direction) {
-      state.target = element.scrollTop;
-    }
+    if (state.direction && direction !== state.direction) state.target = element.scrollTop;
     state.direction = direction;
-    lastDirection = direction;
 
-    const maxLead = Math.min(620, Math.max(280, innerHeight * 0.72));
+    const maxLead = Math.min(980, Math.max(520, innerHeight * 1.05));
     const proposed = state.target + delta;
     const leadLimited = direction > 0
       ? Math.min(proposed, element.scrollTop + maxLead)
