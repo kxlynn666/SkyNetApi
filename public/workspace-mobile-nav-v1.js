@@ -179,8 +179,8 @@
   }
 
   function handleSidebarClick(event) {
-    if (!isMobile()) return;
-    if (event.target.closest('.workspace-nav-link')) closeMenu({ restoreFocus: false });
+    if (!isMobile() || !event.target.closest('.workspace-nav-link')) return;
+    window.setTimeout(() => closeMenu({ restoreFocus: false }), 0);
   }
 
   function handleKeydown(event) {
@@ -199,18 +199,23 @@
     touchStartY = event.touches[0].clientY;
   }
 
+  function resetTouchGesture() {
+    touchStartX = null;
+    touchStartY = null;
+  }
+
   function handleTouchEnd(event) {
-    if (touchStartX == null || touchStartY == null || !isMobile() || !isOpen()) return;
+    if (touchStartX == null || touchStartY == null || !isMobile() || !isOpen()) return resetTouchGesture();
     const touch = event.changedTouches[0];
     const dx = touch.clientX - touchStartX;
     const dy = touch.clientY - touchStartY;
-    touchStartX = null;
-    touchStartY = null;
+    resetTouchGesture();
     if (dx < -64 && Math.abs(dx) > Math.abs(dy) * 1.25) closeMenu();
   }
 
   function syncViewportMode() {
     if (!sidebar || !backdrop || !menuButton) return;
+    resetTouchGesture();
     if (isMobile()) {
       if (!isOpen()) {
         sidebar.setAttribute('aria-hidden', 'true');
@@ -247,6 +252,7 @@
     sidebar.addEventListener('click', handleSidebarClick, true);
     sidebar.addEventListener('touchstart', handleTouchStart, { passive: true });
     sidebar.addEventListener('touchend', handleTouchEnd, { passive: true });
+    sidebar.addEventListener('touchcancel', resetTouchGesture, { passive: true });
     document.addEventListener('keydown', handleKeydown, true);
 
     navObserver = new MutationObserver(scheduleNavigationCleanup);
@@ -255,7 +261,10 @@
     if (typeof mobileQuery.addEventListener === 'function') mobileQuery.addEventListener('change', syncViewportMode);
     else mobileQuery.addListener(syncViewportMode);
 
-    window.addEventListener('pagehide', () => setDocumentLock(false), { once: true });
+    window.addEventListener('pagehide', () => {
+      setDocumentLock(false);
+      resetTouchGesture();
+    }, { once: true });
     dedupeNavigation();
     syncViewportMode();
     initialized = true;
