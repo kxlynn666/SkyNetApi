@@ -1,0 +1,154 @@
+/* Mobile workspace drawer stabilization. Loaded after the design system so older
+   sidebar rules cannot reintroduce viewport/scroll issues. */
+@media (max-width:820px){
+  html.workspace-nav-open,
+  body.workspace-nav-open{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+
+  .workspace-sidebar{
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:min(88vw,340px)!important;
+    max-width:calc(100vw - 44px)!important;
+    height:100vh!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+    padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px))!important;
+    transform:translate3d(calc(-100% - 14px),0,0)!important;
+    visibility:hidden;
+    pointer-events:none;
+    z-index:100!important;
+    box-shadow:28px 0 80px rgba(0,0,0,.58)!important;
+    transition:transform .22s cubic-bezier(.2,.75,.2,1),visibility 0s linear .22s!important;
+    will-change:transform;
+  }
+
+  @supports (height:100dvh){
+    .workspace-sidebar{height:100dvh!important}
+  }
+
+  .workspace-sidebar.open{
+    transform:translate3d(0,0,0)!important;
+    visibility:visible;
+    pointer-events:auto;
+    transition:transform .22s cubic-bezier(.2,.75,.2,1),visibility 0s!important;
+  }
+
+  .workspace-sidebar>.workspace-logo{
+    flex:0 0 auto!important;
+    min-height:48px;
+    padding:3px 52px 15px 7px!important;
+    margin:0!important;
+  }
+
+  .workspace-sidebar-close{
+    position:absolute;
+    top:calc(13px + env(safe-area-inset-top,0px));
+    right:12px;
+    z-index:2;
+    width:40px;
+    height:40px;
+    min-height:40px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border:1px solid #303035;
+    border-radius:4px;
+    background:#111113;
+    color:#c9c9c5;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .workspace-sidebar-close:active{transform:scale(.97)}
+  .workspace-sidebar-close:focus-visible{outline:1px solid var(--v15-purple-soft,#b7aff4);outline-offset:2px}
+  .workspace-sidebar-close svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+
+  .workspace-sidebar .workspace-nav{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    width:100%;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;
+    padding:0 3px 14px 0!important;
+    margin:0 -3px 0 0!important;
+  }
+
+  .workspace-sidebar .workspace-nav-group{
+    margin-top:12px!important;
+  }
+
+  .workspace-sidebar .workspace-nav-label{
+    padding:0 9px 6px!important;
+  }
+
+  .workspace-sidebar .workspace-nav-link{
+    min-height:48px!important;
+    padding:8px 9px!important;
+    gap:10px!important;
+    font-size:13px!important;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .workspace-sidebar .workspace-nav-link .workspace-nav-icon{
+    flex:0 0 auto;
+  }
+
+  .workspace-sidebar .workspace-sidebar-footer{
+    flex:0 0 auto!important;
+    margin-top:0!important;
+    padding-top:10px!important;
+    padding-bottom:max(0px,env(safe-area-inset-bottom,0px));
+    background:#070708;
+  }
+
+  .workspace-sidebar .workspace-profile-mini{
+    margin-bottom:6px;
+  }
+
+  .workspace-sidebar .workspace-logout{
+    min-height:44px!important;
+    touch-action:manipulation;
+  }
+
+  .workspace-sidebar-backdrop{
+    position:fixed!important;
+    inset:0!important;
+    z-index:90!important;
+    background:rgba(0,0,0,.64)!important;
+    -webkit-backdrop-filter:blur(3px);
+    backdrop-filter:blur(3px);
+    touch-action:manipulation;
+  }
+
+  .workspace-menu-button{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .workspace-menu-button[aria-expanded="true"]{
+    border-color:#55515e!important;
+    color:#f4f4f0!important;
+    background:#19191c!important;
+  }
+
+  body.workspace-nav-open .workspace-mobile-dock{
+    pointer-events:none;
+  }
+}
+
+@media (min-width:821px){
+  .workspace-sidebar-close{display:none!important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .workspace-sidebar{transition:none!important}
+}
