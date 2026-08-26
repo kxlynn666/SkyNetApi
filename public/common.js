@@ -116,13 +116,13 @@ window.SkyNet = (() => {
 
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
-        ['/smooth-scroll-v3.js', 'skynetSmoothScrollV3'],
+        ['/smooth-scroll-v4.js', 'skynetSmoothScrollV4'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
         ['/profile-preview-v2.js', 'skynetProfilePreviewV2'],
         ['/profile-design-v1.js', 'skynetProfileDesignV1'],
-        ['/profile-editor-organizer-v2.js', 'skynetProfileEditorOrganizerV2'],
+        ['/profile-editor-organizer-v3.js', 'skynetProfileEditorOrganizerV3'],
         ['/experience-polish-v10.js', 'skynetExperiencePolishV10'],
         ['/store-layout-hotfix-v11.js', 'skynetStoreLayoutHotfixV11'],
         ['/store-experience-v14.js', 'skynetStoreExperienceV14'],
@@ -136,8 +136,7 @@ window.SkyNet = (() => {
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
-        ['/motion-v16.js', 'skynetMotionV16'],
-        ['/motion-scroll-scenes-v2.js', 'skynetMotionScrollScenesV2']
+        ['/motion-v17.js', 'skynetMotionV17']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
