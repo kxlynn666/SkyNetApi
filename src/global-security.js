@@ -17,6 +17,20 @@ function installGlobalSecurity(app) {
     allowedHeaders: ['Content-Type','x-api-key','Authorization']
   }));
 
+  // Keep legacy query-key support only for the documented direct image link.
+  // On every other route, strip it before any auth middleware can consume it.
+  app.use((req, res, next) => {
+    if (!req.query || !Object.prototype.hasOwnProperty.call(req.query, 'apikey')) return next();
+    const directCardLink = req.method === 'GET' && req.path === '/generate-card';
+    if (directCardLink) {
+      res.setHeader('Referrer-Policy','no-referrer');
+      res.setHeader('Cache-Control','no-store');
+      return next();
+    }
+    delete req.query.apikey;
+    return next();
+  });
+
   // Parse small JSON/form bodies before feature modules registered in server.js.
   // Multer routes keep handling multipart bodies themselves.
   app.use(express.json({ limit:'256kb' }));
