@@ -135,7 +135,7 @@ window.SkyNet = (() => {
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
-        ['/motion-v14.js', 'skynetMotionV14']
+        ['/motion-v16.js', 'skynetMotionV16']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
