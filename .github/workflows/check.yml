@@ -1,0 +1,27 @@
+name: Check SkyNetApi
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Syntax checks
+        run: npm run check
+      - name: Runtime dependency smoke test
+        run: |
+          node -e "const fs=require('fs'); const ffmpeg=require('ffmpeg-static'); if(!ffmpeg) throw new Error('ffmpeg-static sem binário'); fs.accessSync(ffmpeg); require('./src/tictactoe'); require('./src/profile-cosmetics-extra'); require('./src/profile-media'); console.log('runtime modules OK')"
