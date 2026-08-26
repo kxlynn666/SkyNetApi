@@ -9,7 +9,6 @@
   window.__SKYNET_MOTION_SCROLL_SCENES_V1__ = true;
   window.__SKYNET_MOTION_REPEAT_V1__ = true;
 
-  const softMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const observed = new WeakSet();
   const leaveTimers = new WeakMap();
   const pendingRoots = new Set();
@@ -27,44 +26,46 @@
   style.id = 'motionV17Styles';
   style.textContent = `
     body{position:relative;isolation:isolate}
-    .v17-sky{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:radial-gradient(circle at 50% 115%,rgba(70,58,121,.13),transparent 48%);contain:strict}
-    .v17-stars{position:absolute;inset:0;opacity:var(--v17-stars-opacity,.12);background-image:radial-gradient(circle,rgba(255,255,255,.38) 0 1px,transparent 1.4px),radial-gradient(circle,rgba(186,176,255,.25) 0 1px,transparent 1.3px);background-size:97px 97px,151px 151px;background-position:17px 23px,71px 49px;transition:opacity .35s linear}
+    body.workspace-body{background:transparent!important}
+    body.workspace-body .workspace-shell,body.workspace-body .workspace-loading{position:relative;z-index:1}
+    .v17-sky{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:#0b0713 radial-gradient(circle at 50% 112%,rgba(70,58,121,.2),transparent 50%);contain:strict}
+    .v17-stars{position:absolute;inset:0;opacity:var(--v17-stars-opacity,.12);background-image:radial-gradient(circle,rgba(255,255,255,.38) 0 1px,transparent 1.4px),radial-gradient(circle,rgba(186,176,255,.25) 0 1px,transparent 1.3px);background-size:97px 97px,151px 151px;background-position:17px 23px,71px 49px;transition:opacity .28s linear}
     .v17-cloud-scene,.v17-moon-scene{position:absolute;inset:0;pointer-events:none;will-change:opacity}
-    .v17-cloud-scene{opacity:var(--v17-cloud-scene-opacity,.72)}
-    .v17-cloud-bank{position:absolute;top:8vh;width:74vw;height:50vh;min-width:560px;min-height:300px;opacity:.88;filter:blur(11px);will-change:transform;background:radial-gradient(ellipse at 22% 50%,rgba(242,242,248,.23) 0 20%,transparent 48%),radial-gradient(ellipse at 48% 38%,rgba(205,199,244,.22) 0 22%,transparent 49%),radial-gradient(ellipse at 73% 57%,rgba(239,239,247,.19) 0 21%,transparent 47%),radial-gradient(ellipse at 50% 58%,rgba(101,88,166,.14),transparent 66%)}
-    .v17-cloud-left{left:-17vw;transform:translate3d(var(--v17-cloud-left-x,0vw),var(--v17-cloud-y,0px),0) scale(var(--v17-cloud-scale,1.04))}
-    .v17-cloud-right{right:-17vw;transform:translate3d(var(--v17-cloud-right-x,0vw),var(--v17-cloud-y,0px),0) scale(var(--v17-cloud-scale,1.04))}
-    .v17-cloud-center-glow{position:absolute;left:50%;top:28%;width:58vw;height:34vh;transform:translate(-50%,-50%) scale(var(--v17-cloud-glow-scale,.9));opacity:var(--v17-cloud-glow-opacity,.08);filter:blur(30px);background:radial-gradient(ellipse,rgba(137,121,235,.27),transparent 68%);will-change:transform,opacity}
+    .v17-cloud-scene{opacity:var(--v17-cloud-scene-opacity,.82)}
+    .v17-cloud-bank{position:absolute;top:6vh;width:76vw;height:54vh;min-width:580px;min-height:320px;opacity:.96;filter:blur(10px);will-change:transform;background:radial-gradient(ellipse at 20% 50%,rgba(247,247,252,.3) 0 20%,transparent 49%),radial-gradient(ellipse at 47% 38%,rgba(210,203,248,.28) 0 23%,transparent 50%),radial-gradient(ellipse at 74% 58%,rgba(243,243,250,.25) 0 21%,transparent 48%),radial-gradient(ellipse at 50% 58%,rgba(102,88,170,.18),transparent 68%)}
+    .v17-cloud-left{left:-18vw;transform:translate3d(var(--v17-cloud-left-x,0vw),var(--v17-cloud-y,0px),0) scale(var(--v17-cloud-scale,1.04))}
+    .v17-cloud-right{right:-18vw;transform:translate3d(var(--v17-cloud-right-x,0vw),var(--v17-cloud-y,0px),0) scale(var(--v17-cloud-scale,1.04))}
+    .v17-cloud-center-glow{position:absolute;left:50%;top:27%;width:62vw;height:38vh;transform:translate(-50%,-50%) scale(var(--v17-cloud-glow-scale,.9));opacity:var(--v17-cloud-glow-opacity,.1);filter:blur(28px);background:radial-gradient(ellipse,rgba(137,121,235,.34),transparent 68%);will-change:transform,opacity}
 
     .v17-moon-scene{opacity:var(--v17-moon-scene-opacity,0)}
-    .v17-moon{position:absolute;left:50%;top:48%;width:min(23vw,280px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%) scale(var(--v17-moon-scale,.76));opacity:var(--v17-moon-opacity,.05);will-change:transform,opacity;background:radial-gradient(circle at 31% 27%,rgba(255,255,255,.62) 0 3.8%,transparent 4.7%),radial-gradient(circle at 68% 35%,rgba(66,65,80,.12) 0 7%,transparent 8%),radial-gradient(circle at 41% 69%,rgba(54,53,70,.11) 0 9%,transparent 10%),radial-gradient(circle at 65% 72%,rgba(45,44,58,.09) 0 6%,transparent 7%),radial-gradient(circle at 35% 32%,#fffef7,#deded8 56%,#aaa8b8 100%);box-shadow:0 0 42px rgba(229,225,255,.18),0 0 130px rgba(122,105,225,.15)}
-    .v17-moon-cloud{position:absolute;top:30%;width:70vw;height:45vh;min-width:520px;filter:blur(12px);opacity:var(--v17-moon-cloud-opacity,.72);will-change:transform,opacity;background:radial-gradient(ellipse at 28% 50%,rgba(236,236,244,.22) 0 21%,transparent 48%),radial-gradient(ellipse at 55% 42%,rgba(188,180,230,.21) 0 23%,transparent 50%),radial-gradient(ellipse at 78% 58%,rgba(242,242,247,.17) 0 20%,transparent 47%)}
+    .v17-moon{position:absolute;left:50%;top:48%;width:min(23vw,280px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%) scale(var(--v17-moon-scale,.76));opacity:var(--v17-moon-opacity,.05);will-change:transform,opacity;background:radial-gradient(circle at 31% 27%,rgba(255,255,255,.62) 0 3.8%,transparent 4.7%),radial-gradient(circle at 68% 35%,rgba(66,65,80,.12) 0 7%,transparent 8%),radial-gradient(circle at 41% 69%,rgba(54,53,70,.11) 0 9%,transparent 10%),radial-gradient(circle at 65% 72%,rgba(45,44,58,.09) 0 6%,transparent 7%),radial-gradient(circle at 35% 32%,#fffef7,#deded8 56%,#aaa8b8 100%);box-shadow:0 0 42px rgba(229,225,255,.22),0 0 140px rgba(122,105,225,.2)}
+    .v17-moon-cloud{position:absolute;top:29%;width:72vw;height:47vh;min-width:540px;filter:blur(11px);opacity:var(--v17-moon-cloud-opacity,.78);will-change:transform,opacity;background:radial-gradient(ellipse at 28% 50%,rgba(241,241,247,.26) 0 21%,transparent 49%),radial-gradient(ellipse at 55% 42%,rgba(193,184,235,.25) 0 23%,transparent 51%),radial-gradient(ellipse at 78% 58%,rgba(246,246,250,.21) 0 20%,transparent 48%)}
     .v17-moon-cloud-left{left:-18vw;transform:translate3d(var(--v17-moon-left-x,0vw),var(--v17-moon-y,0px),0)}
     .v17-moon-cloud-right{right:-18vw;transform:translate3d(var(--v17-moon-right-x,0vw),var(--v17-moon-y,0px),0)}
 
-    .v17-reveal{opacity:0;transform:translate3d(0,16px,0) scale(.995);filter:blur(2.2px);transition:opacity 1.05s cubic-bezier(.16,1,.3,1),transform 1.12s cubic-bezier(.16,1,.3,1),filter .9s cubic-bezier(.16,1,.3,1);transform-origin:50% 30%}
+    .v17-reveal{opacity:0;transform:translate3d(0,14px,0) scale(.996);filter:blur(1.5px);transform-origin:50% 30%;transition:opacity 1.22s cubic-bezier(.16,1,.3,1),transform 1.28s cubic-bezier(.16,1,.3,1),filter 1.05s cubic-bezier(.16,1,.3,1)}
     .v17-reveal.v17-visible{opacity:1;transform:translate3d(0,0,0) scale(1);filter:none}
-    .v17-card-motion{transition:transform .62s cubic-bezier(.16,1,.3,1),box-shadow .62s cubic-bezier(.16,1,.3,1),border-color .4s ease!important}
-    .v17-card-motion.v17-visible:hover{transform:translate3d(0,-3px,0) scale(1.002);box-shadow:0 22px 58px rgba(0,0,0,.22)}
-    .v17-button-motion{transition:transform .28s cubic-bezier(.16,1,.3,1),background-color .28s ease,border-color .28s ease,box-shadow .35s ease!important}
+    .v17-reveal.v17-card-motion{transition:opacity 1.22s cubic-bezier(.16,1,.3,1),transform 1.28s cubic-bezier(.16,1,.3,1),filter 1.05s cubic-bezier(.16,1,.3,1),box-shadow .62s cubic-bezier(.16,1,.3,1),border-color .4s ease}
+    .v17-card-motion.v17-visible:hover{transition:transform .48s cubic-bezier(.16,1,.3,1),box-shadow .58s cubic-bezier(.16,1,.3,1),border-color .35s ease;transform:translate3d(0,-3px,0) scale(1.002);box-shadow:0 22px 58px rgba(0,0,0,.22)}
+    .v17-button-motion{transition:transform .3s cubic-bezier(.16,1,.3,1),background-color .28s ease,border-color .28s ease,box-shadow .35s ease!important}
     .v17-button-motion:hover{transform:translate3d(0,-1px,0)}
     .v17-button-motion:active{transform:translate3d(0,1px,0) scale(.985)!important}
-    .v17-topbar-enter{animation:v17-topbar-enter .78s cubic-bezier(.16,1,.3,1) both}
-    .v17-sidebar-enter{animation:v17-sidebar-enter .86s cubic-bezier(.16,1,.3,1) both}
-    @keyframes v17-topbar-enter{from{opacity:0;transform:translate3d(0,-10px,0);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
-    @keyframes v17-sidebar-enter{from{opacity:0;transform:translate3d(-12px,0,0);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+    .v17-topbar-enter{animation:v17-topbar-enter .9s cubic-bezier(.16,1,.3,1) both}
+    .v17-sidebar-enter{animation:v17-sidebar-enter .98s cubic-bezier(.16,1,.3,1) both}
+    @keyframes v17-topbar-enter{from{opacity:0;transform:translate3d(0,-9px,0);filter:blur(1.5px)}to{opacity:1;transform:none;filter:none}}
+    @keyframes v17-sidebar-enter{from{opacity:0;transform:translate3d(-11px,0,0);filter:blur(1.5px)}to{opacity:1;transform:none;filter:none}}
 
     @media(max-width:820px){
-      .v17-cloud-bank{width:112vw;min-width:0;height:42vh;min-height:230px;top:11vh;filter:blur(9px)}
-      .v17-cloud-left{left:-54vw}.v17-cloud-right{right:-54vw}
+      .v17-cloud-bank{width:114vw;min-width:0;height:44vh;min-height:240px;top:10vh;filter:blur(8px)}
+      .v17-cloud-left{left:-55vw}.v17-cloud-right{right:-55vw}
       .v17-moon{width:min(46vw,230px);top:48%}
-      .v17-moon-cloud{width:112vw;min-width:0;height:38vh;top:32%}
-      .v17-moon-cloud-left{left:-52vw}.v17-moon-cloud-right{right:-52vw}
-      .v17-reveal{transform:translate3d(0,12px,0) scale(.997);filter:blur(1.6px);transition-duration:.88s,.96s,.78s}
+      .v17-moon-cloud{width:114vw;min-width:0;height:40vh;top:31%}
+      .v17-moon-cloud-left{left:-53vw}.v17-moon-cloud-right{right:-53vw}
+      .v17-reveal{transform:translate3d(0,10px,0) scale(.998);filter:blur(1px);transition-duration:1s,1.08s,.9s}
     }
     @media(prefers-reduced-motion:reduce){
-      .v17-reveal{transform:translate3d(0,7px,0) scale(.998);filter:blur(1px);transition-duration:.65s,.72s,.58s}
-      .v17-card-motion{transition-duration:.4s!important}.v17-button-motion{transition-duration:.2s!important}
+      .v17-reveal{transform:translate3d(0,6px,0) scale(.999);filter:blur(.7px);transition-duration:.78s,.84s,.7s}
+      .v17-card-motion.v17-visible:hover{transform:translate3d(0,-2px,0)}
     }
   `;
   document.head.appendChild(style);
@@ -107,18 +108,17 @@
       const oldTimer = leaveTimers.get(node);
       if (oldTimer) { clearTimeout(oldTimer); leaveTimers.delete(node); }
 
-      if (entry.isIntersecting && entry.intersectionRatio > .025) {
+      if (entry.isIntersecting && entry.intersectionRatio > .02) {
         node.classList.add('v17-visible');
       } else if (!entry.isIntersecting) {
-        // Re-arm only after the element is actually outside the viewport.
         const timer = setTimeout(() => {
           if (node.isConnected) node.classList.remove('v17-visible');
           leaveTimers.delete(node);
-        }, 90);
+        }, 80);
         leaveTimers.set(node, timer);
       }
     }
-  }, { threshold:[0,.03,.12], rootMargin:'2% 0px 2% 0px' }) : null;
+  }, { threshold:[0,.02,.1], rootMargin:'1% 0px 1% 0px' }) : null;
 
   function decorate(root) {
     if (!(root instanceof Element) && root !== document.documentElement && root !== document.body) return;
@@ -131,8 +131,11 @@
       observed.add(node);
       node.classList.add('v17-reveal');
       if (node.matches(cardSelector)) node.classList.add('v17-card-motion');
-      if (revealObserver) requestAnimationFrame(() => revealObserver.observe(node));
-      else requestAnimationFrame(() => node.classList.add('v17-visible'));
+      if (revealObserver) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (node.isConnected) revealObserver.observe(node);
+        }));
+      } else requestAnimationFrame(() => node.classList.add('v17-visible'));
     }
 
     const cards = [];
@@ -171,35 +174,34 @@
     const u = y / vh;
     const mobile = innerWidth <= 820;
 
-    // Scene 1: at the top the banks meet in the middle. Scrolling down parts
-    // them; scrolling up runs the exact same progress backwards and closes them.
-    const cloudOpen = smootherstep((u - .02) / .72);
-    const cloudFade = 1 - smootherstep((u - 1.02) / .58);
-    const cloudShift = cloudOpen * (mobile ? 48 : 36);
+    // Closed at the top -> open while descending -> close along the exact same
+    // path when the user scrolls upward, because progress is position-based.
+    const cloudOpen = smootherstep((u - .01) / .66);
+    const cloudFade = 1 - smootherstep((u - 1.04) / .5);
+    const cloudShift = cloudOpen * (mobile ? 50 : 38);
 
-    // Scene 2 starts shortly below: another bank opens and reveals the moon.
-    // Because this is driven only by scroll position, going upward closes it.
-    const moonScene = smootherstep((u - .68) / .48);
-    const moonOpen = smootherstep((u - .93) / .82);
-    const moonReveal = smootherstep((u - 1.08) / .68);
-    const moonShift = moonOpen * (mobile ? 46 : 34);
+    // A little farther down, a second cloud bank opens to reveal the moon.
+    const moonScene = smootherstep((u - .62) / .42);
+    const moonOpen = smootherstep((u - .86) / .76);
+    const moonReveal = smootherstep((u - 1.0) / .62);
+    const moonShift = moonOpen * (mobile ? 48 : 36);
 
     root.style.setProperty('--v17-cloud-left-x', `${(-cloudShift).toFixed(2)}vw`);
     root.style.setProperty('--v17-cloud-right-x', `${cloudShift.toFixed(2)}vw`);
-    root.style.setProperty('--v17-cloud-y', `${(-Math.min(y, vh * 1.8) * .018).toFixed(1)}px`);
-    root.style.setProperty('--v17-cloud-scale', (1.04 + cloudOpen * .035).toFixed(4));
-    root.style.setProperty('--v17-cloud-glow-scale', (.9 + cloudOpen * .22).toFixed(4));
-    root.style.setProperty('--v17-cloud-glow-opacity', (.07 + cloudOpen * .16).toFixed(4));
-    root.style.setProperty('--v17-cloud-scene-opacity', (.72 * cloudFade).toFixed(4));
+    root.style.setProperty('--v17-cloud-y', `${(-Math.min(y, vh * 1.7) * .014).toFixed(1)}px`);
+    root.style.setProperty('--v17-cloud-scale', (1.04 + cloudOpen * .04).toFixed(4));
+    root.style.setProperty('--v17-cloud-glow-scale', (.9 + cloudOpen * .24).toFixed(4));
+    root.style.setProperty('--v17-cloud-glow-opacity', (.1 + cloudOpen * .2).toFixed(4));
+    root.style.setProperty('--v17-cloud-scene-opacity', (.84 * cloudFade).toFixed(4));
 
     root.style.setProperty('--v17-moon-scene-opacity', moonScene.toFixed(4));
     root.style.setProperty('--v17-moon-left-x', `${(-moonShift).toFixed(2)}vw`);
     root.style.setProperty('--v17-moon-right-x', `${moonShift.toFixed(2)}vw`);
-    root.style.setProperty('--v17-moon-y', `${(-Math.max(0, y - vh * .65) * .012).toFixed(1)}px`);
-    root.style.setProperty('--v17-moon-cloud-opacity', (.78 - moonReveal * .25).toFixed(4));
-    root.style.setProperty('--v17-moon-scale', (.76 + moonReveal * .25).toFixed(4));
-    root.style.setProperty('--v17-moon-opacity', (.04 + moonReveal * .92).toFixed(4));
-    root.style.setProperty('--v17-stars-opacity', (.11 + moonScene * .18).toFixed(4));
+    root.style.setProperty('--v17-moon-y', `${(-Math.max(0, y - vh * .6) * .008).toFixed(1)}px`);
+    root.style.setProperty('--v17-moon-cloud-opacity', (.82 - moonReveal * .3).toFixed(4));
+    root.style.setProperty('--v17-moon-scale', (.76 + moonReveal * .26).toFixed(4));
+    root.style.setProperty('--v17-moon-opacity', (.04 + moonReveal * .94).toFixed(4));
+    root.style.setProperty('--v17-stars-opacity', (.1 + moonScene * .2).toFixed(4));
   }
 
   function scheduleSky() {
@@ -213,6 +215,8 @@
     document.querySelector('.workspace-sidebar')?.classList.add('v17-sidebar-enter');
     updateSky();
 
+    // This observer never expires: content rendered after API calls or after the
+    // page is fully loaded still receives reveal/hover animation behavior.
     const observer = new MutationObserver(records => {
       for (const record of records) {
         for (const node of record.addedNodes || []) if (node.nodeType === 1 && !node.classList?.contains('v17-sky')) queueDecorate(node);
