@@ -2,6 +2,7 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const { createApp } = require('./src/app');
+const { installGlobalSecurity } = require('./src/global-security');
 const C = require('./src/config');
 const S = require('./src/store');
 const { registerTikTokRoutes } = require('./src/tiktok');
@@ -26,7 +27,7 @@ const { registerProfileMediaRoutes, cleanupProfileMediaAccount } = require('./sr
 const { registerExtraProfileCosmetics, cleanupExtraProfileCosmeticsAccount } = require('./src/profile-cosmetics-extra');
 
 const app = express();
-if (C.TRUST_PROXY) app.set('trust proxy', 1);
+installGlobalSecurity(app);
 
 try {
     const migration = migrateExclusiveProfileItems();
