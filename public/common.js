@@ -116,7 +116,7 @@ window.SkyNet = (() => {
 
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
-        ['/smooth-scroll-v2.js', 'skynetSmoothScrollV2'],
+        ['/smooth-scroll-v3.js', 'skynetSmoothScrollV3'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
@@ -136,7 +136,8 @@ window.SkyNet = (() => {
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
-        ['/motion-v16.js', 'skynetMotionV16']
+        ['/motion-v16.js', 'skynetMotionV16'],
+        ['/motion-scroll-scenes-v1.js', 'skynetMotionScrollScenesV1']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
