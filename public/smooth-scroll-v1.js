@@ -12,6 +12,7 @@
   style.textContent = `
     html{scroll-behavior:smooth;scroll-padding-top:84px}
     .workspace-nav,.workspace-content,.ttt-users,.list,.chat-messages,[data-smooth-scroll]{scroll-behavior:smooth;overscroll-behavior:contain}
+    .skynet-inertial-active{scroll-behavior:auto!important}
     @media(prefers-reduced-motion:reduce){html,.workspace-nav,.workspace-content,.ttt-users,.list,.chat-messages,[data-smooth-scroll]{scroll-behavior:auto!important}}
   `;
   document.head.appendChild(style);
@@ -58,6 +59,7 @@
     const state = states.get(element);
     if (!state) return;
     if (state.raf) cancelAnimationFrame(state.raf);
+    element.classList?.remove('skynet-inertial-active');
     states.delete(element);
   }
 
@@ -68,6 +70,7 @@
   function animate(element) {
     const state = states.get(element);
     if (!state || state.raf) return;
+    element.classList?.add('skynet-inertial-active');
     let last = performance.now();
 
     const frame = now => {
@@ -80,6 +83,7 @@
       if (Math.abs(diff) < 0.55) {
         element.scrollTop = current.target;
         current.raf = 0;
+        element.classList?.remove('skynet-inertial-active');
         states.delete(element);
         return;
       }
