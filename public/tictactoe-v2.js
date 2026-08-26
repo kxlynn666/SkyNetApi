@@ -1,0 +1,373 @@
+(() => {
+  if (window.__SKYNET_TICTACTOE_V2__) return;
+  window.__SKYNET_TICTACTOE_V2__ = true;
+
+  const S = window.SkyNet;
+  if (!S) return;
+
+  const PATH = '/painel/jogos';
+  const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const cleanPath = () => location.pathname.replace(/\/+$/, '') || '/';
+
+  let socket = null;
+  let game = null;
+  let localGame = null;
+  let stats = null;
+  let queued = false;
+  let invite = null;
+  let searchTimer = null;
+
+  const style = document.createElement('style');
+  style.id = 'tttV2Styles';
+  style.textContent = `
+    .ttt-v2{display:grid;gap:14px;max-width:1120px;margin:0 auto}.ttt-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;padding:20px;border:1px solid #29292e;background:#0a0a0c}.ttt-hero h2{font-size:clamp(30px,5vw,52px);margin:5px 0 8px;line-height:.95}.ttt-hero p{margin:0;color:#88888f;font-size:11px;line-height:1.55;max-width:650px}.ttt-live{font:600 8px 'IBM Plex Mono',monospace;color:#57f287;border:1px solid #2d4535;padding:6px 8px;background:#0e1510}.ttt-layout{display:grid;grid-template-columns:minmax(300px,.95fr) minmax(320px,1.05fr);gap:14px}.ttt-panel{border:1px solid #29292e;background:#0a0a0c;padding:16px}.ttt-panel h3{margin:0 0 5px;font-size:13px}.ttt-muted{color:#74747b;font-size:10px;line-height:1.5}.ttt-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:13px}.ttt-modes .button{min-width:0;padding:8px 5px;font-size:9px}.ttt-local-launch{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:11px;padding:11px;border:1px solid #34343b;background:#0e0e11}.ttt-local-launch strong,.ttt-local-launch span{display:block}.ttt-local-launch strong{font-size:10px}.ttt-local-launch span{font-size:8px;color:#76767e;margin-top:3px}.ttt-online-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.ttt-online-actions .button{width:100%}.ttt-search{margin-top:12px}.ttt-users{display:grid;gap:5px;margin-top:7px;max-height:210px;overflow:auto}.ttt-user{display:flex;align-items:center;gap:8px;border:1px solid #242429;background:#0e0e10;padding:8px}.ttt-user-copy{min-width:0;flex:1}.ttt-user strong,.ttt-user span{display:block}.ttt-user strong{font-size:10px}.ttt-user span{font-size:8px;color:#707077}.ttt-user .button{min-height:30px!important;font-size:8px!important;padding:5px 8px!important}.ttt-invite{margin-top:10px;padding:11px;border:1px solid #4a456b;background:#12111a;display:none}.ttt-invite.show{display:block}.ttt-invite-actions{display:flex;gap:6px;margin-top:8px}.ttt-game-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.ttt-player{display:flex;align-items:center;gap:7px;font-size:10px}.ttt-symbol{width:28px;height:28px;display:grid;place-items:center;border:1px solid #34343a;background:#111113;font:700 14px 'IBM Plex Mono',monospace}.ttt-player.active .ttt-symbol{border-color:#b7aff4;box-shadow:0 0 0 2px rgba(142,130,232,.08)}.ttt-local-score{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:-2px 0 12px}.ttt-local-score div{padding:8px;border:1px solid #29292e;background:#0e0e10;text-align:center}.ttt-local-score strong,.ttt-local-score span{display:block}.ttt-local-score strong{font-size:14px}.ttt-local-score span{font-size:7px;color:#707077;text-transform:uppercase}.ttt-local-score .draw{padding:4px 7px;border:0;background:transparent;font-size:8px;color:#77777f}.ttt-board{width:min(100%,430px);aspect-ratio:1;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:#050506}.ttt-cell{border:1px solid #303035;background:#111113;color:#f4f4f0;display:grid;place-items:center;font:700 clamp(38px,8vw,70px) 'IBM Plex Mono',monospace;cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease;min-width:0}.ttt-cell:hover:not(:disabled){background:#18181b;border-color:#55515f;transform:translateY(-1px)}.ttt-cell:disabled{cursor:default}.ttt-cell.win{border-color:#57f287;background:#101a13;color:#a8f3bd}.ttt-cell.x{color:#b7aff4}.ttt-cell.o{color:#8edfff}.ttt-status{text-align:center;min-height:20px;margin:11px 0 0;font-size:10px;color:#aaaab0}.ttt-game-actions{display:flex;justify-content:center;gap:7px;margin-top:10px;flex-wrap:wrap}.ttt-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}.ttt-stat{padding:9px;border:1px solid #25252a;background:#0e0e10}.ttt-stat strong,.ttt-stat span{display:block}.ttt-stat strong{font-size:16px}.ttt-stat span{font-size:7px;color:#707077;text-transform:uppercase}.ttt-ranking{display:grid;gap:5px;margin-top:10px}.ttt-rank{display:grid;grid-template-columns:30px 1fr auto;gap:7px;align-items:center;padding:7px;border-bottom:1px solid #222226;font-size:9px}.ttt-rank b{font-family:'IBM Plex Mono',monospace;color:#8e82e8}.ttt-empty{padding:24px;text-align:center;color:#66666d;font-size:10px;border:1px dashed #2a2a2f}.ttt-queue{color:#fee75c!important}.ttt-divider{height:1px;background:#242429;margin-top:16px}
+    @media(max-width:850px){.ttt-layout{grid-template-columns:1fr}.ttt-hero{grid-template-columns:1fr}.ttt-live{justify-self:start}.ttt-board{max-width:420px}}
+    @media(max-width:430px){.ttt-panel{padding:11px}.ttt-modes{gap:5px}.ttt-online-actions,.ttt-local-launch{grid-template-columns:1fr}.ttt-stats{grid-template-columns:repeat(2,1fr)}.ttt-board{gap:4px}.ttt-local-launch .button{width:100%}}
+  `;
+  document.head.appendChild(style);
+
+  function installNav() {
+    const nav = document.querySelector('#workspaceSidebar .workspace-nav');
+    if (!nav || document.getElementById('tttNavGroup')) return false;
+    const group = document.createElement('div');
+    group.className = 'workspace-nav-group';
+    group.id = 'tttNavGroup';
+    group.innerHTML = `<div class="workspace-nav-label">Jogos</div><a class="workspace-nav-link ${cleanPath() === PATH ? 'active' : ''}" href="${PATH}"><span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM9.7 5v14M14.3 5v14M5 9.7h14M5 14.3h14"/></svg></span><span>Jogo da Velha</span></a>`;
+    nav.appendChild(group);
+    if (cleanPath() === PATH) document.querySelectorAll('.workspace-nav-link').forEach(a => a.classList.toggle('active', a.getAttribute('href') === PATH));
+    return true;
+  }
+
+  function waitWorkspace() {
+    const ready = () => document.getElementById('workspaceShell') && !document.getElementById('workspaceShell').classList.contains('hidden') && document.querySelector('#workspaceSidebar .workspace-nav');
+    if (ready()) {
+      installNav();
+      if (cleanPath() === PATH) renderPage();
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      if (!ready()) return;
+      installNav();
+      if (cleanPath() === PATH) renderPage();
+      observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+
+  function renderPage() {
+    document.getElementById('workspaceKicker').textContent = 'Jogos / Social';
+    document.getElementById('workspaceTitle').textContent = 'Jogo da Velha';
+    document.getElementById('workspaceDescription').textContent = 'Jogue contra bots, online ou com duas pessoas no mesmo dispositivo.';
+    document.title = 'Jogo da Velha - SkyNetApi';
+    const root = document.getElementById('workspaceContent');
+    root.innerHTML = `<div class="ttt-v2"><section class="ttt-hero"><div><div class="workspace-kicker">TIC TAC TOE / LOCAL + REALTIME</div><h2>Três em linha.<br>Do seu jeito.</h2><p>Jogue contra bots, desafie usuários online ou use o modo 1v1 local para duas pessoas jogarem alternando no mesmo dispositivo.</p></div><span class="ttt-live" id="tttConnection">CONECTANDO</span></section><div class="ttt-layout"><div><section class="ttt-panel"><h3>Contra bot</h3><div class="ttt-muted">Fácil joga aleatoriamente; Médio procura vitórias e bloqueios; Difícil usa estratégia ótima.</div><div class="ttt-modes"><button class="button" data-bot="easy">Fácil</button><button class="button" data-bot="medium">Médio</button><button class="button primary" data-bot="hard">Difícil</button></div><div class="ttt-local-launch"><div><strong>1v1 local</strong><span>Duas pessoas no mesmo PC ou celular. Não precisa de conexão para a partida.</span></div><button class="button primary" id="tttLocal" type="button">Jogar local</button></div><div class="ttt-divider"></div><h3 style="margin-top:16px">Contra usuários online</h3><div class="ttt-online-actions"><button class="button primary" id="tttQueue">Partida rápida</button><button class="button" id="tttQueueLeave" hidden>Sair da fila</button></div><div class="ttt-search"><input id="tttSearch" placeholder="Buscar @usuário" autocomplete="off"><div class="ttt-users" id="tttUsers"></div></div><div class="ttt-invite" id="tttInvite"></div></section><section class="ttt-panel" style="margin-top:14px"><h3>Suas estatísticas online</h3><div class="ttt-stats" id="tttStats"></div><h3 style="margin-top:16px">Ranking PvP online</h3><div class="ttt-ranking" id="tttRanking"><div class="ttt-muted">Carregando...</div></div></section></div><section class="ttt-panel"><div id="tttGame"><div class="ttt-empty">Escolha um modo para começar uma partida.</div></div></section></div></div>`;
+    bindUi();
+    connectSocket();
+    loadStats();
+    loadRanking();
+  }
+
+  function bindUi() {
+    document.querySelectorAll('[data-bot]').forEach(button => button.addEventListener('click', () => startBot(button.dataset.bot)));
+    document.getElementById('tttLocal')?.addEventListener('click', startLocal);
+    document.getElementById('tttQueue')?.addEventListener('click', joinQueue);
+    document.getElementById('tttQueueLeave')?.addEventListener('click', () => socket?.emit('ttt:queue:leave'));
+    const input = document.getElementById('tttSearch');
+    input?.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => searchUsers(input.value.trim()), 250);
+    });
+  }
+
+  function startBot(difficulty) {
+    if (!socket?.connected) return notify('Conecte-se para jogar contra o bot.');
+    localGame = null;
+    socket.emit('ttt:bot:start', { difficulty });
+  }
+
+  function joinQueue() {
+    if (!socket?.connected) return notify('Sem conexão com o modo online.');
+    if (localGame) {
+      localGame = null;
+      renderGame('Modo local encerrado.');
+    }
+    socket.emit('ttt:queue:join');
+  }
+
+  function startLocal() {
+    if (game?.status === 'playing') return notify('Saia da partida online atual antes de iniciar o 1v1 local.');
+    if (game) {
+      socket?.emit('ttt:leave');
+      game = null;
+    }
+    if (queued) socket?.emit('ttt:queue:leave');
+    queued = false;
+    renderQueue();
+    localGame = makeLocalRound({ x: 0, o: 0, draws: 0 }, 1, 'X');
+    renderGame();
+  }
+
+  function makeLocalRound(scores, round, starter) {
+    return { board: Array(9).fill(''), turn: starter, starter, status: 'playing', winner: null, winningLine: [], scores: { ...scores }, round };
+  }
+
+  function localMove(index) {
+    if (!localGame || localGame.status !== 'playing' || localGame.board[index]) return;
+    const symbol = localGame.turn;
+    localGame.board[index] = symbol;
+    const result = localResult(localGame.board);
+    if (result.winner) {
+      localGame.status = 'finished';
+      localGame.winner = result.winner;
+      localGame.winningLine = result.line;
+      localGame.scores[result.winner.toLowerCase()] += 1;
+    } else if (result.draw) {
+      localGame.status = 'finished';
+      localGame.winner = 'draw';
+      localGame.scores.draws += 1;
+    } else {
+      localGame.turn = symbol === 'X' ? 'O' : 'X';
+    }
+    renderGame();
+  }
+
+  function localResult(board) {
+    for (const line of WIN_LINES) {
+      const [a,b,c] = line;
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) return { winner: board[a], line };
+    }
+    return { winner: null, line: [], draw: board.every(Boolean) };
+  }
+
+  function localRematch() {
+    if (!localGame) return;
+    const nextStarter = localGame.starter === 'X' ? 'O' : 'X';
+    localGame = makeLocalRound(localGame.scores, localGame.round + 1, nextStarter);
+    renderGame();
+  }
+
+  function localRestartRound() {
+    if (!localGame) return;
+    localGame = makeLocalRound(localGame.scores, localGame.round, localGame.starter);
+    renderGame();
+  }
+
+  function localResetScore() {
+    localGame = makeLocalRound({ x: 0, o: 0, draws: 0 }, 1, 'X');
+    renderGame();
+  }
+
+  async function searchUsers(query) {
+    const root = document.getElementById('tttUsers');
+    if (!root) return;
+    if (query.length < 2) {
+      root.innerHTML = '';
+      return;
+    }
+    try {
+      const data = await S.api(`/api/social/users?q=${encodeURIComponent(query)}`);
+      const users = (data.users || []).slice(0, 8);
+      root.innerHTML = users.length ? users.map(user => `<div class="ttt-user"><div class="ttt-user-copy"><strong>${S.escapeHtml(user.displayName || user.username)}</strong><span>@${S.escapeHtml(user.username)}</span></div><button class="button small" data-challenge="${S.escapeHtml(user.id)}">Desafiar</button></div>`).join('') : '<div class="ttt-muted">Nenhum usuário encontrado.</div>';
+      root.querySelectorAll('[data-challenge]').forEach(button => button.addEventListener('click', () => {
+        if (localGame) {
+          localGame = null;
+          renderGame('Modo local encerrado.');
+        }
+        socket?.emit('ttt:challenge', { userId: button.dataset.challenge });
+        button.disabled = true;
+        button.textContent = 'Enviado';
+      }));
+    } catch (error) {
+      root.innerHTML = `<div class="ttt-muted">${S.escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  function connectSocket() {
+    if (socket || typeof io !== 'function') return;
+    socket = io();
+    const connection = document.getElementById('tttConnection');
+    socket.on('connect', () => {
+      if (connection) {
+        connection.textContent = 'ONLINE';
+        connection.style.color = '#57f287';
+      }
+    });
+    socket.on('disconnect', () => {
+      if (connection) {
+        connection.textContent = 'OFFLINE / LOCAL OK';
+        connection.style.color = '#fee75c';
+      }
+    });
+    socket.on('ttt:ready', data => {
+      stats = data.stats || stats;
+      queued = Boolean(data.queued);
+      renderStats();
+      renderQueue();
+    });
+    socket.on('ttt:stats', data => {
+      stats = data.stats || stats;
+      renderStats();
+      loadRanking();
+    });
+    socket.on('ttt:game', data => {
+      localGame = null;
+      game = data;
+      queued = false;
+      renderQueue();
+      renderGame();
+    });
+    socket.on('ttt:queue', data => {
+      queued = Boolean(data.queued);
+      renderQueue();
+    });
+    socket.on('ttt:challenge', data => {
+      invite = data;
+      renderInvite();
+    });
+    socket.on('ttt:challenge:expired', data => {
+      if (invite?.inviteId === data.inviteId) {
+        invite = null;
+        renderInvite();
+      }
+    });
+    socket.on('ttt:challenge:declined', () => notify('Desafio recusado.'));
+    socket.on('ttt:challenge:sent', data => notify(`Desafio enviado para @${data.to?.username || 'usuário'}.`));
+    socket.on('ttt:rematch:state', () => notify('Revanche solicitada.'));
+    socket.on('ttt:left', data => {
+      game = null;
+      if (!localGame) renderGame(data.reason || 'Partida encerrada.');
+    });
+    socket.on('ttt:error', data => notify(data.error || 'Erro na partida.'));
+  }
+
+  function renderQueue() {
+    const join = document.getElementById('tttQueue');
+    const leave = document.getElementById('tttQueueLeave');
+    if (!join || !leave) return;
+    join.hidden = queued;
+    leave.hidden = !queued;
+    leave.classList.toggle('ttt-queue', queued);
+    leave.textContent = queued ? 'Buscando jogador…' : 'Sair da fila';
+  }
+
+  function renderInvite() {
+    const root = document.getElementById('tttInvite');
+    if (!root) return;
+    if (!invite) {
+      root.classList.remove('show');
+      root.innerHTML = '';
+      return;
+    }
+    root.classList.add('show');
+    root.innerHTML = `<strong>@${S.escapeHtml(invite.from?.username || 'usuário')} desafiou você</strong><div class="ttt-muted">O convite expira em cerca de um minuto.</div><div class="ttt-invite-actions"><button class="button primary small" data-accept>Aceitar</button><button class="button small" data-decline>Recusar</button></div>`;
+    root.querySelector('[data-accept]').onclick = () => {
+      localGame = null;
+      socket.emit('ttt:challenge:accept', { inviteId: invite.inviteId });
+      invite = null;
+      renderInvite();
+    };
+    root.querySelector('[data-decline]').onclick = () => {
+      socket.emit('ttt:challenge:decline', { inviteId: invite.inviteId });
+      invite = null;
+      renderInvite();
+    };
+  }
+
+  function renderGame(message = '') {
+    if (localGame) return renderLocalGame(message);
+    const root = document.getElementById('tttGame');
+    if (!root) return;
+    if (!game) {
+      root.innerHTML = `<div class="ttt-empty">${S.escapeHtml(message || 'Escolha um modo para começar uma partida.')}</div>`;
+      return;
+    }
+    const mine = game.viewerSymbol;
+    const opponent = mine === 'X' ? game.o : game.x;
+    let status = message;
+    if (!status) {
+      if (game.status === 'finished') {
+        status = game.winner === 'draw' ? 'Empate.' : game.winner === mine ? 'Você venceu!' : 'Você perdeu.';
+        if (game.forfeitReason) status += ` ${game.forfeitReason}`;
+      } else status = game.canMove ? 'Sua vez.' : `Vez de ${game.turn}.`;
+    }
+    root.innerHTML = `<div class="ttt-game-head"><div class="ttt-player ${game.turn === game.viewerSymbol && game.status === 'playing' ? 'active' : ''}"><span class="ttt-symbol">${S.escapeHtml(mine || '?')}</span><span>Você</span></div><div class="ttt-muted">VS</div><div class="ttt-player ${game.turn !== game.viewerSymbol && game.status === 'playing' ? 'active' : ''}"><span>@${S.escapeHtml(opponent?.username || 'Bot')}</span><span class="ttt-symbol">${game.viewerSymbol === 'X' ? 'O' : 'X'}</span></div></div><div class="ttt-board">${game.board.map((value,index) => `<button class="ttt-cell ${value ? value.toLowerCase() : ''} ${(game.winningLine || []).includes(index) ? 'win' : ''}" data-cell="${index}" ${(!game.canMove || value || game.status !== 'playing') ? 'disabled' : ''} aria-label="Casa ${index + 1}${value ? `, ${value}` : ''}">${value || ''}</button>`).join('')}</div><div class="ttt-status">${S.escapeHtml(status)}</div><div class="ttt-game-actions">${game.status === 'finished' ? '<button class="button primary small" data-rematch>Revanche</button>' : ''}<button class="button small" data-leave>Sair</button></div>`;
+    root.querySelectorAll('[data-cell]').forEach(button => button.addEventListener('click', () => {
+      button.disabled = true;
+      socket.emit('ttt:move', { gameId: game.id, index: Number(button.dataset.cell) });
+    }));
+    root.querySelector('[data-rematch]')?.addEventListener('click', event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = 'Aguardando…';
+      socket.emit('ttt:rematch', { gameId: game.id });
+    });
+    root.querySelector('[data-leave]')?.addEventListener('click', () => socket.emit('ttt:leave'));
+  }
+
+  function renderLocalGame(message = '') {
+    const root = document.getElementById('tttGame');
+    if (!root || !localGame) return;
+    const currentName = localGame.turn === 'X' ? 'Jogador 1' : 'Jogador 2';
+    let status = message;
+    if (!status) {
+      if (localGame.status === 'finished') {
+        status = localGame.winner === 'draw' ? 'Empate!' : `${localGame.winner === 'X' ? 'Jogador 1' : 'Jogador 2'} venceu!`;
+      } else status = `Vez do ${currentName} (${localGame.turn}).`;
+    }
+    root.innerHTML = `<div class="ttt-game-head"><div class="ttt-player ${localGame.turn === 'X' && localGame.status === 'playing' ? 'active' : ''}"><span class="ttt-symbol">X</span><span>Jogador 1</span></div><div class="ttt-muted">1V1 LOCAL · RODADA ${localGame.round}</div><div class="ttt-player ${localGame.turn === 'O' && localGame.status === 'playing' ? 'active' : ''}"><span>Jogador 2</span><span class="ttt-symbol">O</span></div></div><div class="ttt-local-score"><div><strong>${localGame.scores.x}</strong><span>Jogador 1 · X</span></div><span class="draw">${localGame.scores.draws} empate${localGame.scores.draws === 1 ? '' : 's'}</span><div><strong>${localGame.scores.o}</strong><span>Jogador 2 · O</span></div></div><div class="ttt-board">${localGame.board.map((value,index) => `<button class="ttt-cell ${value ? value.toLowerCase() : ''} ${localGame.winningLine.includes(index) ? 'win' : ''}" data-local-cell="${index}" ${(value || localGame.status !== 'playing') ? 'disabled' : ''} aria-label="Casa ${index + 1}${value ? `, ${value}` : ''}">${value || ''}</button>`).join('')}</div><div class="ttt-status">${S.escapeHtml(status)}</div><div class="ttt-game-actions">${localGame.status === 'finished' ? '<button class="button primary small" data-local-rematch>Revanche</button>' : '<button class="button small" data-local-restart>Reiniciar rodada</button>'}<button class="button small" data-local-reset>Zerar placar</button><button class="button small" data-local-leave>Sair</button></div>`;
+    root.querySelectorAll('[data-local-cell]').forEach(button => button.addEventListener('click', () => localMove(Number(button.dataset.localCell))));
+    root.querySelector('[data-local-rematch]')?.addEventListener('click', localRematch);
+    root.querySelector('[data-local-restart]')?.addEventListener('click', localRestartRound);
+    root.querySelector('[data-local-reset]')?.addEventListener('click', localResetScore);
+    root.querySelector('[data-local-leave]')?.addEventListener('click', () => {
+      localGame = null;
+      renderGame('Modo 1v1 local encerrado.');
+    });
+  }
+
+  async function loadStats() {
+    try {
+      const data = await S.api('/api/tictactoe/me');
+      stats = data.stats;
+      if (data.activeGame && !localGame) {
+        game = data.activeGame;
+        renderGame();
+      }
+      renderStats();
+    } catch {}
+  }
+
+  function renderStats() {
+    const root = document.getElementById('tttStats');
+    if (!root) return;
+    const current = stats || {};
+    root.innerHTML = [['Partidas',current.games || 0],['Vitórias',current.wins || 0],['Empates',current.draws || 0],['PvP',current.pvp?.wins || 0]].map(([label,value]) => `<div class="ttt-stat"><strong>${Number(value).toLocaleString('pt-BR')}</strong><span>${label}</span></div>`).join('');
+  }
+
+  async function loadRanking() {
+    const root = document.getElementById('tttRanking');
+    if (!root) return;
+    try {
+      const data = await S.api('/api/tictactoe/leaderboard');
+      root.innerHTML = (data.leaderboard || []).slice(0,8).map((row,index) => `<div class="ttt-rank"><b>#${index + 1}</b><span>@${S.escapeHtml(row.username)}</span><strong>${Number(row.pvpWins || 0)} vit.</strong></div>`).join('') || '<div class="ttt-muted">Ainda não há partidas PvP registradas.</div>';
+    } catch {
+      root.innerHTML = '<div class="ttt-muted">Ranking indisponível.</div>';
+    }
+  }
+
+  function notify(text) {
+    const status = document.querySelector('.ttt-status');
+    if (status && (game || localGame)) {
+      status.textContent = text;
+      return;
+    }
+    const connection = document.getElementById('tttConnection');
+    if (!connection) return;
+    const old = connection.textContent;
+    connection.textContent = text.slice(0, 28);
+    setTimeout(() => {
+      connection.textContent = socket?.connected ? 'ONLINE' : old;
+    }, 2200);
+  }
+
+  waitWorkspace();
+})();
