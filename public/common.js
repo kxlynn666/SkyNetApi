@@ -116,6 +116,7 @@ window.SkyNet = (() => {
 
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
+        ['/smooth-scroll-v2.js', 'skynetSmoothScrollV2'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
