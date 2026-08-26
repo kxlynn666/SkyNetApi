@@ -35,6 +35,14 @@
     document.head.appendChild(script);
   }
 
+  if (!document.querySelector('script[src="/smooth-scroll-v1.js"]')) {
+    const smooth = document.createElement('script');
+    smooth.src = '/smooth-scroll-v1.js';
+    smooth.async = false;
+    smooth.dataset.skynetSmoothScrollV1 = '1';
+    document.head.appendChild(smooth);
+  }
+
   reduceMotion.addEventListener?.('change', clearPageFlash);
   setTimeout(clearPageFlash, 1400);
   setTimeout(() => observer.disconnect(), 5000);
