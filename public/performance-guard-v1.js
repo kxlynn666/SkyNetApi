@@ -52,17 +52,18 @@
       html.skynet-page-hidden .cosmetic-avatar::before,
       html.skynet-page-hidden .cosmetic-avatar::after,
       html.skynet-page-hidden .profile-tag{animation-play-state:paused!important}
+
+      /* Emergency mode now keeps motion alive, only reducing GPU-heavy effects. */
       html.skynet-emergency-lite .profile-surface::before,
-      html.skynet-emergency-lite .profile-surface::after,
+      html.skynet-emergency-lite .profile-surface::after{animation-duration:20s!important;filter:none!important}
       html.skynet-emergency-lite .cosmetic-avatar::before,
-      html.skynet-emergency-lite .cosmetic-avatar::after,
-      html.skynet-emergency-lite .profile-tag{animation:none!important;filter:none!important}
+      html.skynet-emergency-lite .cosmetic-avatar::after{animation-duration:16s!important;filter:none!important}
+      html.skynet-emergency-lite .profile-tag{animation-duration:12s!important;filter:none!important}
       html.skynet-emergency-lite .topbar,
       html.skynet-emergency-lite .workspace-topbar,
       html.skynet-emergency-lite .workspace-mobile-dock,
       html.skynet-emergency-lite .skynet-music-bar,
       html.skynet-emergency-lite .profile-v3-tabs{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-      html.skynet-emergency-lite *{scroll-behavior:auto!important}
       .skynet-action-busy{pointer-events:none!important;opacity:.72!important}
     `;
     document.head.appendChild(style);
