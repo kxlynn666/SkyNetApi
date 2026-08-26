@@ -137,7 +137,7 @@ window.SkyNet = (() => {
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
         ['/motion-v16.js', 'skynetMotionV16'],
-        ['/motion-scroll-scenes-v1.js', 'skynetMotionScrollScenesV1']
+        ['/motion-scroll-scenes-v2.js', 'skynetMotionScrollScenesV2']
     ];
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
