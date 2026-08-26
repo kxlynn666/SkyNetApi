@@ -21,6 +21,9 @@ const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migrat
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
+const { registerTicTacToeRoutes, attachTicTacToeSocket, cleanupTicTacToeAccount } = require('./src/tictactoe');
+const { registerProfileMediaRoutes, cleanupProfileMediaAccount } = require('./src/profile-media');
+const { registerExtraProfileCosmetics, cleanupExtraProfileCosmeticsAccount } = require('./src/profile-cosmetics-extra');
 
 const app = express();
 if (C.TRUST_PROXY) app.set('trust proxy', 1);
@@ -54,7 +57,10 @@ app.use((req, res, next) => {
                     cleanupProfileEconomyAccount(accountId);
                     cleanupProfileDesignAccount(accountId);
                     cleanupStickersAccount(accountId);
-                } catch (error) { console.error('Falha ao limpar dados comunitários:', error); }
+                    cleanupTicTacToeAccount(accountId);
+                    cleanupProfileMediaAccount(accountId);
+                    cleanupExtraProfileCosmeticsAccount(accountId);
+                } catch (error) { console.error('Falha ao limpar dados da conta:', error); }
             }
         });
     }
@@ -69,6 +75,9 @@ registerXpAdminRoutes(app);
 registerMusicRoutes(app);
 registerBratRoutes(app);
 registerBotLogRoutes(app);
+registerTicTacToeRoutes(app);
+registerProfileMediaRoutes(app);
+registerExtraProfileCosmetics(app);
 registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
@@ -126,6 +135,7 @@ const workspaceRoutes = [
     '/painel/chat',
     '/painel/figurinhas',
     '/painel/grupos',
+    '/painel/jogos',
     '/painel/musica',
     '/painel/visual',
     '/painel/upscale',
@@ -187,6 +197,7 @@ io.use((socket, next) => {
 });
 
 attachCommunitySocket(io);
+attachTicTacToeSocket(io);
 
 server.listen(C.PORT, () => {
     console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
