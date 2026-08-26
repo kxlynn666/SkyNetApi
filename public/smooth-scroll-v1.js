@@ -2,7 +2,7 @@
   if (window.__SKYNET_SMOOTH_SCROLL_V1__) return;
   window.__SKYNET_SMOOTH_SCROLL_V1__ = true;
 
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const softMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const finePointer = matchMedia('(hover:hover) and (pointer:fine)');
   const root = document.scrollingElement || document.documentElement;
   const states = new Map();
@@ -13,7 +13,6 @@
     html{scroll-behavior:smooth;scroll-padding-top:84px}
     .workspace-nav,.workspace-content,.ttt-users,.list,.chat-messages,[data-smooth-scroll]{scroll-behavior:smooth;overscroll-behavior:contain}
     .skynet-inertial-active{scroll-behavior:auto!important}
-    @media(prefers-reduced-motion:reduce){html,.workspace-nav,.workspace-content,.ttt-users,.list,.chat-messages,[data-smooth-scroll]{scroll-behavior:auto!important}}
   `;
   document.head.appendChild(style);
 
@@ -48,7 +47,8 @@
     let value = event.deltaY;
     if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) value *= 18;
     else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) value *= innerHeight * 0.88;
-    return Math.max(-460, Math.min(460, value));
+    const limit = softMotion.matches ? 300 : 460;
+    return Math.max(-limit, Math.min(limit, value));
   }
 
   function likelyTrackpad(event) {
@@ -87,7 +87,8 @@
         states.delete(element);
         return;
       }
-      const factor = 1 - Math.pow(0.80, dt / 16.667);
+      const base = softMotion.matches ? 0.72 : 0.80;
+      const factor = 1 - Math.pow(base, dt / 16.667);
       element.scrollTop = position + diff * factor;
       current.raf = requestAnimationFrame(frame);
     };
@@ -96,7 +97,7 @@
   }
 
   function onWheel(event) {
-    if (event.defaultPrevented || reduceMotion.matches || !finePointer.matches) return;
+    if (event.defaultPrevented || !finePointer.matches) return;
     if (event.ctrlKey || event.metaKey || event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     if (!event.deltaY || likelyTrackpad(event)) return;
     if (event.target instanceof Element && event.target.closest('textarea,select,input[type="number"],input[type="range"],[contenteditable="true"],[data-native-scroll]')) return;
@@ -124,5 +125,5 @@
   addEventListener('keydown', event => {
     if (['Home','End','PageUp','PageDown','ArrowUp','ArrowDown',' '].includes(event.key)) cancelAll();
   });
-  reduceMotion.addEventListener?.('change', cancelAll);
+  softMotion.addEventListener?.('change', cancelAll);
 })();
