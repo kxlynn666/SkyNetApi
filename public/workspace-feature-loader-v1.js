@@ -36,10 +36,7 @@
     return true;
   }
 
-  const tryNav = () => {
-    if (addGamesNav()) return true;
-    return false;
-  };
+  const tryNav = () => addGamesNav();
 
   if (!tryNav()) {
     const navObserver = new MutationObserver(() => {
@@ -55,6 +52,6 @@
   }
 
   if (path === '/painel/jogos') {
-    loadScript('/tictactoe-v1.js', 'tictactoeV1');
+    loadScript('/tictactoe-v2.js', 'tictactoeV2');
   }
 })();
