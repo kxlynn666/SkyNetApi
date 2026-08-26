@@ -53,7 +53,7 @@ function attachTicTacToeSocket(io) {
 
         socket.on('ttt:bot:start', payload => safeSocket(socket, () => {
             leaveQueue(userId);
-            leaveCurrentGame(userId, 'Nova partida iniciada.', false);
+            leaveCurrentGame(userId, 'Nova partida iniciada.', true);
             const difficulty = ['easy','medium','hard'].includes(payload?.difficulty) ? payload.difficulty : 'easy';
             const game = newGame({ type: 'bot', players: [userId, 'bot'], difficulty });
             games.set(game.id, game);
@@ -81,6 +81,7 @@ function attachTicTacToeSocket(io) {
             if (!target) return socket.emit('ttt:error', { error: 'Usuário não encontrado.' });
             if (playerGames.has(userId)) return socket.emit('ttt:error', { error: 'Você já está em uma partida.' });
             if (playerGames.has(targetId)) return socket.emit('ttt:error', { error: 'Esse usuário já está em uma partida.' });
+            if ([...invites.values()].filter(item => item.fromId === userId && item.expiresAt > Date.now()).length >= 3) return socket.emit('ttt:error', { error: 'Você já possui muitos desafios pendentes.' });
             const invite = { id: randomId(), fromId: userId, toId: targetId, createdAt: Date.now(), expiresAt: Date.now() + 60000 };
             invites.set(invite.id, invite);
             setTimeout(() => {
@@ -121,8 +122,12 @@ function attachTicTacToeSocket(io) {
             const game = gameId ? games.get(gameId) : null;
             if (!game || game.type !== 'pvp' || game.status === 'finished') return;
             clearDisconnect(userId);
-            const timer = setTimeout(() => {
+            const timer = setTimeout(async () => {
                 disconnectTimers.delete(userId);
+                try {
+                    const connected = await io.in(userRoom(userId)).fetchSockets();
+                    if (connected.length) return;
+                } catch {}
                 const currentId = playerGames.get(userId);
                 const current = currentId ? games.get(currentId) : null;
                 if (!current || current.status === 'finished') return;
@@ -154,9 +159,10 @@ function startPvpGame(game) {
 function matchQueue() {
     while (queue.length >= 2) {
         const a = queue.shift();
-        const b = queue.find(id => id !== a && !playerGames.has(id));
-        if (!a || !b || playerGames.has(a)) continue;
-        queue.splice(queue.indexOf(b), 1);
+        if (!a || playerGames.has(a)) continue;
+        const bIndex = queue.findIndex(id => id !== a && !playerGames.has(id));
+        if (bIndex < 0) { queue.unshift(a); break; }
+        const [b] = queue.splice(bIndex, 1);
         const game = newGame({ type: 'pvp', players: shufflePair(a,b) });
         ioServer.to(userRoom(a)).emit('ttt:queue', { queued: false });
         ioServer.to(userRoom(b)).emit('ttt:queue', { queued: false });
@@ -322,7 +328,13 @@ function loadStats(){ensureStorage();try{const v=JSON.parse(fs.readFileSync(STAT
 function getStats(accountId){const found=loadStats().find(r=>r.accountId===accountId)||{};return normalizeStats(accountId,found);}
 function normalizeStats(accountId,row){return {accountId,games:Number(row.games||0),wins:Number(row.wins||0),losses:Number(row.losses||0),draws:Number(row.draws||0),pvp:{...emptyBucket(),...(row.pvp||{})},bot:{easy:{...emptyBucket(),...(row.bot?.easy||{})},medium:{...emptyBucket(),...(row.bot?.medium||{})},hard:{...emptyBucket(),...(row.bot?.hard||{})}},updatedAt:row.updatedAt||null};}
 function emptyBucket(){return{games:0,wins:0,losses:0,draws:0};}
-function updateStats(accountId,outcome,mode){const all=loadStats();let row=all.find(r=>r.accountId===accountId);if(!row){row=normalizeStats(accountId,{});all.push(row);}else Object.assign(row,normalizeStats(accountId,row));row.games++;row[`${outcome}s`]++;const bucket=mode==='pvp'?row.pvp:row.bot[mode.split(':')[1]];bucket.games++;bucket[`${outcome}s`]++;row.updatedAt=new Date().toISOString();writeJsonAtomic(STATS_FILE,all);ioServer?.to(userRoom(accountId)).emit('ttt:stats',{stats:row});}
+function updateStats(accountId,outcome,mode){
+    const all=loadStats();let row=all.find(r=>r.accountId===accountId);if(!row){row=normalizeStats(accountId,{});all.push(row);}else Object.assign(row,normalizeStats(accountId,row));
+    row.games++;
+    if(outcome==='win')row.wins++;else if(outcome==='loss')row.losses++;else row.draws++;
+    const bucket=mode==='pvp'?row.pvp:row.bot[mode.split(':')[1]];bucket.games++;if(outcome==='win')bucket.wins++;else if(outcome==='loss')bucket.losses++;else bucket.draws++;
+    row.updatedAt=new Date().toISOString();writeJsonAtomic(STATS_FILE,all);ioServer?.to(userRoom(accountId)).emit('ttt:stats',{stats:row});
+}
 function writeJsonAtomic(file,value){const temp=`${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;fs.writeFileSync(temp,JSON.stringify(value,null,2),{mode:0o600});fs.renameSync(temp,file);}
 function cleanupTicTacToeAccount(accountId){leaveQueue(accountId);leaveCurrentGame(accountId,'Conta removida.',false);writeJsonAtomic(STATS_FILE,loadStats().filter(r=>r.accountId!==accountId));for(const [id,invite] of invites)if(invite.fromId===accountId||invite.toId===accountId)invites.delete(id);}
 
