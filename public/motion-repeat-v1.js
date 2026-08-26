@@ -20,7 +20,6 @@
       return;
     }
 
-    // Avoid flicker at viewport boundaries, but re-arm once the item is really gone.
     const id = setTimeout(() => {
       if (!node.isConnected) return;
       node.classList.remove('v16-visible');
@@ -49,20 +48,24 @@
     }
   }
 
-  function scan() {
-    observeNode(document.documentElement);
-  }
-
+  const scan = () => observeNode(document.documentElement);
   scan();
 
   const mutations = new MutationObserver(records => {
     for (const record of records) {
+      if (record.type === 'attributes') {
+        observeNode(record.target);
+        continue;
+      }
       for (const node of record.addedNodes) observeNode(node);
     }
   });
-  mutations.observe(document.documentElement, { childList:true, subtree:true });
+  mutations.observe(document.documentElement, {
+    childList:true,
+    subtree:true,
+    attributes:true,
+    attributeFilter:['class']
+  });
 
-  // Motion v16 can decorate existing nodes shortly after this script starts.
-  setTimeout(scan, 250);
-  setTimeout(scan, 900);
+  [120, 300, 650, 1200, 2400].forEach(delay => setTimeout(scan, delay));
 })();
