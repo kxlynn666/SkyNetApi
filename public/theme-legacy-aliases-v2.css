@@ -1,0 +1,12 @@
+html[data-skynet-theme]{
+  --cyan:var(--theme-bright);
+  --cyan-soft:var(--theme-glow);
+  --pink:var(--theme-bright);
+  --purple:var(--theme-primary);
+  --purple-soft:var(--theme-bright);
+  --primary:var(--theme-primary);
+  --primary-rgb:var(--theme-primary-rgb);
+  --accent-primary:var(--theme-primary);
+  --accent-secondary:var(--theme-bright);
+  --accent-glow:var(--theme-glow);
+}
