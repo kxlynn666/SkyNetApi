@@ -9,6 +9,7 @@
   let catalog = [];
   let loading = null;
   let scheduled = false;
+  let requestNameFilter = false;
   let namePreviewBaseline = '';
   let namePreviewActive = false;
   const byId = new Map();
@@ -32,6 +33,8 @@
       enhanceProfile();
       observe(document.getElementById('workspaceContent') || document.documentElement);
       document.addEventListener('click', handleProfileClick, true);
+      document.addEventListener('input', handleStoreControlChange, true);
+      document.addEventListener('change', handleStoreControlChange, true);
       return;
     }
     if (path.startsWith('/u/')) {
@@ -75,7 +78,7 @@
   function scheduleEnhance() {
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(async () => {
+    requestAnimationFrame(() => {
       scheduled = false;
       if (path === '/painel/perfil') enhanceProfile();
       else if (path.startsWith('/u/')) enhancePublicDom();
@@ -146,7 +149,12 @@
         visual.innerHTML = `<span class="profile-name-decoration-demo" data-name-decoration="${esc(item.id)}">Seu nome</span>`;
       }
     });
-    if (panel.dataset.nameDecorationFilterV1 === '1') updateNameFilterCount(panel);
+    if (requestNameFilter) {
+      requestNameFilter = false;
+      activateNameFilter(panel);
+    } else if (panel.dataset.nameDecorationFilterV1 === '1') {
+      updateNameFilterCount(panel);
+    }
   }
 
   function installNameFilter(panel) {
@@ -160,19 +168,38 @@
       button.textContent = 'Nome';
       row.appendChild(button);
       button.addEventListener('click', () => {
-        panel.dataset.nameDecorationFilterV1 = '1';
-        row.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button));
-        updateNameFilterCount(panel);
+        const all = row.querySelector('[data-store-filter="all"]');
+        if (all && !all.classList.contains('active')) {
+          requestNameFilter = true;
+          all.click();
+          return;
+        }
+        activateNameFilter(panel);
       });
     }
     button.classList.toggle('active', panel.dataset.nameDecorationFilterV1 === '1');
   }
 
+  function activateNameFilter(panel) {
+    if (!panel) return;
+    panel.dataset.nameDecorationFilterV1 = '1';
+    const row = panel.querySelector('.profile-v3-store-filter');
+    const button = row?.querySelector('[data-name-decoration-filter-v1]');
+    row?.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button));
+    updateNameFilterCount(panel);
+  }
+
   function updateNameFilterCount(panel) {
-    const cards = [...panel.querySelectorAll('.profile-v3-product')];
-    const count = cards.filter(card => card.dataset.profileItemType === 'name-decoration').length;
+    const names = [...panel.querySelectorAll('.profile-v3-product')].filter(card => card.dataset.profileItemType === 'name-decoration');
+    const visible = names.filter(card => !card.hidden).length;
     const counter = panel.querySelector('.profile-store-count-v5');
-    if (counter) counter.textContent = `${count} de ${cards.length} itens`;
+    if (counter) counter.textContent = `${visible} de ${names.length} efeitos de nome`;
+  }
+
+  function handleStoreControlChange(event) {
+    if (!event.target.closest?.('.profile-store-tools-v5')) return;
+    const panel = document.querySelector('[data-profile-panel="store"][data-name-decoration-filter-v1="1"]');
+    if (panel) requestAnimationFrame(() => updateNameFilterCount(panel));
   }
 
   function handleProfileClick(event) {
