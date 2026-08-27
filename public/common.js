@@ -76,6 +76,7 @@ window.SkyNet = (() => {
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-cosmetics.css', 'profileCosmetics'],
         ['/profile-social-pack-v9.css', 'profileSocialPackV9'],
+        ['/podium-frames-v2.css', 'podiumFramesV2'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
