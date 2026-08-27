@@ -1,0 +1,40 @@
+/* Single authoritative workspace menu layer. Opaque surfaces keep text crisp on mobile. */
+.workspace-sidebar{box-sizing:border-box!important;min-height:0!important;height:100vh!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#070708!important;border-right:1px solid #222226!important;filter:none!important;-webkit-filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+@supports(height:100dvh){.workspace-sidebar{height:100dvh!important}}
+.workspace-sidebar>.workspace-logo{flex:0 0 auto!important}
+.workspace-sidebar>.workspace-nav{flex:1 1 auto!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:contain!important;scrollbar-width:thin;scrollbar-color:rgba(183,175,244,.32) transparent;padding-right:5px!important;padding-bottom:18px!important;scroll-padding-block:18px}
+.workspace-sidebar>.workspace-sidebar-footer{flex:0 0 auto!important;margin-top:0!important;padding-top:12px!important;background:#070708!important;position:relative;z-index:2}
+.workspace-nav-link{min-width:0!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.workspace-nav-link>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-nav::-webkit-scrollbar{width:7px}.workspace-nav::-webkit-scrollbar-track{background:transparent}.workspace-nav::-webkit-scrollbar-thumb{background:rgba(183,175,244,.26);border-radius:99px}
+.workspace-sidebar-close{display:none}
+
+@media(min-width:821px){
+  .workspace-sidebar{position:sticky!important;top:0!important;align-self:start!important;padding-bottom:14px!important}
+  .workspace-sidebar>.workspace-nav{margin-bottom:8px!important}
+}
+
+@media(max-width:820px){
+  html.workspace-nav-open,body.workspace-nav-open{overflow:hidden!important;overscroll-behavior:none!important}
+  .workspace-sidebar{
+    position:fixed!important;inset:0 auto 0 0!important;width:min(86vw,328px)!important;max-width:calc(100vw - 38px)!important;
+    padding:calc(12px + env(safe-area-inset-top,0px)) 11px calc(11px + env(safe-area-inset-bottom,0px))!important;
+    transform:translateX(-104%)!important;visibility:hidden!important;pointer-events:none!important;z-index:120!important;
+    box-shadow:22px 0 58px rgba(0,0,0,.48)!important;transition:transform .24s cubic-bezier(.22,.8,.25,1),visibility 0s linear .24s!important;
+    will-change:auto!important;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased
+  }
+  .workspace-sidebar.open{transform:translateX(0)!important;visibility:visible!important;pointer-events:auto!important;transition:transform .24s cubic-bezier(.22,.8,.25,1),visibility 0s!important}
+  .workspace-sidebar>.workspace-logo{min-height:48px;padding:3px 48px 13px 6px!important}
+  .workspace-sidebar-close{position:absolute;display:grid!important;place-items:center;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:4;width:39px;height:39px;padding:0;border:1px solid #34343a;border-radius:4px;background:#111113;color:#eee;cursor:pointer;touch-action:manipulation}
+  .workspace-sidebar-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+  .workspace-sidebar>.workspace-nav{padding:0 2px max(18px,env(safe-area-inset-bottom,0px)) 0!important;margin:0!important;-webkit-overflow-scrolling:touch}
+  .workspace-nav-group{margin-top:11px!important}.workspace-nav-label{padding:0 8px 6px!important}
+  .workspace-nav-link{min-height:47px!important;padding:8px 9px!important;gap:10px!important;font-size:13px!important}
+  .workspace-sidebar>.workspace-sidebar-footer{padding-bottom:max(0px,env(safe-area-inset-bottom,0px))!important}
+  .workspace-sidebar-backdrop{position:fixed!important;inset:0!important;z-index:110!important;background:rgba(0,0,0,.68)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important;touch-action:manipulation}
+  .workspace-sidebar-backdrop.hidden{display:none!important}
+  .workspace-menu-button{position:relative;z-index:125;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .workspace-menu-button[aria-expanded="true"]{background:#171719!important;border-color:#4a4a50!important;color:#fff!important}
+}
+
+@media(prefers-reduced-motion:reduce){.workspace-sidebar{transition:none!important}}
