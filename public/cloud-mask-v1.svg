@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs>
+    <filter id="organic" x="-12%" y="-18%" width="124%" height="136%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.011" numOctaves="3" seed="19" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="34" xChannelSelector="R" yChannelSelector="B" result="warped"/>
+      <feGaussianBlur in="warped" stdDeviation="3.5"/>
+    </filter>
+    <radialGradient id="edge" cx="50%" cy="48%" r="58%">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="0.72" stop-color="#fff" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g filter="url(#organic)" fill="url(#edge)">
+    <ellipse cx="130" cy="390" rx="220" ry="180"/>
+    <ellipse cx="290" cy="300" rx="245" ry="225"/>
+    <ellipse cx="475" cy="350" rx="265" ry="245"/>
+    <ellipse cx="650" cy="275" rx="250" ry="230"/>
+    <ellipse cx="830" cy="350" rx="290" ry="250"/>
+    <ellipse cx="1030" cy="320" rx="240" ry="215"/>
+    <ellipse cx="1080" cy="465" rx="230" ry="175"/>
+    <ellipse cx="825" cy="505" rx="310" ry="185"/>
+    <ellipse cx="545" cy="500" rx="325" ry="195"/>
+    <ellipse cx="270" cy="500" rx="280" ry="185"/>
+  </g>
+</svg>
