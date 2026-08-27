@@ -94,5 +94,4 @@
   enhance();
   const observer=new MutationObserver(()=>requestAnimationFrame(enhance));
   observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','data-grant-only','data-buy-profile-item']});
-  setTimeout(()=>observer.disconnect(),30000);
 })();
