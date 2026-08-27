@@ -1,0 +1,14 @@
+/* Keep every equipped avatar frame visible in the main podium, mini podium and ranking. */
+.podium-identity,.panel-mini-person,.leaderboard-row,.podium-copy,.panel-mini-copy{overflow:visible!important}
+.podium-identity .cosmetic-avatar,.panel-mini-person .cosmetic-avatar,.leaderboard-row .cosmetic-avatar{position:relative!important;isolation:isolate!important;overflow:visible!important;z-index:6!important}
+.podium-identity .cosmetic-avatar[data-frame]:not([data-frame=""]),.panel-mini-person .cosmetic-avatar[data-frame]:not([data-frame=""]),.leaderboard-row .cosmetic-avatar[data-frame]:not([data-frame=""]){padding:4px!important}
+.podium-identity .cosmetic-avatar::before,.panel-mini-person .cosmetic-avatar::before,.leaderboard-row .cosmetic-avatar::before{z-index:0!important}
+.podium-identity .cosmetic-avatar-inner,.panel-mini-person .cosmetic-avatar-inner,.leaderboard-row .cosmetic-avatar-inner{z-index:1!important}
+.podium-identity .cosmetic-avatar::after,.panel-mini-person .cosmetic-avatar::after,.leaderboard-row .cosmetic-avatar::after{z-index:3!important;pointer-events:none!important}
+.podium-content{padding-bottom:22px!important}.panel-mini-content{padding-bottom:14px!important}
+.podium-card-v3 .podium-identity,.panel-mini-podium-card .panel-mini-person{position:relative!important;z-index:7!important}
+/* Social-pack frames are larger than the original rings. Give them a little breathing room. */
+.podium-card-v3 .cosmetic-avatar[data-frame^="frame-social-"]{margin:4px!important}
+.panel-mini-podium-card .cosmetic-avatar[data-frame^="frame-social-"]{margin:3px!important}
+.leaderboard-row .cosmetic-avatar[data-frame^="frame-social-"]{margin:2px!important}
+@media(max-width:520px){.podium-content{padding-bottom:18px!important}.panel-mini-content{padding-bottom:11px!important}}
