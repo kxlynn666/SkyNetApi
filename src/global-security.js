@@ -74,7 +74,9 @@ function securityHeaders(req, res, next) {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Referrer-Policy','same-origin');
-  res.setHeader('Permissions-Policy','camera=(), microphone=(self), geolocation=()');
+  // Realtime media stays first-party only. Browser permission prompts are still
+  // required for microphone, camera and display capture.
+  res.setHeader('Permissions-Policy','camera=(self), microphone=(self), display-capture=(self), geolocation=()');
   res.setHeader('Cross-Origin-Resource-Policy','same-origin');
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
