@@ -1,0 +1,72 @@
+/* Completa o tema da conta sobre as camadas visuais legadas. Carregado por ultimo via design-system-v14.css. */
+html[data-skynet-theme]{
+  --v15-purple:var(--theme-primary);
+  --v15-purple-soft:var(--theme-bright);
+  --v15-purple-dim:color-mix(in srgb,var(--theme-primary) 10%,transparent);
+  --glow-violet:color-mix(in srgb,var(--theme-primary) 22%,transparent);
+  --glow-cyan:color-mix(in srgb,var(--theme-bright) 13%,transparent);
+  --surface-1:color-mix(in srgb,var(--theme-panel) 94%,transparent);
+  --surface-2:color-mix(in srgb,var(--theme-field) 72%,transparent);
+  --surface-3:color-mix(in srgb,var(--theme-bg) 88%,transparent);
+  accent-color:var(--theme-primary);
+  scrollbar-color:color-mix(in srgb,var(--theme-primary) 48%,var(--theme-border)) color-mix(in srgb,var(--theme-bg) 82%,#000);
+}
+html[data-skynet-theme] *{scrollbar-color:color-mix(in srgb,var(--theme-primary) 48%,var(--theme-border)) color-mix(in srgb,var(--theme-bg) 82%,#000)}
+html[data-skynet-theme] *::-webkit-scrollbar-track{background:color-mix(in srgb,var(--theme-bg) 82%,#000)!important}
+html[data-skynet-theme] *::-webkit-scrollbar-thumb{background:linear-gradient(180deg,color-mix(in srgb,var(--theme-primary) 68%,var(--theme-border)),color-mix(in srgb,var(--theme-bright) 38%,var(--theme-border)))!important;border-color:color-mix(in srgb,var(--theme-bg) 82%,#000)!important}
+html[data-skynet-theme] ::selection{background:color-mix(in srgb,var(--theme-primary) 42%,transparent);color:var(--theme-text)}
+html[data-skynet-theme] body::after{background:radial-gradient(42vw 32vw at 76% 10%,color-mix(in srgb,var(--theme-primary) 8%,transparent),transparent 70%),radial-gradient(30vw 22vw at 14% 82%,color-mix(in srgb,var(--theme-bright) 4%,transparent),transparent 72%)!important}
+
+html[data-skynet-theme] .topbar{border-color:color-mix(in srgb,var(--theme-primary) 18%,var(--theme-border-soft))!important;background:color-mix(in srgb,var(--theme-bg) 88%,transparent)!important}
+html[data-skynet-theme] .brand::before{background:linear-gradient(135deg,var(--theme-primary),var(--theme-bright))!important;color:var(--theme-on-primary)!important;box-shadow:0 0 22px color-mix(in srgb,var(--theme-primary) 30%,transparent)!important}
+html[data-skynet-theme] .nav-link,html[data-skynet-theme] .button{background:color-mix(in srgb,var(--theme-field) 88%,var(--theme-panel))!important;border-color:var(--theme-border)!important;color:var(--theme-muted)!important;box-shadow:none!important}
+html[data-skynet-theme] .nav-link:hover,html[data-skynet-theme] .button:hover{background:color-mix(in srgb,var(--theme-primary) 9%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 48%,var(--theme-border))!important;color:var(--theme-text)!important;box-shadow:0 0 20px color-mix(in srgb,var(--theme-primary) 10%,transparent)!important}
+html[data-skynet-theme] .button.primary{background:linear-gradient(135deg,var(--theme-primary),var(--theme-bright))!important;border-color:color-mix(in srgb,var(--theme-primary) 70%,var(--theme-bright))!important;color:var(--theme-on-primary)!important;box-shadow:0 10px 24px color-mix(in srgb,var(--theme-primary) 22%,transparent)!important}
+html[data-skynet-theme] .button.primary:hover{box-shadow:0 12px 30px color-mix(in srgb,var(--theme-primary) 29%,transparent)!important}
+html[data-skynet-theme] .button.danger{background:#141012!important;border-color:#4b292f!important;color:#e8b9c1!important}
+html[data-skynet-theme] .button:focus-visible,html[data-skynet-theme] input:focus-visible,html[data-skynet-theme] textarea:focus-visible,html[data-skynet-theme] select:focus-visible,html[data-skynet-theme] a:focus-visible{outline-color:var(--theme-bright)!important}
+
+html[data-skynet-theme] .ui-title-icon,html[data-skynet-theme] .ui-stat-icon,html[data-skynet-theme] .workspace-stat-ui-icon,html[data-skynet-theme] .workspace-quick-ui-icon{background:color-mix(in srgb,var(--theme-primary) 13%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 22%,var(--theme-border))!important;color:var(--theme-bright)!important}
+html[data-skynet-theme] .card,html[data-skynet-theme] .stat,html[data-skynet-theme] .workspace-card,html[data-skynet-theme] .workspace-stat,html[data-skynet-theme] .workspace-info,html[data-skynet-theme] .workspace-quick,html[data-skynet-theme] .list-item,html[data-skynet-theme] .endpoint{background:linear-gradient(180deg,color-mix(in srgb,var(--theme-panel) 96%,#000),color-mix(in srgb,var(--theme-panel) 84%,var(--theme-bg)))!important;border-color:var(--theme-border-soft)!important}
+html[data-skynet-theme] .card::before,html[data-skynet-theme] .workspace-card::before{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--theme-primary) 50%,transparent),color-mix(in srgb,var(--theme-bright) 30%,transparent),transparent)!important}
+html[data-skynet-theme] .stat::after,html[data-skynet-theme] .workspace-stat::after,html[data-skynet-theme] .workspace-quick::after{background:radial-gradient(circle,color-mix(in srgb,var(--theme-primary) 16%,transparent),transparent 70%)!important}
+html[data-skynet-theme] .card-title{color:var(--theme-bright)!important}
+html[data-skynet-theme] .card-title::before{background:var(--theme-glow)!important;box-shadow:0 0 12px color-mix(in srgb,var(--theme-glow) 72%,transparent)!important}
+
+html[data-skynet-theme] .tabs,html[data-skynet-theme] .profile-v3-tabs,html[data-skynet-theme] .profile-editor-tabs-v2,html[data-skynet-theme] .profile-design-tabs-v1{border-bottom-color:var(--theme-border-soft)!important}
+html[data-skynet-theme] .tab:hover,html[data-skynet-theme] .profile-v3-tab:hover{background:color-mix(in srgb,var(--theme-primary) 7%,transparent)!important;color:var(--theme-text)!important}
+html[data-skynet-theme] .tab.active,html[data-skynet-theme] .profile-v3-tab.active,html[data-skynet-theme] .profile-editor-tab-v2.active,html[data-skynet-theme] .profile-design-tab-v1.active{color:var(--theme-text)!important;border-bottom-color:var(--theme-primary)!important;text-shadow:none!important}
+
+html[data-skynet-theme] input,html[data-skynet-theme] textarea,html[data-skynet-theme] select{background:var(--theme-field)!important;border-color:var(--theme-border)!important;color:var(--theme-text)!important}
+html[data-skynet-theme] input:hover,html[data-skynet-theme] textarea:hover,html[data-skynet-theme] select:hover{border-color:color-mix(in srgb,var(--theme-primary) 38%,var(--theme-border))!important}
+html[data-skynet-theme] input:focus,html[data-skynet-theme] textarea:focus,html[data-skynet-theme] select:focus{border-color:var(--theme-primary)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--theme-primary) 18%,transparent),0 0 18px color-mix(in srgb,var(--theme-primary) 7%,transparent)!important}
+
+html[data-skynet-theme] .workspace-body{background-image:radial-gradient(800px circle at 75% -10%,color-mix(in srgb,var(--theme-primary) 11%,transparent),transparent 58%),radial-gradient(620px circle at 20% 105%,color-mix(in srgb,var(--theme-bright) 6%,transparent),transparent 64%)!important}
+html[data-skynet-theme] .workspace-sidebar{background:linear-gradient(180deg,color-mix(in srgb,var(--theme-panel) 90%,#000),color-mix(in srgb,var(--theme-bg) 96%,#000))!important;border-right-color:var(--theme-border-soft)!important}
+html[data-skynet-theme] .workspace-logo span{background:linear-gradient(135deg,var(--theme-primary),var(--theme-bright))!important;box-shadow:0 8px 26px color-mix(in srgb,var(--theme-primary) 30%,transparent)!important}
+html[data-skynet-theme] .workspace-nav-link:hover{background:color-mix(in srgb,var(--theme-primary) 8%,var(--theme-field))!important}
+html[data-skynet-theme] .workspace-nav-link:hover .workspace-nav-icon{background:color-mix(in srgb,var(--theme-primary) 10%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 18%,var(--theme-border))!important}
+html[data-skynet-theme] .workspace-nav-link.active{background:color-mix(in srgb,var(--theme-primary) 12%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 22%,var(--theme-border))!important;box-shadow:inset 2px 0 0 var(--theme-primary)!important}
+html[data-skynet-theme] .workspace-nav-link.active .workspace-nav-icon{background:color-mix(in srgb,var(--theme-primary) 16%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 25%,var(--theme-border))!important;color:var(--theme-bright)!important;box-shadow:0 0 18px color-mix(in srgb,var(--theme-primary) 9%,transparent)!important}
+html[data-skynet-theme] .workspace-user-chip::before{background:color-mix(in srgb,var(--theme-primary) 18%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 24%,var(--theme-border))!important;color:var(--theme-bright)!important}
+
+html[data-skynet-theme] .profile-v3-preview,html[data-skynet-theme] .profile-v3-summary-card,html[data-skynet-theme] .profile-v3-card,html[data-skynet-theme] .profile-v3-product,html[data-skynet-theme] .profile-v3-choice,html[data-skynet-theme] .profile-v3-check{border-color:var(--theme-border-soft)!important;background:color-mix(in srgb,var(--theme-panel) 92%,transparent)!important}
+html[data-skynet-theme] .profile-v3-preview-bg{background:radial-gradient(circle at 20% 20%,color-mix(in srgb,var(--profile-accent,var(--theme-primary)) 28%,transparent),transparent 44%),linear-gradient(135deg,var(--theme-panel),var(--theme-bg))!important}
+html[data-skynet-theme] .profile-v3-handle{color:var(--theme-bright)!important}
+html[data-skynet-theme] .profile-v3-choice:has(input:checked){border-color:color-mix(in srgb,var(--theme-primary) 48%,var(--theme-border))!important;background:color-mix(in srgb,var(--theme-primary) 9%,var(--theme-field))!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--theme-primary) 13%,transparent),0 0 20px color-mix(in srgb,var(--theme-primary) 8%,transparent)!important}
+html[data-skynet-theme] .profile-v3-store-filter button{background:var(--theme-field)!important;border-color:var(--theme-border)!important;color:var(--theme-muted)!important}
+html[data-skynet-theme] .profile-v3-store-filter button.active{background:color-mix(in srgb,var(--theme-primary) 13%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 42%,var(--theme-border))!important;color:var(--theme-text)!important}
+html[data-skynet-theme] .profile-store-tools-v5{border-color:color-mix(in srgb,var(--theme-primary) 18%,var(--theme-border-soft))!important;background:color-mix(in srgb,var(--theme-panel) 62%,transparent)!important}
+html[data-skynet-theme] .profile-store-owned-v5{background:var(--theme-field)!important;border-color:var(--theme-border)!important;color:var(--theme-muted)!important}
+html[data-skynet-theme] .profile-store-count-v5{color:var(--theme-bright)!important}
+html[data-skynet-theme] .profile-store-collection-v5.c-core{color:var(--theme-bright)!important;border-color:color-mix(in srgb,var(--theme-primary) 28%,var(--theme-border))!important;background:color-mix(in srgb,var(--theme-primary) 8%,var(--theme-field))!important}
+html[data-skynet-theme] .v14-store-hint::before{color:var(--theme-bright)!important}
+
+html[data-skynet-theme] .chat-conversation:hover,html[data-skynet-theme] .chat-conversation.active{background:color-mix(in srgb,var(--theme-primary) 9%,var(--theme-field))!important}
+html[data-skynet-theme] .chat-bubble.mine{background:color-mix(in srgb,var(--theme-primary) 13%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 24%,var(--theme-border))!important}
+html[data-skynet-theme] .chat-unread{background:var(--theme-primary)!important;color:var(--theme-on-primary)!important}
+html[data-skynet-theme] .chat-presence-v15.online::before{box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-primary) 9%,transparent)!important}
+html[data-skynet-theme] .leaderboard-row:hover{background:color-mix(in srgb,var(--theme-primary) 7%,transparent)!important}
+
+/* Cores de cosméticos continuam próprias do item; apenas o chrome da interface segue o tema. */
+@media(max-width:820px){html[data-skynet-theme] .topbar .brand{background:color-mix(in srgb,var(--theme-bg) 95%,transparent)!important}}
