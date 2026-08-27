@@ -23,4 +23,4 @@ jobs:
         run: npm run check
       - name: Runtime dependency smoke test
         run: |
-          node -e "const fs=require('fs'); const ffmpeg=require('ffmpeg-static'); if(!ffmpeg) throw new Error('ffmpeg-static sem binário'); fs.accessSync(ffmpeg); require('./src/tictactoe'); require('./src/profile-cosmetics-extra'); require('./src/profile-media'); console.log('runtime modules OK')"
+          node -e "const fs=require('fs'); const ffmpeg=require('ffmpeg-static'); if(!ffmpeg) throw new Error('ffmpeg-static sem binário'); fs.accessSync(ffmpeg); require('./src/tictactoe'); require('./src/profile-cosmetics-extra'); require('./src/profile-media'); const nameDecor=require('./src/profile-name-decorations'); if(!Array.isArray(nameDecor.NAME_CATALOG)||nameDecor.NAME_CATALOG.length<1) throw new Error('catálogo de nome vazio'); console.log('runtime modules OK')"
