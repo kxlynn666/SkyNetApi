@@ -75,6 +75,7 @@ window.SkyNet = (() => {
     const styles = [
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-cosmetics.css', 'profileCosmetics'],
+        ['/profile-social-pack-v9.css', 'profileSocialPackV9'],
         ['/profile-effects-v5.css', 'skynetProfileEffectsV5'],
         ['/profile-hotfix-v5.css', 'skynetProfileHotfixV5'],
         ['/profile-aesthetic-v6.css', 'skynetProfileAestheticV6'],
@@ -115,6 +116,7 @@ window.SkyNet = (() => {
     }, { once: true });
 
     const scripts = [
+        ['/theme-engine-v1.js', 'skynetThemeEngineV1'],
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
         ['/smooth-scroll-v5.js', 'skynetSmoothScrollV5'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
@@ -140,7 +142,7 @@ window.SkyNet = (() => {
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
         ['/motion-v19.js', 'skynetMotionV19']
     ];
-    if (currentPath !== '/painel/perfil') scripts.splice(13, 0, ['/ui-icons-v4.js', 'skynetUiIconsV4']);
+    if (currentPath !== '/painel/perfil') scripts.splice(14, 0, ['/ui-icons-v4.js', 'skynetUiIconsV4']);
 
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
