@@ -1,0 +1,13 @@
+html[data-skynet-theme] .public-profile-v3{--profile-accent:var(--theme-primary)!important;background:linear-gradient(180deg,color-mix(in srgb,var(--theme-panel) 97%,#000),color-mix(in srgb,var(--theme-bg) 96%,#000))!important;border-color:color-mix(in srgb,var(--theme-primary) 25%,var(--theme-border))!important;color:var(--theme-text)!important;box-shadow:0 30px 90px rgba(0,0,0,.28),0 0 44px color-mix(in srgb,var(--theme-primary) 7%,transparent)!important}
+html[data-skynet-theme] .public-profile-v3[data-style="glass"]{background:linear-gradient(135deg,color-mix(in srgb,var(--theme-panel) 84%,transparent),color-mix(in srgb,var(--theme-bg) 82%,transparent))!important;border-color:color-mix(in srgb,var(--theme-primary) 35%,transparent)!important;box-shadow:0 30px 90px rgba(0,0,0,.3),0 0 46px color-mix(in srgb,var(--theme-primary) 10%,transparent)!important}
+html[data-skynet-theme] .public-profile-v3[data-style="contrast"]{background:color-mix(in srgb,var(--theme-bg) 92%,#000)!important;border-color:color-mix(in srgb,var(--theme-primary) 62%,var(--theme-border))!important;box-shadow:0 28px 90px rgba(0,0,0,.48),0 0 0 1px color-mix(in srgb,var(--theme-primary) 8%,transparent)!important}
+html[data-skynet-theme] .public-cover-v3{background:radial-gradient(circle at 20% 20%,color-mix(in srgb,var(--theme-primary) 32%,transparent),transparent 46%),linear-gradient(135deg,var(--theme-panel),var(--theme-bg))!important}
+html[data-skynet-theme] .public-cover-v3::after{background:linear-gradient(to top,color-mix(in srgb,var(--theme-bg) 96%,transparent),transparent 66%)!important}
+html[data-skynet-theme] .public-head-v3 .cosmetic-avatar-inner{background:color-mix(in srgb,var(--theme-field) 92%,var(--theme-primary))!important}
+html[data-skynet-theme] .public-handle-v3{color:var(--theme-bright)!important}
+html[data-skynet-theme] .public-headline-v3,html[data-skynet-theme] .public-status-v3{color:var(--theme-muted)!important}
+html[data-skynet-theme] .public-status-v3{border-color:color-mix(in srgb,var(--theme-primary) 32%,var(--theme-border))!important;background:color-mix(in srgb,var(--theme-primary) 8%,transparent)!important}
+html[data-skynet-theme] .public-bio-v3{color:var(--theme-muted)!important}
+html[data-skynet-theme] .public-stat-v3{background:color-mix(in srgb,var(--theme-field) 78%,transparent)!important;border-color:color-mix(in srgb,var(--theme-primary) 14%,var(--theme-border-soft))!important}
+html[data-skynet-theme] .public-stat-v3 span,html[data-skynet-theme] .public-join-v3{color:var(--theme-faint)!important}
+html[data-skynet-theme="mono"] .public-profile-v3,html[data-skynet-theme="mono"] .public-stat-v3{box-shadow:none!important}
