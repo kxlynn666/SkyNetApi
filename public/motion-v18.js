@@ -24,7 +24,10 @@
   style.id = 'motionV18Styles';
   style.textContent = `
     body.workspace-body{background:#09070f!important}
-    body.workspace-body .workspace-shell,body.workspace-body .workspace-loading{position:relative;z-index:4}
+    body.workspace-body .workspace-shell{position:relative;z-index:auto!important}
+    body.workspace-body .workspace-loading{position:relative;z-index:50}
+    body.workspace-body .workspace-main{position:relative;z-index:auto}
+    body.workspace-body .workspace-content{position:relative;z-index:4}
     body.workspace-body .workspace-sidebar,body.workspace-body .workspace-topbar{position:relative;z-index:40}
 
     .v18-space{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(circle at 50% 118%,rgba(88,70,146,.2),transparent 48%),linear-gradient(#08070d,#0b0813);contain:strict}
