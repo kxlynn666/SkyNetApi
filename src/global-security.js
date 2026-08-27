@@ -17,8 +17,20 @@ function installGlobalSecurity(app) {
     allowedHeaders: ['Content-Type','x-api-key','Authorization']
   }));
 
+  // Serve public UI assets before any general-purpose rate limiter. Previously
+  // every CSS/JS/font/image request consumed the same request budget as API calls.
+  const earlyStatic = express.static(C.PUBLIC_DIR, {
+    index:false,
+    dotfiles:'deny',
+    etag:true,
+    maxAge:C.IS_PRODUCTION ? '1h' : 0
+  });
+  app.use((req,res,next) => {
+    if (req.path.startsWith('/uploads/') || req.path.startsWith('/generated/') || req.path.startsWith('/profile-media/')) return next();
+    return earlyStatic(req,res,next);
+  });
+
   // Keep legacy query-key support only for the documented direct image link.
-  // On every other route, strip it before any auth middleware can consume it.
   app.use((req, res, next) => {
     if (!req.query || !Object.prototype.hasOwnProperty.call(req.query, 'apikey')) return next();
     const directCardLink = req.method === 'GET' && req.path === '/generate-card';
@@ -31,14 +43,9 @@ function installGlobalSecurity(app) {
     return next();
   });
 
-  // Parse small JSON/form bodies before feature modules registered in server.js.
-  // Multer routes keep handling multipart bodies themselves.
   app.use(express.json({ limit:'256kb' }));
   app.use(express.urlencoded({ limit:'256kb', extended:true }));
 
-  // Browser state-changing requests must originate from this site or an
-  // explicitly configured trusted origin. Non-browser API clients commonly
-  // omit Origin and remain supported.
   app.use((req, res, next) => {
     if (!['POST','PUT','PATCH','DELETE'].includes(req.method)) return next();
     const origin = String(req.get('origin') || '').trim();
@@ -48,16 +55,25 @@ function installGlobalSecurity(app) {
     return res.status(403).json({ ok:false, error:'Origem não permitida.' });
   });
 
-  // Outer safety net for routes that live before createApp(). createApp keeps
-  // its stricter 240/min limiter for the original/core routes.
-  app.use(createRateLimiter({ windowMs:60000, max:600 }));
+  // Outer safety net only for API/processing traffic. Normal page navigation and
+  // static assets do not belong in this bucket. Sensitive routes still keep their
+  // own stricter limiters inside their modules.
+  app.use(createRateLimiter({
+    windowMs:60000,
+    max:1200,
+    skip:req => !isRateLimitedTraffic(req)
+  }));
+}
+
+function isRateLimitedTraffic(req) {
+  const p = String(req.path || '');
+  return p.startsWith('/api/') || p === '/generate-card' || p === '/painel/gerar';
 }
 
 function securityHeaders(req, res, next) {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('X-Frame-Options','DENY');
   res.setHeader('Referrer-Policy','same-origin');
-  // Voice calls are an intentional first-party feature; camera/geolocation are not.
   res.setHeader('Permissions-Policy','camera=(), microphone=(self), geolocation=()');
   res.setHeader('Cross-Origin-Resource-Policy','same-origin');
   res.setHeader('Content-Security-Policy', [
@@ -77,7 +93,7 @@ function securityHeaders(req, res, next) {
   next();
 }
 
-function createRateLimiter({ windowMs, max }) {
+function createRateLimiter({ windowMs, max, skip = null }) {
   const buckets = new Map();
   const timer = setInterval(() => {
     const now = Date.now();
@@ -86,6 +102,7 @@ function createRateLimiter({ windowMs, max }) {
   timer.unref?.();
 
   return (req, res, next) => {
+    if (skip?.(req)) return next();
     const now = Date.now();
     const key = String(req.ip || req.socket?.remoteAddress || 'unknown');
     let bucket = buckets.get(key);
@@ -94,6 +111,9 @@ function createRateLimiter({ windowMs, max }) {
       buckets.set(key, bucket);
     }
     bucket.count += 1;
+    res.setHeader('RateLimit-Limit', String(max));
+    res.setHeader('RateLimit-Remaining', String(Math.max(0,max-bucket.count)));
+    res.setHeader('RateLimit-Reset', String(Math.ceil(bucket.resetAt/1000)));
     if (bucket.count > max) {
       res.setHeader('Retry-After', String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
       return res.status(429).json({ ok:false, error:'Muitas requisições. Tente novamente em instantes.' });
