@@ -23,6 +23,7 @@ const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
 const { attachRealtimeCallsV3 } = require('./src/realtime-calls-v3');
 const { registerGroupMessageLimiterV2 } = require('./src/group-message-limiter-v2');
+const { registerProfileThemeRoutes, cleanupProfileThemeAccount } = require('./src/profile-theme');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
 const { registerTicTacToeRoutes, attachTicTacToeSocket, cleanupTicTacToeAccount } = require('./src/tictactoe');
 const { registerProfileMediaRoutes, cleanupProfileMediaAccount } = require('./src/profile-media');
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
                     cleanupTicTacToeAccount(accountId);
                     cleanupProfileMediaAccount(accountId);
                     cleanupExtraProfileCosmeticsAccount(accountId);
+                    cleanupProfileThemeAccount(accountId);
                 } catch (error) { console.error('Falha ao limpar dados da conta:', error); }
             }
         });
@@ -86,6 +88,7 @@ registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
 registerWorkspaceBootstrapRoutes(app);
 registerUpscaleRoutes(app);
+registerProfileThemeRoutes(app);
 registerGroupMessageLimiterV2(app);
 registerCommunityV2Routes(app);
 
