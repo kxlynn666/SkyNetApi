@@ -21,7 +21,7 @@ const { registerUpscaleRoutes } = require('./src/upscale-ai');
 const { migrateExclusiveProfileItems } = require('./src/profile-exclusive-migration');
 const { registerSocialRoutes, attachSocialSocket } = require('./src/social');
 const { registerCommunityV2Routes, attachCommunitySocket } = require('./src/community-v2');
-const { attachRealtimeCallsV2 } = require('./src/realtime-calls-v2');
+const { attachRealtimeCallsV3 } = require('./src/realtime-calls-v3');
 const { registerGroupMessageLimiterV2 } = require('./src/group-message-limiter-v2');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
 const { registerTicTacToeRoutes, attachTicTacToeSocket, cleanupTicTacToeAccount } = require('./src/tictactoe');
@@ -201,7 +201,7 @@ io.use((socket, next) => {
 });
 
 attachCommunitySocket(io);
-attachRealtimeCallsV2(io);
+attachRealtimeCallsV3(io);
 attachTicTacToeSocket(io);
 
 server.listen(C.PORT, () => {
