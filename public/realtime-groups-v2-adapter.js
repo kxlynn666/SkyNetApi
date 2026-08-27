@@ -7,10 +7,26 @@
 
   function adapt() {
     document.querySelectorAll('.group-v3-item[data-group-id]').forEach(item=>item.classList.add('group-item'));
-    const join=document.getElementById('groupV3JoinCall');
-    if(join&&!document.getElementById('groupJoinCall')){
-      join.dataset.originalGroupV3Join='1';
+    let join=document.getElementById('groupJoinCall') || document.getElementById('groupV3JoinCall');
+    if(join){
       join.id='groupJoinCall';
+      join.dataset.originalGroupV3Join='1';
+      join.classList.add('rtc2-call-button');
+      join.classList.remove('primary');
+      join.setAttribute('aria-label','Entrar na chamada por áudio');
+      join.title='Entrar por áudio';
+      join.textContent='Áudio';
+      if(!document.getElementById('groupJoinVideoCallV2')){
+        const video=document.createElement('button');
+        video.id='groupJoinVideoCallV2';
+        video.type='button';
+        video.className='button small primary rtc2-call-button';
+        video.dataset.rtc2='1';
+        video.setAttribute('aria-label','Entrar na chamada com vídeo');
+        video.title='Entrar com vídeo';
+        video.textContent='Vídeo';
+        join.insertAdjacentElement('afterend',video);
+      }
     }
   }
 
