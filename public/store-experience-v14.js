@@ -29,13 +29,13 @@
     [data-profile-v3="1"] [data-profile-panel="store"] .profile-v3-product>.button,[data-profile-v3="1"] [data-profile-panel="store"] .profile-preview-product-actions .button{width:30px!important;height:30px!important;min-height:30px!important;min-width:30px!important;padding:0!important;display:inline-grid!important;place-items:center!important;border-radius:3px!important;flex:0 0 30px!important;font-size:0!important;white-space:nowrap!important}
     [data-profile-v3="1"] [data-profile-panel="store"] .profile-v3-product>.button{grid-column:2!important;grid-row:3!important;justify-self:end!important;align-self:end!important;margin:0!important}
     [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="buy"]{background:#efefec!important;border-color:#efefec!important;color:#09090b!important}
-    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="owned"]{background:#141416!important;border-color:#35353a!important;color:#a7a7ad!important}
-    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="preview"]{background:#111113!important;border-color:#333338!important;color:#f0f0ed!important}
+    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="buy"]{background:var(--theme-primary,#efefec)!important;border-color:var(--theme-primary,#efefec)!important;color:var(--theme-on-primary,#09090b)!important}
+    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="owned"]{background:var(--theme-field,#141416)!important;border-color:var(--theme-border,#35353a)!important;color:var(--theme-muted,#a7a7ad)!important}
+    [data-profile-v3="1"] [data-profile-panel="store"] .v14-store-icon[data-kind="preview"]{background:var(--theme-field,#111113)!important;border-color:var(--theme-border,#333338)!important;color:var(--theme-text,#f0f0ed)!important}
     [data-profile-v3="1"] [data-profile-panel="store"] .profile-exclusive-label{font-size:6px!important;line-height:1.2!important;display:block!important;max-width:100%!important}
     [data-profile-v3="1"] [data-profile-panel="store"] .profile-store-rail-v10{display:flex!important;align-items:center!important;gap:5px!important;flex-wrap:wrap!important;margin-top:7px!important;min-width:0!important;max-width:100%!important}
     [data-profile-v3="1"] [data-profile-panel="store"] .profile-store-rail-v10 .button{min-height:28px!important;padding:4px 7px!important;font-size:8px!important;border-radius:3px!important}
-    .v14-store-hint{display:flex;align-items:center;gap:7px;margin:2px 0 8px;color:#75757c;font:500 8px 'IBM Plex Mono',monospace}.v14-store-hint::before{content:'↔';color:#b4abfa;font-size:11px}
+    .v14-store-hint{display:flex;align-items:center;gap:7px;margin:2px 0 8px;color:var(--theme-faint,#75757c);font:500 8px 'IBM Plex Mono',monospace}.v14-store-hint::before{content:'↔';color:var(--theme-bright,#b4abfa);font-size:11px}
     @media(max-width:760px){
       [data-profile-v3="1"] [data-profile-panel="store"]>.profile-v3-card{padding:10px!important}
       [data-profile-v3="1"] [data-profile-panel="store"] .profile-v3-store-head{grid-template-columns:1fr!important;gap:5px!important}
@@ -60,7 +60,8 @@
   };
 
   function iconify(button,kind,label){
-    if(!button||button.dataset.v14Icon==='1')return;
+    if(!button)return;
+    if(button.dataset.v14Icon==='1'&&button.dataset.kind===kind){button.title=label;button.setAttribute('aria-label',label);return;}
     button.dataset.v14Icon='1';
     button.dataset.kind=kind;
     button.classList.add('v14-store-icon');
@@ -81,15 +82,16 @@
       iconify(preview,'preview','Visualizar no perfil');
       const buy=card.querySelector('[data-buy-profile-item],:scope > .button');
       if(!buy)return;
-      const text=String(buy.textContent||buy.getAttribute('aria-label')||'').toLowerCase();
-      if(buy.disabled||/comprado|adquirido/.test(text))iconify(buy,'owned','Item adquirido');
-      else if(/não disponível|exclusivo/.test(text))iconify(buy,'locked','Item exclusivo');
+      const text=`${buy.textContent||''} ${buy.getAttribute('aria-label')||''} ${buy.title||''}`.toLowerCase();
+      const exclusive=card.dataset.grantOnly==='1'||/não disponível|exclusivo|bloqueado/.test(text);
+      const acquired=/comprado|adquirido|item adquirido/.test(text)||(buy.disabled&&!exclusive&&!buy.hasAttribute('data-buy-profile-item'));
+      if(exclusive)iconify(buy,'locked','Item exclusivo');
+      else if(acquired)iconify(buy,'owned','Item adquirido');
       else iconify(buy,'buy','Comprar item');
     });
   }
 
   enhance();
   const observer=new MutationObserver(()=>requestAnimationFrame(enhance));
-  observer.observe(document.documentElement,{childList:true,subtree:true});
-  setTimeout(()=>observer.disconnect(),20000);
+  observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','data-grant-only','data-buy-profile-item']});
 })();
