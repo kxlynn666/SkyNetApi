@@ -14,6 +14,7 @@ const { registerMusicRoutes } = require('./src/music');
 const { registerBratRoutes } = require('./src/brat');
 const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
+const { registerProfileNameDecorations, cleanupProfileNameDecorationsAccount } = require('./src/profile-name-decorations');
 const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
 const { registerStickerRoutes, cleanupStickersAccount } = require('./src/stickers');
 const { registerWorkspaceBootstrapRoutes } = require('./src/workspace-bootstrap');
@@ -60,6 +61,7 @@ app.use((req, res, next) => {
                 try {
                     cleanupCommunityAccount(accountId);
                     cleanupProfileEconomyAccount(accountId);
+                    cleanupProfileNameDecorationsAccount(accountId);
                     cleanupProfileDesignAccount(accountId);
                     cleanupStickersAccount(accountId);
                     cleanupTicTacToeAccount(accountId);
@@ -85,6 +87,7 @@ registerBotLogRoutes(app);
 registerTicTacToeRoutes(app);
 registerProfileMediaRoutes(app);
 registerExtraProfileCosmetics(app);
+registerProfileNameDecorations(app);
 registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
