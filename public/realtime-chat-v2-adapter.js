@@ -19,6 +19,21 @@
     }
   }
 
+  // The chat updates ?with= after loading history. A fast click on the call
+  // button used to happen before that update, making the realtime layer think no
+  // conversation was selected. Keep the URL in sync with the active row first.
+  document.addEventListener('click', event => {
+    const callButton = event.target.closest?.('#startCall,#startVideoCallV2,#startAudioCall,#startVideoCall');
+    if (!callButton) return;
+    const active = document.querySelector('.chat-conversation.active[data-user]');
+    const userId = active?.dataset.user;
+    if (!userId) return;
+    const url = new URL(location.href);
+    if (url.searchParams.get('with') === userId) return;
+    url.searchParams.set('with', userId);
+    history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, true);
+
   let raf = 0;
   const schedule = () => {
     if (raf) return;
