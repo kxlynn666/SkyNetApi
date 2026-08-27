@@ -138,10 +138,8 @@ window.SkyNet = (() => {
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
-        ['/motion-v18.js', 'skynetMotionV18']
+        ['/motion-v19.js', 'skynetMotionV19']
     ];
-    // The automatic icon scanner is useful elsewhere, but it adds unnecessary
-    // mutation work to the large profile/store DOM and can misclassify media UI.
     if (currentPath !== '/painel/perfil') scripts.splice(13, 0, ['/ui-icons-v4.js', 'skynetUiIconsV4']);
 
     for (const [src, marker] of scripts) {
@@ -197,7 +195,6 @@ window.SkyNet = (() => {
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 
-/* Music remains page-scoped so media-specific icons never leak into profile UI. */
 (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
     if (cleanPath !== '/painel/musica') return;
