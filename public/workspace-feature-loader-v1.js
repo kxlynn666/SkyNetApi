@@ -36,22 +36,18 @@
     return true;
   }
 
-  const tryNav = () => addGamesNav();
-
-  if (!tryNav()) {
+  if (!addGamesNav()) {
     const navObserver = new MutationObserver(() => {
-      if (tryNav()) navObserver.disconnect();
+      if (addGamesNav()) navObserver.disconnect();
     });
-    navObserver.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(() => navObserver.disconnect(), 15000);
+    navObserver.observe(document.documentElement, { childList:true, subtree:true });
+    setTimeout(() => navObserver.disconnect(), 12000);
   }
 
   if (path === '/painel/perfil') {
     loadStyle('/profile-social-pack-v9.css', 'profileSocialPackV9');
-    loadScript('/profile-media-v2.js', 'profileMediaV2');
+    loadScript('/profile-media-v3.js', 'profileMediaV3');
   }
 
-  if (path === '/painel/jogos') {
-    loadScript('/tictactoe-v2.js', 'tictactoeV2');
-  }
+  if (path === '/painel/jogos') loadScript('/tictactoe-v2.js', 'tictactoeV2');
 })();
