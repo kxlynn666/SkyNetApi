@@ -12,7 +12,15 @@
 
   const icon = body => `<span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg></span>`;
   const icons = {
-    profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',friends:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a5 5 0 0 1 7-4.6"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>',game:'<path d="M5 5h14v14H5zM9.7 5v14M14.3 5v14M5 9.7h14M5 14.3h14"/>',upscale:'<path d="M4 5h15v15H4zM9 2v5M6.5 4.5h5M15 11h6M18 8v6"/>',music:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M16 6v7.5a2.5 2.5 0 1 1-2-2.45"/>',card:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M6 8h12M6 12h12M6 16h8"/>',brat:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 9h10M7 15h10"/>'
+    profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    friends:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a5 5 0 0 1 7-4.6"/>',
+    chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+    groups:'<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0"/>',
+    game:'<path d="M5 5h14v14H5zM9.7 5v14M14.3 5v14M5 9.7h14M5 14.3h14"/>',
+    upscale:'<path d="M4 5h15v15H4zM9 2v5M6.5 4.5h5M15 11h6M18 8v6"/>',
+    music:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M16 6v7.5a2.5 2.5 0 1 1-2-2.45"/>',
+    card:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M6 8h12M6 12h12M6 16h8"/>',
+    brat:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 9h10M7 15h10"/>'
   };
 
   function link(href,label,kind) {
@@ -26,9 +34,17 @@
 
   function canonicalize() {
     if(!nav) return;
-    const social=group('Social','menuV2Social'); add(social,'/painel/perfil','Perfil','profile'); add(social,'/painel/amigos','Amigos','friends'); add(social,'/painel/chat','Chat','chat');
+    const social=group('Social','menuV2Social');
+    add(social,'/painel/perfil','Perfil','profile');
+    add(social,'/painel/amigos','Amigos','friends');
+    add(social,'/painel/chat','Chat','chat');
+    add(social,'/painel/grupos','Grupos','groups');
+
     const creation=[...nav.querySelectorAll('.workspace-nav-group')].find(g=>g.querySelector('.workspace-nav-label')?.textContent.trim()==='Criação');
-    if(creation){ if(!nav.querySelector('a[href="/painel/card2"]')) creation.appendChild(link('/painel/card2','Card 2.0','card')); if(!nav.querySelector('a[href="/painel/brat"]')) creation.appendChild(link('/painel/brat','Brat Generator','brat')); }
+    if(creation){
+      if(!nav.querySelector('a[href="/painel/card2"]')) creation.appendChild(link('/painel/card2','Card 2.0','card'));
+      if(!nav.querySelector('a[href="/painel/brat"]')) creation.appendChild(link('/painel/brat','Brat Generator','brat'));
+    }
     const image=group('Imagem','menuV2Image'); add(image,'/painel/upscale','AI Upscaler','upscale');
     const media=group('Mídia','menuV2Media'); add(media,'/painel/musica','Música','music');
     const games=group('Jogos','menuV2Games'); add(games,'/painel/jogos','Jogo da Velha','game');
@@ -70,9 +86,11 @@
     mq.addEventListener?.('change',()=>{close();canonicalize();});
     window.addEventListener('pageshow',()=>{canonicalize();close();},{passive:true});
     sync(false); ready=true;
-    [120,600,1400].forEach(ms=>setTimeout(()=>{canonicalize();},ms));
+    [120,600,1400].forEach(ms=>setTimeout(()=>canonicalize(),ms));
     return true;
   }
   if(setup())return;
-  const boot=new MutationObserver(()=>{if(setup())boot.disconnect();}); boot.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); setTimeout(()=>boot.disconnect(),12000);
+  const boot=new MutationObserver(()=>{if(setup())boot.disconnect();});
+  boot.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  setTimeout(()=>boot.disconnect(),12000);
 })();
