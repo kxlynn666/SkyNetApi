@@ -6,6 +6,7 @@ const C = require('./config');
 const S = require('./store');
 
 const THEME_FILE = path.join(C.DATA_DIR, 'profile-themes.json');
+const LEGACY_PROFILE_FILE = path.join(C.DATA_DIR, 'profile-custom.json');
 const PRESETS = new Set(['violet','mono','cyan','emerald','rose','gold','custom']);
 
 function registerProfileThemeRoutes(app) {
@@ -33,7 +34,26 @@ function registerProfileThemeRoutes(app) {
 
 function getTheme(accountId) {
   const found = loadThemes().find(item => item.accountId === accountId);
-  return sanitizeTheme(found || {}, { preset:'violet', accent:'#a855f7' });
+  if (found) return sanitizeTheme(found, { preset:'violet', accent:'#a855f7' });
+  const accent = legacyAccent(accountId);
+  if (accent) return { preset:inferPreset(accent), accent };
+  return { preset:'violet', accent:'#a855f7' };
+}
+
+function legacyAccent(accountId) {
+  try {
+    if (!fs.existsSync(LEGACY_PROFILE_FILE)) return '';
+    const list = JSON.parse(fs.readFileSync(LEGACY_PROFILE_FILE,'utf8'));
+    const row = Array.isArray(list) ? list.find(item => item.accountId === accountId) : null;
+    const accent = String(row?.accent || '').toLowerCase();
+    return /^#[0-9a-f]{6}$/i.test(accent) ? accent : '';
+  } catch { return ''; }
+}
+
+function inferPreset(accent) {
+  const normalized = String(accent || '').toLowerCase();
+  for (const preset of ['violet','mono','cyan','emerald','rose','gold']) if (presetAccent(preset) === normalized) return preset;
+  return 'custom';
 }
 
 function sanitizeTheme(input, fallback) {
