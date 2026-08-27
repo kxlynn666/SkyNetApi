@@ -26,6 +26,7 @@ const { registerGroupMessageLimiterV2 } = require('./src/group-message-limiter-v
 const { registerProfileThemeRoutes, cleanupProfileThemeAccount } = require('./src/profile-theme');
 const { cleanupCommunityAccount } = require('./src/community-cleanup');
 const { registerTicTacToeRoutes, attachTicTacToeSocket, cleanupTicTacToeAccount } = require('./src/tictactoe');
+const { attachCheckersSocket, cleanupCheckersAccount } = require('./src/checkers');
 const { registerProfileMediaRoutes, cleanupProfileMediaAccount } = require('./src/profile-media');
 const { registerExtraProfileCosmetics, cleanupExtraProfileCosmeticsAccount } = require('./src/profile-cosmetics-extra');
 
@@ -62,6 +63,7 @@ app.use((req, res, next) => {
                     cleanupProfileDesignAccount(accountId);
                     cleanupStickersAccount(accountId);
                     cleanupTicTacToeAccount(accountId);
+                    cleanupCheckersAccount(accountId);
                     cleanupProfileMediaAccount(accountId);
                     cleanupExtraProfileCosmeticsAccount(accountId);
                     cleanupProfileThemeAccount(accountId);
@@ -143,6 +145,8 @@ const workspaceRoutes = [
     '/painel/figurinhas',
     '/painel/grupos',
     '/painel/jogos',
+    '/painel/jogos/damas',
+    '/painel/jogos/dados',
     '/painel/musica',
     '/painel/visual',
     '/painel/upscale',
@@ -206,6 +210,7 @@ io.use((socket, next) => {
 attachCommunitySocket(io);
 attachRealtimeCallsV3(io);
 attachTicTacToeSocket(io);
+attachCheckersSocket(io);
 
 server.listen(C.PORT, () => {
     console.log(`SkyNetApi rodando em http://localhost:${C.PORT}`);
