@@ -71,6 +71,7 @@ window.SkyNet = (() => {
 })();
 
 (() => {
+    const currentPath = location.pathname.replace(/\/+$/, '') || '/';
     const styles = [
         ['/ui-v3.css', 'skynetUiV3'],
         ['/profile-cosmetics.css', 'profileCosmetics'],
@@ -81,7 +82,6 @@ window.SkyNet = (() => {
         ['/profile-stock-v7-perf.css', 'skynetProfileStockV7Perf'],
         ['/profile-objects-v8.css', 'skynetProfileObjectsV8'],
         ['/mobile-polish-v4.css', 'skynetMobilePolishV4'],
-        ['/music-icons-v5.css', 'skynetMusicIconsV5'],
         ['/design-system-v12.css', 'skynetDesignSystemV12'],
         ['/design-system-v14.css', 'skynetDesignSystemV14']
     ];
@@ -111,33 +111,39 @@ window.SkyNet = (() => {
     headObserver.observe(document.head, { childList: true });
     window.addEventListener('load', () => {
         pinThemeLast();
-        setTimeout(() => headObserver.disconnect(), 15000);
+        setTimeout(() => headObserver.disconnect(), 10000);
     }, { once: true });
 
     const scripts = [
         ['/performance-guard-v1.js', 'skynetPerformanceGuardV1'],
-        ['/smooth-scroll-v4.js', 'skynetSmoothScrollV4'],
+        ['/smooth-scroll-v5.js', 'skynetSmoothScrollV5'],
         ['/profile-actions-stability-v1.js', 'skynetProfileActionsStabilityV1'],
         ['/site-ui-v3.js', 'skynetSiteUiV3'],
         ['/profile-catalog-v4.js', 'skynetProfileCatalogV4'],
         ['/profile-preview-v2.js', 'skynetProfilePreviewV2'],
+        ['/profile-media-v3.js', 'skynetProfileMediaV3'],
         ['/profile-design-v1.js', 'skynetProfileDesignV1'],
         ['/profile-editor-organizer-v3.js', 'skynetProfileEditorOrganizerV3'],
+        ['/profile-store-performance-v1.js', 'skynetProfileStorePerformanceV1'],
         ['/experience-polish-v10.js', 'skynetExperiencePolishV10'],
         ['/store-layout-hotfix-v11.js', 'skynetStoreLayoutHotfixV11'],
         ['/store-experience-v14.js', 'skynetStoreExperienceV14'],
         ['/stickers-v1.js', 'skynetStickersV1'],
-        ['/ui-icons-v4.js', 'skynetUiIconsV4'],
         ['/profile-store-organizer-v5.js', 'skynetProfileStoreOrganizerV5'],
         ['/ui-preferences-v4.js', 'skynetUiPreferencesV4'],
         ['/panel-mini-podium-v1.js', 'skynetPanelMiniPodiumV1'],
+        ['/podium-media-animator-v1.js', 'skynetPodiumMediaAnimatorV1'],
         ['/dashboard-insights-v1.js', 'skynetDashboardInsightsV1'],
         ['/workspace-command-menu-v1.js', 'skynetWorkspaceCommandMenuV1'],
         ['/visual-lab-v14.js', 'skynetVisualLabV14'],
         ['/upscale-panel.js', 'skynetUpscalePanelV1'],
         ['/upscale-external-v2.js', 'skynetUpscaleExternalV2'],
-        ['/motion-v17.js', 'skynetMotionV17']
+        ['/motion-v18.js', 'skynetMotionV18']
     ];
+    // The automatic icon scanner is useful elsewhere, but it adds unnecessary
+    // mutation work to the large profile/store DOM and can misclassify media UI.
+    if (currentPath !== '/painel/perfil') scripts.splice(13, 0, ['/ui-icons-v4.js', 'skynetUiIconsV4']);
+
     for (const [src, marker] of scripts) {
         if (document.querySelector(`script[src="${src}"],script[data-${marker.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}]`)) continue;
         const script = document.createElement('script');
@@ -191,10 +197,17 @@ window.SkyNet = (() => {
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 
-/* Music remains page-scoped so it never covers other tools. */
+/* Music remains page-scoped so media-specific icons never leak into profile UI. */
 (() => {
     const cleanPath = location.pathname.replace(/\/+$/, '') || '/';
     if (cleanPath !== '/painel/musica') return;
+    if (!document.querySelector('link[href="/music-icons-v5.css"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/music-icons-v5.css';
+        link.dataset.skynetMusicIconsV5 = '1';
+        document.head.appendChild(link);
+    }
     const ordered = [
         ['/music-player-v2.js', 'skynetMusicPlayer'],
         ['/music-player-polish-v4.js', 'skynetMusicPolishV4'],
