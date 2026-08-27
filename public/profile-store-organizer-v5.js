@@ -11,9 +11,14 @@
     let scheduled = false;
 
     function owned(card) {
-        const button = card.querySelector('.button');
-        const text = String(button?.textContent || '').toLowerCase();
-        return /comprado|adquirido/.test(text);
+        const button = card.querySelector('[data-buy-profile-item],.v14-store-icon[data-kind],.button');
+        if (!button) return false;
+        const kind = String(button.dataset.kind || '').toLowerCase();
+        if (kind === 'owned') return true;
+        if (kind === 'locked') return false;
+        const text = `${button.textContent || ''} ${button.getAttribute('aria-label') || ''} ${button.title || ''}`.toLowerCase();
+        if (/não disponível|exclusivo|bloqueado/.test(text)) return false;
+        return /comprado|adquirido|item adquirido/.test(text) || (button.disabled && !button.hasAttribute('data-buy-profile-item'));
     }
 
     function decorateCard(card) {
@@ -36,7 +41,7 @@
         if (!host) return;
         const tools = document.createElement('div');
         tools.className = 'profile-store-tools-v5';
-        tools.innerHTML = `<label class="profile-store-search-v5"><span>Buscar</span><input type="search" placeholder="Nome, tag, moldura..." aria-label="Buscar cosmético"></label><label class="profile-store-select-v5"><span>Coleção</span><select aria-label="Filtrar por coleção"><option value="all">Todas as coleções</option></select></label><label class="profile-store-owned-v5"><input type="checkbox"><span>Somente adquiridos</span></label><div class="profile-store-count-v5" aria-live="polite"></div>`;
+        tools.innerHTML = `<label class="profile-store-search-v5"><span>Buscar</span><input type="search" placeholder="Nome, tag, moldura, decoração..." aria-label="Buscar cosmético"></label><label class="profile-store-select-v5"><span>Coleção</span><select aria-label="Filtrar por coleção"><option value="all">Todas as coleções</option></select></label><label class="profile-store-owned-v5"><input type="checkbox"><span>Somente adquiridos</span></label><div class="profile-store-count-v5" aria-live="polite"></div>`;
         host.insertBefore(tools, store);
         const search = tools.querySelector('input[type="search"]');
         const select = tools.querySelector('select');
@@ -56,6 +61,7 @@
         const observer = new MutationObserver(records => {
             let relevant = false;
             for (const record of records) {
+                if (record.type === 'attributes') { relevant = true; break; }
                 for (const node of record.addedNodes || []) {
                     if (node.nodeType !== 1) continue;
                     if (node.matches?.('.profile-v3-product') || node.querySelector?.('.profile-v3-product')) { relevant = true; break; }
@@ -64,7 +70,7 @@
             }
             if (relevant) scheduleRefresh(store);
         });
-        observer.observe(store, { childList:true, subtree:true });
+        observer.observe(store, { childList:true, subtree:true, attributes:true, attributeFilter:['data-collection','data-kind','disabled','aria-label','data-profile-item-type'] });
     }
 
     function scheduleRefresh(store) {
@@ -100,7 +106,7 @@
             decorateCard(card);
             const text = String(card.textContent || '').toLowerCase();
             const show = (!term || text.includes(term)) && (collection === 'all' || card.dataset.collection === collection) && (!onlyOwned || owned(card));
-            if (card.hidden === show) card.hidden = !show;
+            card.hidden = !show;
             if (show) visible++;
         }
         const count = tools.querySelector('.profile-store-count-v5');
@@ -123,7 +129,7 @@
 
     const style = document.createElement('style');
     style.id = 'profileStoreOrganizerV5Styles';
-    style.textContent = `.profile-store-tools-v5{display:grid;grid-template-columns:minmax(190px,1.3fr) minmax(150px,.7fr) auto auto;gap:9px;align-items:end;margin:0 0 14px;padding:11px;border:1px solid rgba(139,92,246,.14);border-radius:14px;background:rgba(12,8,23,.42)}.profile-store-search-v5,.profile-store-select-v5{display:grid;gap:5px}.profile-store-search-v5>span,.profile-store-select-v5>span{font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;font-weight:700}.profile-store-search-v5 input,.profile-store-select-v5 select{min-height:38px!important}.profile-store-owned-v5{display:flex;align-items:center;gap:7px;min-height:38px;padding:0 9px;border:1px solid var(--border-soft);border-radius:10px;background:rgba(30,22,56,.42);font-size:10px;color:var(--text-muted);white-space:nowrap}.profile-store-owned-v5 input{width:auto;min-height:0}.profile-store-count-v5{font:700 10px 'JetBrains Mono',monospace;color:#c4b5fd;white-space:nowrap;align-self:center}.profile-store-collection-v5{font-size:8px;line-height:1;padding:4px 6px;border:1px solid rgba(167,139,250,.22);border-radius:999px;color:#c4b5fd;background:rgba(139,92,246,.07);white-space:nowrap;margin-left:auto}.profile-store-collection-v5.c-sakura{color:#f9a8d4;border-color:rgba(244,114,182,.26);background:rgba(190,24,93,.08)}.profile-store-collection-v5.c-developer{color:#86efac;border-color:rgba(34,197,94,.28);background:rgba(5,46,22,.18)}.profile-store-collection-v5.c-admin{color:#fde68a;border-color:rgba(250,204,21,.28);background:rgba(120,53,15,.18)}.profile-store-collection-v5.c-editorial{color:#e7e5e4;border-color:rgba(214,211,209,.24);background:rgba(87,83,78,.12)}.profile-store-collection-v5.c-analog{color:#f5e7c8;border-color:rgba(168,143,97,.28);background:rgba(120,90,40,.12)}.profile-store-collection-v5.c-minimal{color:#dbeafe;border-color:rgba(191,219,254,.22);background:rgba(255,255,255,.045)}.profile-store-collection-v5.c-textile{color:#e9d5ff;border-color:rgba(216,180,254,.22);background:rgba(88,28,135,.08)}.profile-store-collection-v5.c-stock{color:#fdba74;border-color:rgba(251,146,60,.25);background:rgba(124,45,18,.09)}.profile-store-collection-v5.c-studio{color:#a5f3fc;border-color:rgba(103,232,249,.23);background:rgba(8,145,178,.075)}.profile-store-collection-v5.c-material{color:#e2e8f0;border-color:rgba(203,213,225,.22);background:rgba(71,85,105,.09)}.profile-store-collection-v5.c-cosmic{color:#c4b5fd}.profile-store-collection-v5.c-holo{color:#67e8f9}.profile-store-collection-v5.c-nature{color:#bef264}.profile-v3-product[hidden]{display:none!important}@media(max-width:760px){.profile-store-tools-v5{grid-template-columns:1fr 1fr}.profile-store-owned-v5{grid-column:1/2}.profile-store-count-v5{grid-column:2/3;text-align:right}}@media(max-width:520px){.profile-store-tools-v5{grid-template-columns:1fr;padding:10px}.profile-store-owned-v5,.profile-store-count-v5{grid-column:auto}.profile-store-count-v5{text-align:left}.profile-store-collection-v5{font-size:7.5px}}`;
+    style.textContent = `.profile-store-tools-v5{display:grid;grid-template-columns:minmax(190px,1.3fr) minmax(150px,.7fr) auto auto;gap:9px;align-items:end;margin:0 0 14px;padding:11px;border:1px solid color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 18%,var(--border-soft));border-radius:14px;background:color-mix(in srgb,var(--theme-panel,var(--bg-panel,#17102b)) 58%,transparent)}.profile-store-search-v5,.profile-store-select-v5{display:grid;gap:5px}.profile-store-search-v5>span,.profile-store-select-v5>span{font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;font-weight:700}.profile-store-search-v5 input,.profile-store-select-v5 select{min-height:38px!important}.profile-store-owned-v5{display:flex;align-items:center;gap:7px;min-height:38px;padding:0 9px;border:1px solid var(--border-soft);border-radius:10px;background:var(--theme-field,var(--bg-field));font-size:10px;color:var(--text-muted);white-space:nowrap}.profile-store-owned-v5 input{width:auto;min-height:0}.profile-store-count-v5{font:700 10px 'JetBrains Mono',monospace;color:var(--theme-bright,var(--violet-bright,#c4b5fd));white-space:nowrap;align-self:center}.profile-store-collection-v5{font-size:8px;line-height:1;padding:4px 6px;border:1px solid color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 26%,var(--border-soft));border-radius:999px;color:var(--theme-bright,var(--violet-bright,#c4b5fd));background:color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 7%,transparent);white-space:nowrap;margin-left:auto}.profile-store-collection-v5.c-sakura{color:#f9a8d4;border-color:rgba(244,114,182,.26);background:rgba(190,24,93,.08)}.profile-store-collection-v5.c-developer{color:#86efac;border-color:rgba(34,197,94,.28);background:rgba(5,46,22,.18)}.profile-store-collection-v5.c-admin{color:#fde68a;border-color:rgba(250,204,21,.28);background:rgba(120,53,15,.18)}.profile-store-collection-v5.c-editorial{color:#e7e5e4;border-color:rgba(214,211,209,.24);background:rgba(87,83,78,.12)}.profile-store-collection-v5.c-analog{color:#f5e7c8;border-color:rgba(168,143,97,.28);background:rgba(120,90,40,.12)}.profile-store-collection-v5.c-minimal{color:#dbeafe;border-color:rgba(191,219,254,.22);background:rgba(255,255,255,.045)}.profile-store-collection-v5.c-textile{color:#e9d5ff;border-color:rgba(216,180,254,.22);background:rgba(88,28,135,.08)}.profile-store-collection-v5.c-stock{color:#fdba74;border-color:rgba(251,146,60,.25);background:rgba(124,45,18,.09)}.profile-store-collection-v5.c-studio{color:#a5f3fc;border-color:rgba(103,232,249,.23);background:rgba(8,145,178,.075)}.profile-store-collection-v5.c-material{color:#e2e8f0;border-color:rgba(203,213,225,.22);background:rgba(71,85,105,.09)}.profile-store-collection-v5.c-cosmic{color:#c4b5fd}.profile-store-collection-v5.c-holo{color:#67e8f9}.profile-store-collection-v5.c-nature{color:#bef264}.profile-v3-product[hidden]{display:none!important}@media(max-width:760px){.profile-store-tools-v5{grid-template-columns:1fr 1fr}.profile-store-owned-v5{grid-column:1/2}.profile-store-count-v5{grid-column:2/3;text-align:right}}@media(max-width:520px){.profile-store-tools-v5{grid-template-columns:1fr;padding:10px}.profile-store-owned-v5,.profile-store-count-v5{grid-column:auto}.profile-store-count-v5{text-align:left}.profile-store-collection-v5{font-size:7.5px}}`;
     document.head.appendChild(style);
 
     enhance();
