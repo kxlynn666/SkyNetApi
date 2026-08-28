@@ -35,25 +35,23 @@ const root = path.join(__dirname, '..');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const youtube = fs.readFileSync(path.join(root, 'src/youtube.js'), 'utf8');
 const youtubeV4 = fs.readFileSync(path.join(root, 'src/youtube-media-v4.js'), 'utf8');
-const hook = fs.readFileSync(path.join(root, 'src/youtube-media-v4-hook.js'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'), 'utf8');
 const clientV4 = fs.readFileSync(path.join(root, 'public/youtube-downloader-v4.js'), 'utf8');
 const legacyBlocker = fs.readFileSync(path.join(root, 'public/youtube-v4-block-legacy.js'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'public/youtube-menu-v1.js'), 'utf8');
 const authHotfix = fs.readFileSync(path.join(root, 'public/youtube-auth-error-hotfix-v1.js'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'public/workspace.html'), 'utf8');
-const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 new Function(menu);
 new Function(authHotfix);
 new Function(clientV4);
 new Function(legacyBlocker);
-assert(server.includes("registerYouTubeRoutes(app)"), 'Backend legado do YouTube não foi registrado.');
+assert(server.includes("const { registerYouTubeMediaV4Routes } = require('./src/youtube-media-v4')"), 'Server não importa o backend YouTube v4.');
+assert(server.includes('registerYouTubeMediaV4Routes(app);'), 'Server não registra o backend YouTube v4.');
+assert(server.indexOf('registerYouTubeMediaV4Routes(app);') < server.indexOf('registerYouTubeRoutes(app);'), 'Backend v4 precisa ser registrado antes das rotas legadas.');
 assert(server.includes("'/painel/youtube',"), 'Rota de workspace do YouTube ausente.');
 assert(!server.includes("app.get('/painel/youtube', (req, res) => res.redirect"), 'YouTube ainda está redirecionando para outra página.');
 assert(youtube.includes("app.post('/painel/youtube-prepare'") && youtube.includes("app.get('/painel/youtube-file'") && youtube.includes("app.get('/painel/youtube-download'"), 'Rotas legadas do arquivo local não estão registradas.');
-assert(hook.includes('registerYouTubeMediaV4Routes(app)') && hook.includes('registerLegacy(app)'), 'Hook não registra v4 antes do backend legado.');
-assert(pkg.scripts.start.includes('youtube-media-v4-hook.js'), 'Produção não está iniciando com o backend YouTube v4.');
 
 assert(youtubeV4.includes("--extract-audio") && youtubeV4.includes("--audio-format', 'mp3'"), 'Backend v4 não prepara áudio MP3 com yt-dlp.');
 assert(youtubeV4.includes("extension: 'mp3'") && youtubeV4.includes("mime: 'audio/mpeg'"), 'Backend v4 não publica áudio como MP3.');
