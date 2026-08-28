@@ -21,8 +21,27 @@
         return /comprado|adquirido|item adquirido/.test(text) || (button.disabled && !button.hasAttribute('data-buy-profile-item'));
     }
 
+    function cardType(card) {
+        const explicit = String(card.dataset.profileItemType || '').trim();
+        if (explicit) return explicit;
+        const visual = card.querySelector('.profile-v3-product-visual');
+        if (visual?.classList.contains('name-decoration')) return 'name-decoration';
+        if (visual?.classList.contains('tag')) return 'tag';
+        if (visual?.classList.contains('frame')) return 'frame';
+        if (visual?.classList.contains('decoration')) return 'decoration';
+        return '';
+    }
+
+    function typeFilter(store) {
+        const value = String(store.closest('[data-profile-panel="store"]')?.dataset.storeTypeFilter || 'all');
+        return ['all','tag','frame','decoration','name-decoration'].includes(value) ? value : 'all';
+    }
+
     function decorateCard(card) {
-        if (!card || card.dataset.storeV5Decorated === '1') return;
+        if (!card) return;
+        const type = cardType(card);
+        if (type) card.dataset.profileItemType = type;
+        if (card.dataset.storeV5Decorated === '1') return;
         const collection = card.dataset.collection || '';
         if (!collection) return;
         const title = card.querySelector('.profile-v3-product-title');
@@ -100,17 +119,20 @@
 
     function applyFilter(store, query, collection, onlyOwned, tools) {
         const term = String(query || '').trim().toLowerCase();
+        const selectedType = typeFilter(store);
         const cards = [...store.querySelectorAll('.profile-v3-product')];
+        const categoryCards = selectedType === 'all' ? cards : cards.filter(card => cardType(card) === selectedType);
         let visible = 0;
         for (const card of cards) {
             decorateCard(card);
             const text = String(card.textContent || '').toLowerCase();
-            const show = (!term || text.includes(term)) && (collection === 'all' || card.dataset.collection === collection) && (!onlyOwned || owned(card));
+            const matchesType = selectedType === 'all' || cardType(card) === selectedType;
+            const show = matchesType && (!term || text.includes(term)) && (collection === 'all' || card.dataset.collection === collection) && (!onlyOwned || owned(card));
             card.hidden = !show;
             if (show) visible++;
         }
         const count = tools.querySelector('.profile-store-count-v5');
-        if (count) count.textContent = `${visible} de ${cards.length} itens`;
+        if (count) count.textContent = `${visible} de ${categoryCards.length} itens`;
     }
 
     function enhance(root = document) {
@@ -131,6 +153,12 @@
     style.id = 'profileStoreOrganizerV5Styles';
     style.textContent = `.profile-store-tools-v5{display:grid;grid-template-columns:minmax(190px,1.3fr) minmax(150px,.7fr) auto auto;gap:9px;align-items:end;margin:0 0 14px;padding:11px;border:1px solid color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 18%,var(--border-soft));border-radius:14px;background:color-mix(in srgb,var(--theme-panel,var(--bg-panel,#17102b)) 58%,transparent)}.profile-store-search-v5,.profile-store-select-v5{display:grid;gap:5px}.profile-store-search-v5>span,.profile-store-select-v5>span{font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;font-weight:700}.profile-store-search-v5 input,.profile-store-select-v5 select{min-height:38px!important}.profile-store-owned-v5{display:flex;align-items:center;gap:7px;min-height:38px;padding:0 9px;border:1px solid var(--border-soft);border-radius:10px;background:var(--theme-field,var(--bg-field));font-size:10px;color:var(--text-muted);white-space:nowrap}.profile-store-owned-v5 input{width:auto;min-height:0}.profile-store-count-v5{font:700 10px 'JetBrains Mono',monospace;color:var(--theme-bright,var(--violet-bright,#c4b5fd));white-space:nowrap;align-self:center}.profile-store-collection-v5{font-size:8px;line-height:1;padding:4px 6px;border:1px solid color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 26%,var(--border-soft));border-radius:999px;color:var(--theme-bright,var(--violet-bright,#c4b5fd));background:color-mix(in srgb,var(--theme-primary,var(--violet,#8b5cf6)) 7%,transparent);white-space:nowrap;margin-left:auto}.profile-store-collection-v5.c-sakura{color:#f9a8d4;border-color:rgba(244,114,182,.26);background:rgba(190,24,93,.08)}.profile-store-collection-v5.c-developer{color:#86efac;border-color:rgba(34,197,94,.28);background:rgba(5,46,22,.18)}.profile-store-collection-v5.c-admin{color:#fde68a;border-color:rgba(250,204,21,.28);background:rgba(120,53,15,.18)}.profile-store-collection-v5.c-editorial{color:#e7e5e4;border-color:rgba(214,211,209,.24);background:rgba(87,83,78,.12)}.profile-store-collection-v5.c-analog{color:#f5e7c8;border-color:rgba(168,143,97,.28);background:rgba(120,90,40,.12)}.profile-store-collection-v5.c-minimal{color:#dbeafe;border-color:rgba(191,219,254,.22);background:rgba(255,255,255,.045)}.profile-store-collection-v5.c-textile{color:#e9d5ff;border-color:rgba(216,180,254,.22);background:rgba(88,28,135,.08)}.profile-store-collection-v5.c-stock{color:#fdba74;border-color:rgba(251,146,60,.25);background:rgba(124,45,18,.09)}.profile-store-collection-v5.c-studio{color:#a5f3fc;border-color:rgba(103,232,249,.23);background:rgba(8,145,178,.075)}.profile-store-collection-v5.c-material{color:#e2e8f0;border-color:rgba(203,213,225,.22);background:rgba(71,85,105,.09)}.profile-store-collection-v5.c-cosmic{color:#c4b5fd}.profile-store-collection-v5.c-holo{color:#67e8f9}.profile-store-collection-v5.c-nature{color:#bef264}.profile-v3-product[hidden]{display:none!important}@media(max-width:760px){.profile-store-tools-v5{grid-template-columns:1fr 1fr}.profile-store-owned-v5{grid-column:1/2}.profile-store-count-v5{grid-column:2/3;text-align:right}}@media(max-width:520px){.profile-store-tools-v5{grid-template-columns:1fr;padding:10px}.profile-store-owned-v5,.profile-store-count-v5{grid-column:auto}.profile-store-count-v5{text-align:left}.profile-store-collection-v5{font-size:7.5px}}`;
     document.head.appendChild(style);
+
+    document.addEventListener('skynet:store-type-filter', event => {
+        const panel = event.target.closest?.('[data-profile-panel="store"]') || document.querySelector('[data-profile-panel="store"]');
+        const store = panel?.querySelector('.profile-v3-store');
+        if (store) scheduleRefresh(store);
+    });
 
     enhance();
     const root = document.getElementById('workspaceContent') || document.body;
