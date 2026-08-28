@@ -86,6 +86,7 @@ function securityHeaders(req, res, next) {
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
     "connect-src 'self'",
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com",
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'none'",

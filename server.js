@@ -8,6 +8,7 @@ const S = require('./src/store');
 const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
+const { registerYouTubeRoutes } = require('./src/youtube');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerMusicRoutes } = require('./src/music');
@@ -79,6 +80,7 @@ app.use((req, res, next) => {
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
+registerYouTubeRoutes(app);
 registerCardV2Routes(app);
 registerXpAdminRoutes(app);
 registerMusicRoutes(app);
@@ -159,6 +161,7 @@ const workspaceRoutes = [
     '/painel/brat',
     '/painel/uploads',
     '/painel/tiktok',
+    '/painel/youtube',
     '/painel/media',
     '/painel/roblox',
     '/painel/historico',
@@ -176,7 +179,6 @@ app.get('/brat.html', (req, res) => res.redirect(302, '/painel/brat'));
 app.get('/painel/login', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'login.html')));
 app.get('/painel/cadastro', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'register.html')));
 app.get('/u/:username', (req, res) => res.sendFile(path.join(C.PUBLIC_DIR, 'public-profile.html')));
-app.get('/painel/youtube', (req, res) => res.redirect(302, '/painel/card2'));
 
 app.get('/painel.html', (req, res) => res.redirect(302, '/painel'));
 app.get('/upload', (req, res) => res.redirect(302, '/painel/uploads'));
