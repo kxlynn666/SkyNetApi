@@ -3,6 +3,7 @@
   window.__SKYNET_STORE_FILTER_CONTROLLER_V2__ = true;
   if ((location.pathname.replace(/\/+$/, '') || '/') !== '/painel/perfil') return;
 
+  const S = window.SkyNet;
   const TYPES = new Set(['all', 'tag', 'frame', 'decoration', 'name-decoration']);
   let scheduled = false;
   let preferredType = 'all';
@@ -108,6 +109,38 @@
     notifyOrganizer(panel, type);
   }
 
+  function syncNameInventory(storeData) {
+    const select = document.getElementById('profileNameDecorationSelectV1');
+    if (!select || !storeData) return;
+    const owned = (storeData.inventory || []).map(entry => entry?.item).filter(item => item?.type === 'name-decoration');
+    const equipped = storeData.equipped?.nameDecorationId || '';
+    const options = ['<option value="">Sem decoração de nome</option>', ...owned.map(item => `<option value="${S.escapeHtml(item.id)}">${S.escapeHtml(item.name)}</option>`)].join('');
+    if (select.innerHTML !== options) select.innerHTML = options;
+    select.value = owned.some(item => item.id === equipped) ? equipped : '';
+  }
+
+  async function refreshAfterPurchase() {
+    if (!S?.api) return;
+    try {
+      const data = await S.api('/api/profile-store/me');
+      syncNameInventory(data);
+      window.SkyNetProfilePreview?.refresh?.();
+      window.dispatchEvent(new CustomEvent('skynet:store-state-refreshed', { detail: { store: data } }));
+    } catch {}
+  }
+
+  function watchPurchase(button) {
+    if (!button || button.dataset.storePurchaseWatchV2 === '1') return;
+    button.dataset.storePurchaseWatchV2 = '1';
+    const observer = new MutationObserver(() => {
+      if (button.hasAttribute('data-buy-profile-item') || !button.disabled) return;
+      observer.disconnect();
+      refreshAfterPurchase();
+    });
+    observer.observe(button, { attributes: true, childList: true, subtree: true, attributeFilter: ['disabled', 'data-buy-profile-item', 'data-kind'] });
+    setTimeout(() => observer.disconnect(), 10000);
+  }
+
   function schedule() {
     if (scheduled) return;
     scheduled = true;
@@ -116,6 +149,11 @@
       enhance();
     });
   }
+
+  window.addEventListener('click', event => {
+    const buy = event.target.closest?.('[data-buy-profile-item]');
+    if (buy) watchPurchase(buy);
+  }, true);
 
   document.addEventListener('click', event => {
     const button = event.target.closest?.('[data-profile-panel="store"] .profile-v3-store-filter button');
