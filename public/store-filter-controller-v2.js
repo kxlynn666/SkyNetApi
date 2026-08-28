@@ -73,6 +73,13 @@
     });
   }
 
+  function notifyOrganizer(panel, type, force = false) {
+    if (!panel.querySelector('.profile-store-tools-v5')) return;
+    if (!force && panel.dataset.storeFilterSyncedV2 === type) return;
+    panel.dataset.storeFilterSyncedV2 = type;
+    panel.dispatchEvent(new CustomEvent('skynet:store-type-filter', { bubbles: true, detail: { type } }));
+  }
+
   function apply(panel, type) {
     if (!panel || !TYPES.has(type)) return;
     preferredType = type;
@@ -80,7 +87,7 @@
     syncLegacyNameFlag(panel, type);
     stampCards(panel);
     setActiveButton(panel, type);
-    panel.dispatchEvent(new CustomEvent('skynet:store-type-filter', { bubbles: true, detail: { type } }));
+    notifyOrganizer(panel, type, true);
     fallbackApply(panel);
   }
 
@@ -98,9 +105,7 @@
     syncLegacyNameFlag(panel, type);
     setActiveButton(panel, type);
     fallbackApply(panel);
-    if (panel.querySelector('.profile-store-tools-v5')) {
-      panel.dispatchEvent(new CustomEvent('skynet:store-type-filter', { bubbles: true, detail: { type } }));
-    }
+    notifyOrganizer(panel, type);
   }
 
   function schedule() {
