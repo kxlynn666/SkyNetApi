@@ -8,12 +8,14 @@
   let installed = false;
   let currentItem = null;
   let requestId = 0;
+  let observer = null;
 
   installStyle();
-  tryInstall();
-  const root = document.getElementById('workspaceContent') || document.documentElement;
-  const observer = new MutationObserver(() => tryInstall());
-  observer.observe(root, { childList: true, subtree: true });
+  if (!tryInstall()) {
+    const root = document.getElementById('workspaceContent') || document.documentElement;
+    observer = new MutationObserver(() => tryInstall());
+    observer.observe(root, { childList: true, subtree: true });
+  }
 
   function tryInstall() {
     if (installed) return true;
@@ -21,7 +23,8 @@
     const player = document.getElementById('youtubePlayer');
     if (!form || !player) return false;
     installed = true;
-    observer.disconnect();
+    observer?.disconnect();
+    observer = null;
     enhanceLayout(form, player);
     form.addEventListener('submit', analyzeForDownload);
     return true;
