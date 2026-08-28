@@ -30,6 +30,7 @@ assert.strictEqual(qualityOptionsFromInfo({ formats:[] }).length, 0);
 
 const root = path.join(__dirname, '..');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+const youtube = fs.readFileSync(path.join(root, 'src/youtube.js'), 'utf8');
 const security = fs.readFileSync(path.join(root, 'src/global-security.js'), 'utf8');
 const loader = fs.readFileSync(path.join(root, 'public/workspace-feature-loader-v1.js'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'), 'utf8');
@@ -37,9 +38,11 @@ const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'
 assert(server.includes("registerYouTubeRoutes(app)"), 'Backend do YouTube não foi registrado.');
 assert(server.includes("'/painel/youtube',"), 'Rota de workspace do YouTube ausente.');
 assert(!server.includes("app.get('/painel/youtube', (req, res) => res.redirect"), 'YouTube ainda está redirecionando para outra página.');
+assert(youtube.includes("app.post('/painel/youtube-info'") && youtube.includes("app.get('/painel/youtube-download'"), 'Rotas do downloader não estão registradas no backend.');
 assert(security.includes("frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com"), 'CSP não permite o player oficial.');
 assert(loader.includes("/youtube-downloader-v1.js"), 'Frontend do downloader não é carregado.');
-assert(client.includes('/painel/youtube-info') && client.includes('/painel/youtube-download'), 'Cliente não usa as rotas do downloader.');
+assert(client.includes('/painel/youtube-info'), 'Cliente não usa a rota de análise do downloader.');
+assert(client.includes('downloadUrl'), 'Cliente não consome os links temporários de download retornados pelo backend.');
 assert(client.includes('permissão para salvar'), 'Aviso de uso responsável ausente.');
 
 console.log('YouTube downloader self-test OK');
