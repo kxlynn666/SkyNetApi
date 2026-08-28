@@ -47,6 +47,11 @@
     return TYPES.has(value) ? value : 'all';
   }
 
+  function syncLegacyNameFlag(panel, type) {
+    if (type === 'name-decoration') panel.dataset.nameDecorationFilterV1 = '1';
+    else delete panel.dataset.nameDecorationFilterV1;
+  }
+
   function setActiveButton(panel, type) {
     const row = panel.querySelector('.profile-v3-store-filter');
     if (!row) return;
@@ -70,7 +75,7 @@
   function apply(panel, type) {
     if (!panel || !TYPES.has(type)) return;
     panel.dataset.storeTypeFilter = type;
-    delete panel.dataset.nameDecorationFilterV1;
+    syncLegacyNameFlag(panel, type);
     stampCards(panel);
     setActiveButton(panel, type);
     panel.dispatchEvent(new CustomEvent('skynet:store-type-filter', { bubbles: true, detail: { type } }));
@@ -86,7 +91,9 @@
       const active = panel.querySelector('.profile-v3-store-filter button.active');
       panel.dataset.storeTypeFilter = typeFromButton(active) || 'all';
     }
-    setActiveButton(panel, currentType(panel));
+    const type = currentType(panel);
+    syncLegacyNameFlag(panel, type);
+    setActiveButton(panel, type);
     fallbackApply(panel);
   }
 
