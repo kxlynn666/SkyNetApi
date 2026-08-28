@@ -5,141 +5,189 @@
   const S = window.SkyNet;
   if (!S) return;
 
-  let installed = false;
   let currentItem = null;
-  let requestId = 0;
+  let renderQueued = false;
   let observer = null;
 
-  installStyle();
-  if (!tryInstall()) {
-    const root = document.getElementById('workspaceContent') || document.documentElement;
-    observer = new MutationObserver(() => tryInstall());
-    observer.observe(root, { childList: true, subtree: true });
+  installStyles();
+  updateHeading();
+  ensurePage();
+
+  const root = document.getElementById('workspaceContent');
+  if (root) {
+    observer = new MutationObserver(() => {
+      if (document.getElementById('youtubeLocalFormV2')) return;
+      if (renderQueued) return;
+      renderQueued = true;
+      queueMicrotask(() => {
+        renderQueued = false;
+        ensurePage();
+      });
+    });
+    observer.observe(root, { childList: true, subtree: false });
+    setTimeout(() => observer?.disconnect(), 12000);
   }
 
-  function tryInstall() {
-    if (installed) return true;
-    const form = document.getElementById('youtubeForm');
-    const player = document.getElementById('youtubePlayer');
-    if (!form || !player) return false;
-    installed = true;
-    observer?.disconnect();
-    observer = null;
-    enhanceLayout(form, player);
-    form.addEventListener('submit', analyzeForDownload);
+  function updateHeading() {
+    const apply = () => {
+      const kicker = document.getElementById('workspaceKicker');
+      const title = document.getElementById('workspaceTitle');
+      const description = document.getElementById('workspaceDescription');
+      if (kicker) kicker.textContent = 'Downloader';
+      if (title) title.textContent = 'YouTube Downloader';
+      if (description) description.textContent = 'Baixe com yt-dlp e reproduza no site o mesmo arquivo MP4 preparado pelo servidor.';
+      document.title = 'YouTube Downloader - SkyNetApi';
+    };
+    apply();
+    setTimeout(apply, 250);
+    setTimeout(apply, 900);
+  }
+
+  function ensurePage() {
+    const root = document.getElementById('workspaceContent');
+    if (!root) return false;
+    if (document.getElementById('youtubeLocalFormV2')) return true;
+
+    root.innerHTML = `
+      <section class="workspace-page-grid youtube-local-grid-v2">
+        <div class="workspace-card workspace-col-5">
+          <div class="workspace-card-header"><div><h2>Baixar e carregar</h2><p>O player só aparece depois que o yt-dlp termina o MP4.</p></div></div>
+          <div class="message" id="youtubeLocalMessageV2"></div>
+          <form id="youtubeLocalFormV2">
+            <div class="form-group">
+              <label for="youtubeLocalUrlV2">Link do YouTube</label>
+              <input id="youtubeLocalUrlV2" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" required>
+            </div>
+            <div class="form-group">
+              <label for="youtubeLocalQualityV2">Qualidade</label>
+              <select id="youtubeLocalQualityV2">
+                <option value="360">360p</option>
+                <option value="720" selected>720p</option>
+                <option value="1080">1080p</option>
+              </select>
+            </div>
+            <button class="button primary youtube-local-submit-v2" id="youtubeLocalSubmitV2" type="submit">Baixar com yt-dlp e carregar</button>
+          </form>
+          <div class="youtube-local-process-v2" id="youtubeLocalProcessV2" hidden>
+            <span class="youtube-local-spinner-v2" aria-hidden="true"></span>
+            <div><strong>Preparando o vídeo...</strong><small>O servidor está usando yt-dlp + FFmpeg. O player abrirá quando o MP4 estiver pronto.</small></div>
+          </div>
+          <p class="hint youtube-rights-note-v2">Baixe apenas vídeos seus, em domínio público ou que você tenha permissão para salvar. Vídeos privados, Premium, 18+, lives em andamento e playlists não são aceitos.</p>
+        </div>
+
+        <div class="workspace-card workspace-col-7">
+          <div class="workspace-card-header"><div><h2>Arquivo preparado</h2><p id="youtubeLocalMetaV2">Nenhum vídeo carregado.</p></div></div>
+          <div class="workspace-media-player youtube-local-player-v2" id="youtubeLocalPlayerV2">
+            <div class="youtube-local-empty-v2"><strong>MP4 local</strong><span>Cole um link e aguarde o yt-dlp terminar o download.</span></div>
+          </div>
+          <div class="youtube-local-details-v2" id="youtubeLocalDetailsV2" hidden></div>
+          <div class="workspace-tool-actions youtube-local-actions-v2">
+            <a class="button primary hidden" id="youtubeLocalDownloadV2" href="#" download>Baixar MP4</a>
+            <a class="button hidden" id="youtubeLocalOpenV2" href="#" target="_blank" rel="noopener">Abrir no YouTube</a>
+          </div>
+        </div>
+      </section>`;
+
+    bindPage();
     return true;
   }
 
-  function enhanceLayout(form, player) {
-    const leftCard = form.closest('.workspace-card');
-    const rightCard = player.closest('.workspace-card');
-    if (leftCard && !leftCard.querySelector('.youtube-rights-note-v1')) {
-      const note = document.createElement('p');
-      note.className = 'hint youtube-rights-note-v1';
-      note.textContent = 'Baixe apenas vídeos seus, em domínio público ou que você tenha permissão para salvar. Vídeos privados, Premium, 18+, lives e playlists não são aceitos.';
-      form.insertAdjacentElement('afterend', note);
-    }
-
-    if (rightCard && !document.getElementById('youtubeDownloadPanelV1')) {
-      const panel = document.createElement('section');
-      panel.id = 'youtubeDownloadPanelV1';
-      panel.className = 'youtube-download-panel-v1';
-      panel.hidden = true;
-      panel.innerHTML = `
-        <div class="youtube-download-meta-v1">
-          <div class="youtube-download-thumb-v1" id="youtubeDownloadThumbV1"></div>
-          <div class="youtube-download-copy-v1">
-            <strong id="youtubeDownloadTitleV1">Vídeo</strong>
-            <span id="youtubeDownloadAuthorV1"></span>
-            <small id="youtubeDownloadDurationV1"></small>
-          </div>
-        </div>
-        <div class="youtube-download-controls-v1">
-          <label><span>Qualidade</span><select id="youtubeQualityV1" aria-label="Qualidade do vídeo"></select></label>
-          <a class="button primary" id="youtubeDownloadV1" href="#">Baixar vídeo</a>
-        </div>`;
-      const actions = rightCard.querySelector('.workspace-tool-actions');
-      if (actions) actions.insertAdjacentElement('beforebegin', panel);
-      else rightCard.appendChild(panel);
-      panel.querySelector('#youtubeQualityV1')?.addEventListener('change', syncDownloadLink);
-      panel.querySelector('#youtubeDownloadV1')?.addEventListener('click', event => {
-        if (!currentItem?.downloads?.length) event.preventDefault();
-      });
-    }
+  function bindPage() {
+    const form = document.getElementById('youtubeLocalFormV2');
+    const select = document.getElementById('youtubeLocalQualityV2');
+    if (!form || form.dataset.bound === '1') return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', prepareVideo);
+    select?.addEventListener('change', () => {
+      if (!currentItem) return;
+      const message = document.getElementById('youtubeLocalMessageV2');
+      S.message(message, 'Qualidade alterada. Clique em “Baixar com yt-dlp e carregar” para preparar outro MP4.', 'warning');
+    });
   }
 
-  async function analyzeForDownload() {
-    const localId = ++requestId;
-    const input = document.getElementById('youtubeUrl');
-    const panel = document.getElementById('youtubeDownloadPanelV1');
-    const message = document.getElementById('youtubeMessage');
+  async function prepareVideo(event) {
+    event.preventDefault();
+    const input = document.getElementById('youtubeLocalUrlV2');
+    const select = document.getElementById('youtubeLocalQualityV2');
+    const message = document.getElementById('youtubeLocalMessageV2');
     const url = String(input?.value || '').trim();
     if (!url) return;
 
     currentItem = null;
-    if (panel) panel.hidden = true;
     setBusy(true);
+    resetResult('Baixando o vídeo com yt-dlp...');
     try {
-      const data = await S.api('/painel/youtube-info', { method: 'POST', body: { url } });
-      if (localId !== requestId) return;
+      const data = await S.api('/painel/youtube-prepare', {
+        method: 'POST',
+        body: { url, height: Number(select?.value || 720) }
+      });
       currentItem = data.item || null;
-      renderItem();
-      if (message) S.message(message, 'Vídeo pronto para assistir ou baixar.', 'success');
+      if (!currentItem?.streamUrl || !currentItem?.downloadUrl) throw new Error('O servidor não retornou o arquivo preparado.');
+      renderItem(currentItem);
+      S.message(message, 'MP4 pronto. O player e o botão de download usam o mesmo arquivo baixado pelo yt-dlp.', 'success');
     } catch (error) {
-      if (localId !== requestId) return;
-      currentItem = null;
-      if (panel) panel.hidden = true;
-      if (message) S.message(message, error.message || 'Não foi possível preparar o download.', 'error');
+      resetResult('Não foi possível preparar o vídeo.');
+      S.message(message, error.message || 'Não foi possível preparar o vídeo.', 'error');
     } finally {
-      if (localId === requestId) setBusy(false);
+      setBusy(false);
     }
   }
 
-  function renderItem() {
-    const item = currentItem;
-    const panel = document.getElementById('youtubeDownloadPanelV1');
-    if (!item || !panel) return;
+  function renderItem(item) {
+    const player = document.getElementById('youtubeLocalPlayerV2');
+    const details = document.getElementById('youtubeLocalDetailsV2');
+    const meta = document.getElementById('youtubeLocalMetaV2');
+    const download = document.getElementById('youtubeLocalDownloadV2');
+    const open = document.getElementById('youtubeLocalOpenV2');
+    const select = document.getElementById('youtubeLocalQualityV2');
 
-    const title = document.getElementById('youtubeDownloadTitleV1');
-    const author = document.getElementById('youtubeDownloadAuthorV1');
-    const duration = document.getElementById('youtubeDownloadDurationV1');
-    const thumb = document.getElementById('youtubeDownloadThumbV1');
-    const select = document.getElementById('youtubeQualityV1');
-    const player = document.getElementById('youtubePlayer');
-    const idText = document.getElementById('youtubeId');
-    const open = document.getElementById('youtubeOpen');
-
-    if (title) title.textContent = item.title || 'Vídeo do YouTube';
-    if (author) author.textContent = item.uploader || 'YouTube';
-    if (duration) duration.textContent = item.duration ? formatDuration(item.duration) : '';
-    if (thumb) thumb.innerHTML = item.thumbnail ? `<img src="${esc(item.thumbnail)}" alt="">` : '<span>YT</span>';
-    if (select) select.innerHTML = (item.downloads || []).map(option => `<option value="${esc(option.downloadUrl)}">${esc(option.label)} · ${esc(option.container || 'MP4')}</option>`).join('');
-
-    if (player && item.embedUrl) {
-      player.innerHTML = `<iframe src="${esc(item.embedUrl)}" title="Player do YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+    if (player) {
+      player.innerHTML = `<video controls playsinline preload="metadata" ${item.thumbnail ? `poster="${esc(item.thumbnail)}"` : ''} src="${esc(item.streamUrl)}"></video>`;
     }
-    if (idText) idText.textContent = `${item.uploader || 'YouTube'}${item.duration ? ` · ${formatDuration(item.duration)}` : ''}`;
-    if (open && item.canonicalUrl) open.href = item.canonicalUrl;
-
-    syncDownloadLink();
-    panel.hidden = false;
+    if (meta) meta.textContent = `${item.uploader || 'YouTube'}${item.duration ? ` · ${formatDuration(item.duration)}` : ''} · ${item.selectedLabel || `${item.selectedHeight || ''}p`}`;
+    if (details) {
+      details.hidden = false;
+      details.innerHTML = `
+        ${item.thumbnail ? `<img src="${esc(item.thumbnail)}" alt="">` : '<div class="youtube-local-thumb-fallback-v2">YT</div>'}
+        <div><strong>${esc(item.title || 'Vídeo do YouTube')}</strong><span>${esc(item.uploader || 'YouTube')}</span><small>${item.size ? esc(S.formatSize(item.size)) : ''}${item.duration ? ` · ${esc(formatDuration(item.duration))}` : ''}</small></div>`;
+    }
+    if (download) {
+      download.href = item.downloadUrl;
+      download.classList.remove('hidden');
+      download.setAttribute('download', '');
+    }
+    if (open) {
+      open.href = item.canonicalUrl || '#';
+      open.classList.toggle('hidden', !item.canonicalUrl);
+    }
+    if (select && Array.isArray(item.qualities) && item.qualities.length) {
+      select.innerHTML = item.qualities.map(option => `<option value="${Number(option.height)}" ${Number(option.height) === Number(item.selectedHeight) ? 'selected' : ''}>${esc(option.label || `${option.height}p`)}</option>`).join('');
+    }
   }
 
-  function syncDownloadLink() {
-    const select = document.getElementById('youtubeQualityV1');
-    const link = document.getElementById('youtubeDownloadV1');
-    if (!link) return;
-    const href = String(select?.value || '');
-    link.href = href || '#';
-    link.classList.toggle('disabled', !href);
-    link.setAttribute('aria-disabled', href ? 'false' : 'true');
+  function resetResult(text) {
+    const player = document.getElementById('youtubeLocalPlayerV2');
+    const details = document.getElementById('youtubeLocalDetailsV2');
+    const meta = document.getElementById('youtubeLocalMetaV2');
+    const download = document.getElementById('youtubeLocalDownloadV2');
+    const open = document.getElementById('youtubeLocalOpenV2');
+    if (player) player.innerHTML = `<div class="youtube-local-empty-v2"><strong>MP4 local</strong><span>${esc(text || 'Nenhum vídeo carregado.')}</span></div>`;
+    if (details) { details.hidden = true; details.innerHTML = ''; }
+    if (meta) meta.textContent = text || 'Nenhum vídeo carregado.';
+    download?.classList.add('hidden');
+    open?.classList.add('hidden');
   }
 
   function setBusy(value) {
-    const button = document.querySelector('#youtubeForm button[type="submit"]');
-    if (!button) return;
-    button.disabled = value;
-    button.textContent = value ? 'Analisando...' : 'Carregar';
+    const button = document.getElementById('youtubeLocalSubmitV2');
+    const process = document.getElementById('youtubeLocalProcessV2');
+    const form = document.getElementById('youtubeLocalFormV2');
+    if (button) {
+      button.disabled = value;
+      button.textContent = value ? 'Baixando com yt-dlp...' : 'Baixar com yt-dlp e carregar';
+    }
+    if (process) process.hidden = !value;
+    form?.querySelectorAll('input,select').forEach(element => { element.disabled = value; });
   }
 
   function formatDuration(seconds) {
@@ -154,22 +202,18 @@
     return S.escapeHtml(value == null ? '' : String(value));
   }
 
-  function installStyle() {
-    if (document.getElementById('youtubeDownloaderV1Styles')) return;
+  function installStyles() {
+    if (document.getElementById('youtubeDownloaderV2Styles')) return;
     const style = document.createElement('style');
-    style.id = 'youtubeDownloaderV1Styles';
+    style.id = 'youtubeDownloaderV2Styles';
     style.textContent = `
-      .youtube-rights-note-v1{margin-top:12px;line-height:1.55}
-      .youtube-download-panel-v1{margin-top:14px;padding:13px;border:1px solid var(--theme-border-soft,var(--border-soft));border-radius:14px;background:color-mix(in srgb,var(--theme-panel,var(--bg-panel,#17102b)) 88%,transparent);display:grid;gap:12px}
-      .youtube-download-panel-v1[hidden]{display:none!important}
-      .youtube-download-meta-v1{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;align-items:center}
-      .youtube-download-thumb-v1{width:112px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:var(--theme-field,var(--bg-field,#21183b));display:grid;place-items:center;color:var(--theme-bright,var(--violet-bright,#c4b5fd));font-weight:800}
-      .youtube-download-thumb-v1 img{width:100%;height:100%;object-fit:cover;display:block}
-      .youtube-download-copy-v1{min-width:0}.youtube-download-copy-v1 strong,.youtube-download-copy-v1 span,.youtube-download-copy-v1 small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .youtube-download-copy-v1 strong{font-size:12px;color:var(--theme-text,var(--text))}.youtube-download-copy-v1 span{font-size:10px;color:var(--theme-muted,var(--text-muted));margin-top:3px}.youtube-download-copy-v1 small{font-size:9px;color:var(--theme-faint,var(--text-faint));margin-top:3px}
-      .youtube-download-controls-v1{display:grid;grid-template-columns:minmax(150px,220px) auto;gap:9px;align-items:end}.youtube-download-controls-v1 label{display:grid;gap:5px}.youtube-download-controls-v1 label>span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--theme-faint,var(--text-faint))}.youtube-download-controls-v1 select{min-height:40px!important}.youtube-download-controls-v1 .button{min-height:40px;justify-content:center}.youtube-download-controls-v1 .button.disabled{pointer-events:none;opacity:.55}
-      #youtubePlayer iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:12px;display:block}
-      @media(max-width:560px){.youtube-download-meta-v1{grid-template-columns:92px minmax(0,1fr)}.youtube-download-thumb-v1{width:92px}.youtube-download-controls-v1{grid-template-columns:1fr}.youtube-download-controls-v1 .button{width:100%}}
+      .youtube-local-grid-v2{align-items:start}.youtube-local-submit-v2{width:100%;justify-content:center}.youtube-rights-note-v2{margin-top:13px;line-height:1.55}
+      .youtube-local-process-v2{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;margin-top:12px;padding:11px 12px;border:1px solid color-mix(in srgb,var(--theme-primary) 24%,var(--theme-border));border-radius:12px;background:color-mix(in srgb,var(--theme-primary) 7%,var(--theme-field))}.youtube-local-process-v2[hidden]{display:none!important}.youtube-local-process-v2 strong,.youtube-local-process-v2 small{display:block}.youtube-local-process-v2 strong{font-size:10px;color:var(--theme-text)}.youtube-local-process-v2 small{font-size:9px;line-height:1.45;color:var(--theme-muted);margin-top:2px}
+      .youtube-local-spinner-v2{width:18px;height:18px;border:2px solid color-mix(in srgb,var(--theme-primary) 18%,transparent);border-top-color:var(--theme-primary);border-radius:50%;animation:youtubeLocalSpinV2 .75s linear infinite}@keyframes youtubeLocalSpinV2{to{transform:rotate(360deg)}}
+      .youtube-local-player-v2{min-height:260px;display:grid;place-items:center;background:color-mix(in srgb,var(--theme-bg) 92%,#000);border:1px solid var(--theme-border-soft);border-radius:14px;overflow:hidden}.youtube-local-player-v2 video{width:100%;max-height:64vh;aspect-ratio:16/9;background:#000;display:block}.youtube-local-empty-v2{padding:28px;text-align:center;display:grid;gap:6px}.youtube-local-empty-v2 strong{color:var(--theme-text);font-size:12px}.youtube-local-empty-v2 span{color:var(--theme-muted);font-size:10px;line-height:1.5}
+      .youtube-local-details-v2{margin-top:12px;padding:10px;border:1px solid var(--theme-border-soft);border-radius:12px;background:var(--theme-field);display:grid;grid-template-columns:112px minmax(0,1fr);gap:11px;align-items:center}.youtube-local-details-v2[hidden]{display:none!important}.youtube-local-details-v2>img,.youtube-local-thumb-fallback-v2{width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:9px;background:color-mix(in srgb,var(--theme-primary) 10%,var(--theme-field));display:grid;place-items:center;color:var(--theme-bright);font-weight:800}.youtube-local-details-v2 strong,.youtube-local-details-v2 span,.youtube-local-details-v2 small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.youtube-local-details-v2 strong{font-size:11px;color:var(--theme-text)}.youtube-local-details-v2 span{font-size:9px;color:var(--theme-muted);margin-top:3px}.youtube-local-details-v2 small{font-size:9px;color:var(--theme-faint);margin-top:3px}.youtube-local-actions-v2{margin-top:12px}
+      @media(max-width:560px){.youtube-local-player-v2{min-height:190px}.youtube-local-details-v2{grid-template-columns:88px minmax(0,1fr)}.youtube-local-details-v2>img,.youtube-local-thumb-fallback-v2{width:88px}.youtube-local-actions-v2 .button{width:100%;justify-content:center}}
+      @media(prefers-reduced-motion:reduce){.youtube-local-spinner-v2{animation:none}}
     `;
     document.head.appendChild(style);
   }
