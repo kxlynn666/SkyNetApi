@@ -169,7 +169,7 @@ async function downloadYouTubeVideo(sourceUrl, height) {
         '--no-config', '--no-playlist', '--no-warnings', '--socket-timeout', '20',
         '--retries', '2', '--fragment-retries', '2', '--max-filesize', `${MAX_YOUTUBE_MB}M`,
         '--restrict-filenames', '--no-part', '--ffmpeg-location', ffmpegPath,
-        '-f', selector, '--merge-output-format', 'mp4', '-o', output, '--', parsed.canonical
+        '-f', selector, '--merge-output-format', 'mp4', '--remux-video', 'mp4', '-o', output, '--', parsed.canonical
     ];
 
     try {
@@ -179,12 +179,13 @@ async function downloadYouTubeVideo(sourceUrl, height) {
         if (!files.length) throw clientError('O yt-dlp não gerou um arquivo para esse vídeo.', 422);
 
         const withStats = await Promise.all(files.map(async filePath => ({ filePath, stat: await fs.promises.stat(filePath) })));
-        withStats.sort((a, b) => b.stat.size - a.stat.size);
-        const selected = withStats[0];
+        const mp4Files = withStats.filter(entry => path.extname(entry.filePath).toLowerCase() === '.mp4');
+        mp4Files.sort((a, b) => b.stat.size - a.stat.size);
+        const selected = mp4Files[0];
+        if (!selected) throw clientError('Não foi possível finalizar esse vídeo em MP4.', 422);
         if (selected.stat.size > MAX_YOUTUBE_BYTES) throw clientError(`O vídeo ultrapassa o limite de ${MAX_YOUTUBE_MB}MB.`, 413);
 
-        const base = path.basename(selected.filePath, path.extname(selected.filePath));
-        return { tempDir, filePath: selected.filePath, fileName: `${base}.mp4` };
+        return { tempDir, filePath: selected.filePath, fileName: path.basename(selected.filePath) };
     } catch (error) {
         await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
         throw error;
