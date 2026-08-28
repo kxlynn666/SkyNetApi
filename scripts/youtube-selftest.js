@@ -38,6 +38,7 @@ const youtubeV4 = fs.readFileSync(path.join(root, 'src/youtube-media-v4.js'), 'u
 const hook = fs.readFileSync(path.join(root, 'src/youtube-media-v4-hook.js'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'), 'utf8');
 const clientV4 = fs.readFileSync(path.join(root, 'public/youtube-downloader-v4.js'), 'utf8');
+const legacyBlocker = fs.readFileSync(path.join(root, 'public/youtube-v4-block-legacy.js'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'public/youtube-menu-v1.js'), 'utf8');
 const authHotfix = fs.readFileSync(path.join(root, 'public/youtube-auth-error-hotfix-v1.js'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'public/workspace.html'), 'utf8');
@@ -46,6 +47,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 new Function(menu);
 new Function(authHotfix);
 new Function(clientV4);
+new Function(legacyBlocker);
 assert(server.includes("registerYouTubeRoutes(app)"), 'Backend legado do YouTube não foi registrado.');
 assert(server.includes("'/painel/youtube',"), 'Rota de workspace do YouTube ausente.');
 assert(!server.includes("app.get('/painel/youtube', (req, res) => res.redirect"), 'YouTube ainda está redirecionando para outra página.');
@@ -71,12 +73,15 @@ assert(clientV4.includes('downloadUrl') && clientV4.includes('Baixar MP3') && cl
 assert(clientV4.includes('SHA-256') && clientV4.includes('Integridade verificada'), 'Frontend v4 não mostra a validação de integridade.');
 assert(!clientV4.includes('<iframe'), 'Frontend v4 voltou a usar iframe em vez do arquivo preparado.');
 
+assert(legacyBlocker.includes('__SKYNET_YOUTUBE_DOWNLOADER_V1__ = true'), 'Frontend legado não está bloqueado antes da v4.');
 assert(menu.includes('/painel/youtube') && menu.includes('YouTube Downloader'), 'YouTube Downloader não está garantido no menu lateral.');
 assert(authHotfix.includes('Isso não significa que o vídeo seja 18+'), 'Falso positivo de verificação de idade não está sendo corrigido no frontend.');
 assert(authHotfix.includes("path.startsWith('/painel/youtube-')"), 'Correção de erro do YouTube está ampla demais.');
 assert(workspace.includes('/youtube-auth-error-hotfix-v1.js?v=1'), 'Correção do falso positivo do YouTube não está carregada.');
+assert(workspace.includes('/youtube-v4-block-legacy.js?v=1'), 'Bloqueio do frontend legado não está carregado.');
 assert(workspace.includes('/youtube-downloader-v4.js?v=audio-integrity-1'), 'Frontend v4 não está carregado com cache-busting.');
-assert(workspace.indexOf('/youtube-downloader-v1.js?v=local-player-2') < workspace.indexOf('/youtube-downloader-v4.js?v=audio-integrity-1'), 'Frontend v4 precisa sobrescrever a interface legada.');
+assert(!workspace.includes('/youtube-downloader-v1.js?v=local-player-2'), 'Frontend legado ainda está carregando diretamente e pode disputar o DOM.');
+assert(workspace.indexOf('/youtube-v4-block-legacy.js?v=1') < workspace.indexOf('/youtube-downloader-v4.js?v=audio-integrity-1'), 'Bloqueio legado precisa carregar antes do frontend v4.');
 assert(workspace.includes('/youtube-menu-v1.js?v=1'), 'Fix do menu do YouTube não está carregado.');
 assert(clientV4.includes('permissão para salvar'), 'Aviso de uso responsável ausente.');
 
