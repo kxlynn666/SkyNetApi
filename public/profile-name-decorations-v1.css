@@ -4,17 +4,41 @@
 .profile-v3-product[data-profile-item-type="name-decoration"] .profile-name-decoration-demo{font-size:12px}
 [data-profile-panel="store"][data-name-decoration-filter-v1="1"] .profile-v3-product:not([data-profile-item-type="name-decoration"]){display:none!important}
 
-[data-name-decoration="name-neon-line"]{color:#67e8f9;text-shadow:0 0 7px rgba(34,211,238,.72),0 0 18px rgba(59,130,246,.32)}
-[data-name-decoration="name-sunset"]{color:#fb7185;background:linear-gradient(90deg,#fb923c,#f43f5e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-[data-name-decoration="name-mint-glow"]{color:#a7f3d0;background:linear-gradient(90deg,#34d399,#d1fae5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(52,211,153,.42))}
+/* 10 efeitos animados */
+[data-name-decoration="name-neon-line"]{color:#67e8f9;text-shadow:0 0 7px rgba(34,211,238,.72),0 0 18px rgba(59,130,246,.32);animation:name-deco-neon-pulse 2.2s ease-in-out infinite}
+[data-name-decoration="name-mint-glow"]{color:#a7f3d0;background:linear-gradient(90deg,#34d399,#d1fae5,#34d399);background-size:180% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(52,211,153,.42));animation:name-deco-mint-breathe 3.3s ease-in-out infinite}
 [data-name-decoration="name-holographic"]{color:#fff;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6,#22d3ee);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:name-deco-shift 3.1s linear infinite}
 [data-name-decoration="name-royal-gold"]{color:#fde047;background:linear-gradient(90deg,#f59e0b,#fef08a,#f59e0b);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 16px rgba(250,204,21,.16);animation:name-deco-shift 4s linear infinite}
 [data-name-decoration="name-frost"]{color:#e0f2fe;background:linear-gradient(90deg,#bae6fd,#fff,#93c5fd);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(186,230,253,.4));animation:name-deco-shift 4.4s ease-in-out infinite alternate}
 [data-name-decoration="name-sakura"]{color:#f9a8d4;background:linear-gradient(90deg,#ec4899,#fce7f3,#f472b6);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(236,72,153,.3));animation:name-deco-shift 4.2s ease-in-out infinite alternate}
 [data-name-decoration="name-glitch"]{color:#f8fafc;text-shadow:-1px 0 #22d3ee,1px 0 #fb7185;animation:name-deco-glitch 2.6s steps(1,end) infinite}
 [data-name-decoration="name-cosmic"]{color:#e9d5ff;background:linear-gradient(90deg,#818cf8,#f0abfc,#c4b5fd,#818cf8);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 7px rgba(129,140,248,.35));animation:name-deco-shift 3.7s linear infinite}
+[data-name-decoration="name-terminal-green"]{color:#86efac;font-family:'JetBrains Mono','IBM Plex Mono',monospace;letter-spacing:.025em;text-shadow:0 0 7px rgba(34,197,94,.42);animation:name-deco-terminal 2.8s steps(1,end) infinite}
+[data-name-decoration="name-solar-flare"]{color:#fde047;background:linear-gradient(90deg,#ea580c,#f97316,#fde047,#fff7ed,#f97316);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(249,115,22,.38));animation:name-deco-solar 3s linear infinite}
+
+/* 15 efeitos estáticos */
+[data-name-decoration="name-sunset"]{color:#fb7185;background:linear-gradient(90deg,#fb923c,#f43f5e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 [data-name-decoration="name-ink"]{color:#e4e4e7;letter-spacing:.015em;text-shadow:1px 1px 0 rgba(113,113,122,.45)}
+[data-name-decoration="name-obsidian-edge"]{color:#e4e4e7;text-shadow:1px 1px 0 #09090b,-1px -1px 0 rgba(161,161,170,.28),0 0 10px rgba(0,0,0,.38)}
+[data-name-decoration="name-ocean-script"]{color:#7dd3fc;background:linear-gradient(90deg,#0284c7,#67e8f9);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-style:italic;text-shadow:0 1px 10px rgba(14,165,233,.16)}
+[data-name-decoration="name-candy-glass"]{color:#fda4af;background:linear-gradient(180deg,#fff1f2 0%,#f9a8d4 46%,#fb7185 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 rgba(255,255,255,.16))}
+[data-name-decoration="name-lavender-mist"]{color:#ddd6fe;background:linear-gradient(90deg,#c4b5fd,#f5d0fe);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(196,181,253,.2))}
+[data-name-decoration="name-crimson-stamp"]{color:#fecaca;text-transform:uppercase;letter-spacing:.06em;text-shadow:1px 1px 0 #991b1b,-1px 0 0 rgba(220,38,38,.35)}
+[data-name-decoration="name-arctic-serif"]{color:#e0f2fe;font-family:Georgia,'Times New Roman',serif;letter-spacing:.02em;text-shadow:0 1px 0 #64748b,0 0 8px rgba(186,230,253,.2)}
+[data-name-decoration="name-bronze-press"]{color:#f59e0b;text-shadow:1px 1px 0 #78350f,-1px -1px 0 rgba(253,186,116,.2);letter-spacing:.025em}
+[data-name-decoration="name-cloud-type"]{color:#f8fafc;background:linear-gradient(180deg,#fff,#cbd5e1);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 3px 12px rgba(148,163,184,.12)}
+[data-name-decoration="name-lime-circuit"]{color:#bef264;font-family:'JetBrains Mono','IBM Plex Mono',monospace;letter-spacing:.045em;text-shadow:1px 0 0 #365314}
+[data-name-decoration="name-lime-circuit"]::after{content:'';position:absolute;left:3%;right:3%;bottom:-2px;height:1px;background:linear-gradient(90deg,transparent,#84cc16,transparent);opacity:.75}
+[data-name-decoration="name-rose-quartz"]{color:#ffe4e6;background:linear-gradient(90deg,#fb7185,#ffe4e6,#fda4af);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 4px rgba(251,113,133,.18))}
+[data-name-decoration="name-monochrome-pro"]{color:#fafafa;letter-spacing:.035em;text-shadow:1px 1px 0 #27272a,-1px -1px 0 #52525b}
+[data-name-decoration="name-blueprint"]{color:#bae6fd;font-family:'JetBrains Mono','IBM Plex Mono',monospace;letter-spacing:.025em;text-shadow:0 0 1px #38bdf8}
+[data-name-decoration="name-blueprint"]::after{content:'';position:absolute;left:0;right:0;bottom:-2px;border-bottom:1px dashed rgba(56,189,248,.55)}
+[data-name-decoration="name-velvet-letter"]{color:#e9d5ff;background:linear-gradient(180deg,#f3e8ff,#a855f7);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 1px 7px rgba(126,34,206,.22);font-family:Georgia,'Times New Roman',serif}
 
 @keyframes name-deco-shift{to{background-position:200% 0}}
+@keyframes name-deco-neon-pulse{0%,100%{filter:brightness(1);text-shadow:0 0 6px rgba(34,211,238,.55),0 0 14px rgba(59,130,246,.22)}50%{filter:brightness(1.22);text-shadow:0 0 10px rgba(34,211,238,.9),0 0 25px rgba(59,130,246,.42)}}
+@keyframes name-deco-mint-breathe{0%,100%{background-position:0 0;filter:drop-shadow(0 0 4px rgba(52,211,153,.25))}50%{background-position:100% 0;filter:drop-shadow(0 0 9px rgba(52,211,153,.55))}}
 @keyframes name-deco-glitch{0%,88%,100%{transform:none;text-shadow:-1px 0 #22d3ee,1px 0 #fb7185}90%{transform:translateX(1px);text-shadow:-2px 0 #22d3ee,2px 0 #fb7185}93%{transform:translateX(-1px)}96%{transform:none}}
+@keyframes name-deco-terminal{0%,92%,100%{opacity:1;text-shadow:0 0 7px rgba(34,197,94,.42)}94%{opacity:.68;text-shadow:2px 0 0 rgba(134,239,172,.45)}96%{opacity:1;transform:translateX(1px)}98%{transform:none}}
+@keyframes name-deco-solar{0%{background-position:0 0;filter:drop-shadow(0 0 4px rgba(249,115,22,.25))}50%{filter:drop-shadow(0 0 10px rgba(250,204,21,.46))}100%{background-position:220% 0;filter:drop-shadow(0 0 4px rgba(249,115,22,.25))}}
 @media(prefers-reduced-motion:reduce){[data-name-decoration]{animation:none!important}}
