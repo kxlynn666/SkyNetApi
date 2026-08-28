@@ -1,1 +1,0 @@
-ytsearch10 integrated tests live in scripts/youtube-selftest.js
