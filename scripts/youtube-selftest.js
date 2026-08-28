@@ -39,9 +39,11 @@ const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const youtube = fs.readFileSync(path.join(root, 'src/youtube.js'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'public/youtube-menu-v1.js'), 'utf8');
+const authHotfix = fs.readFileSync(path.join(root, 'public/youtube-auth-error-hotfix-v1.js'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'public/workspace.html'), 'utf8');
 
 new Function(menu);
+new Function(authHotfix);
 assert(server.includes("registerYouTubeRoutes(app)"), 'Backend do YouTube não foi registrado.');
 assert(server.includes("'/painel/youtube',"), 'Rota de workspace do YouTube ausente.');
 assert(!server.includes("app.get('/painel/youtube', (req, res) => res.redirect"), 'YouTube ainda está redirecionando para outra página.');
@@ -53,6 +55,10 @@ assert(client.includes('streamUrl') && client.includes('<video controls'), 'Fron
 assert(!client.includes('<iframe'), 'Frontend voltou a usar iframe em vez do MP4 preparado.');
 assert(client.includes('downloadUrl'), 'Frontend não usa o mesmo arquivo preparado para download.');
 assert(menu.includes('/painel/youtube') && menu.includes('YouTube Downloader'), 'YouTube Downloader não está garantido no menu lateral.');
+assert(authHotfix.includes('Isso não significa que o vídeo seja 18+'), 'Falso positivo de verificação de idade não está sendo corrigido no frontend.');
+assert(authHotfix.includes("path.startsWith('/painel/youtube-')"), 'Correção de erro do YouTube está ampla demais.');
+assert(workspace.includes('/youtube-auth-error-hotfix-v1.js?v=1'), 'Correção do falso positivo do YouTube não está carregada.');
+assert(workspace.indexOf('/youtube-auth-error-hotfix-v1.js?v=1') < workspace.indexOf('/youtube-downloader-v1.js?v=local-player-2'), 'Correção de erro precisa carregar antes do downloader.');
 assert(workspace.includes('/youtube-menu-v1.js?v=1'), 'Fix do menu do YouTube não está carregado com cache-busting.');
 assert(workspace.includes('/youtube-downloader-v1.js?v=local-player-2'), 'Player local do YouTube não está carregado com cache-busting.');
 assert(workspace.includes('/dashboard.js?v=youtube-local-2'), 'Dashboard não está com cache-busting para a rota do YouTube.');
