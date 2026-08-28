@@ -5,6 +5,7 @@
 
   const TYPES = new Set(['all', 'tag', 'frame', 'decoration', 'name-decoration']);
   let scheduled = false;
+  let preferredType = 'all';
 
   function typeFromButton(button) {
     if (!button) return '';
@@ -43,7 +44,7 @@
   }
 
   function currentType(panel) {
-    const value = String(panel.dataset.storeTypeFilter || 'all');
+    const value = String(panel.dataset.storeTypeFilter || preferredType || 'all');
     return TYPES.has(value) ? value : 'all';
   }
 
@@ -74,6 +75,7 @@
 
   function apply(panel, type) {
     if (!panel || !TYPES.has(type)) return;
+    preferredType = type;
     panel.dataset.storeTypeFilter = type;
     syncLegacyNameFlag(panel, type);
     stampCards(panel);
@@ -88,13 +90,17 @@
     ensureNameButton(panel);
     stampCards(panel);
     if (!panel.dataset.storeTypeFilter) {
-      const active = panel.querySelector('.profile-v3-store-filter button.active');
-      panel.dataset.storeTypeFilter = typeFromButton(active) || 'all';
+      const initialActive = typeFromButton(panel.querySelector('.profile-v3-store-filter button.active')) || 'all';
+      panel.dataset.storeTypeFilter = preferredType !== 'all' ? preferredType : initialActive;
     }
     const type = currentType(panel);
+    preferredType = type;
     syncLegacyNameFlag(panel, type);
     setActiveButton(panel, type);
     fallbackApply(panel);
+    if (panel.querySelector('.profile-store-tools-v5')) {
+      panel.dispatchEvent(new CustomEvent('skynet:store-type-filter', { bubbles: true, detail: { type } }));
+    }
   }
 
   function schedule() {
