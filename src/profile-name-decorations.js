@@ -18,7 +18,22 @@ const NAME_CATALOG = Object.freeze([
     nameItem('name-sakura', 'Sakura Type', 2100, 'legendary', ['#ec4899', '#fce7f3'], 'sakura', true),
     nameItem('name-glitch', 'Signal Glitch', 2350, 'legendary', ['#22d3ee', '#fb7185'], 'studio', true),
     nameItem('name-cosmic', 'Cosmic Chrome', 2700, 'legendary', ['#818cf8', '#f0abfc'], 'cosmic', true),
-    nameItem('name-ink', 'Editorial Ink', 2900, 'legendary', ['#f4f4f5', '#71717a'], 'editorial', false)
+    nameItem('name-ink', 'Editorial Ink', 2900, 'legendary', ['#f4f4f5', '#71717a'], 'editorial', false),
+    nameItem('name-obsidian-edge', 'Obsidian Edge', 3100, 'epic', ['#09090b', '#a1a1aa'], 'material', false),
+    nameItem('name-ocean-script', 'Ocean Script', 3300, 'epic', ['#0ea5e9', '#67e8f9'], 'nature', false),
+    nameItem('name-candy-glass', 'Candy Glass', 3500, 'epic', ['#fb7185', '#f9a8d4'], 'material', false),
+    nameItem('name-terminal-green', 'Terminal Green', 3800, 'legendary', ['#22c55e', '#86efac'], 'studio', true),
+    nameItem('name-solar-flare', 'Solar Flare', 4100, 'legendary', ['#f97316', '#fde047'], 'ember', true),
+    nameItem('name-lavender-mist', 'Lavender Mist', 4300, 'epic', ['#c4b5fd', '#f5d0fe'], 'minimal', false),
+    nameItem('name-crimson-stamp', 'Crimson Stamp', 4500, 'epic', ['#dc2626', '#fecaca'], 'editorial', false),
+    nameItem('name-arctic-serif', 'Arctic Serif', 4700, 'epic', ['#e0f2fe', '#94a3b8'], 'winter', false),
+    nameItem('name-bronze-press', 'Bronze Press', 4900, 'epic', ['#b45309', '#f59e0b'], 'analog', false),
+    nameItem('name-cloud-type', 'Cloud Type', 5100, 'legendary', ['#f8fafc', '#cbd5e1'], 'minimal', false),
+    nameItem('name-lime-circuit', 'Lime Circuit', 5400, 'legendary', ['#84cc16', '#bef264'], 'studio', false),
+    nameItem('name-rose-quartz', 'Rose Quartz', 5700, 'legendary', ['#fda4af', '#ffe4e6'], 'material', false),
+    nameItem('name-monochrome-pro', 'Monochrome Pro', 6000, 'legendary', ['#fafafa', '#52525b'], 'editorial', false),
+    nameItem('name-blueprint', 'Blueprint Name', 6300, 'legendary', ['#38bdf8', '#dbeafe'], 'studio', false),
+    nameItem('name-velvet-letter', 'Velvet Letter', 6600, 'legendary', ['#7e22ce', '#e9d5ff'], 'textile', false)
 ]);
 
 function nameItem(id, name, price, rarity, colors, collection, animated) {

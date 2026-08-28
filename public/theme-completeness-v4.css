@@ -1,0 +1,20 @@
+/* Cobertura temática para módulos que injetam CSS depois do design system. */
+html[data-skynet-theme] h2>.ui-action-icon-v4,html[data-skynet-theme] h3>.ui-action-icon-v4{background:color-mix(in srgb,var(--theme-primary) 10%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 20%,var(--theme-border))!important;color:var(--theme-bright)!important}
+
+html[data-skynet-theme] .skynet-music-bar{border-color:color-mix(in srgb,var(--theme-primary) 28%,var(--theme-border))!important;background:linear-gradient(180deg,color-mix(in srgb,var(--theme-panel) 96%,#000),color-mix(in srgb,var(--theme-bg) 96%,#000))!important}
+html[data-skynet-theme] .skynet-music-copy strong{color:var(--theme-text)!important}
+html[data-skynet-theme] .skynet-music-copy span{color:var(--theme-muted)!important}
+html[data-skynet-theme] .skynet-music-progress,html[data-skynet-theme] .skynet-music-volume{accent-color:var(--theme-primary)!important}
+html[data-skynet-theme] .skynet-music-bar.music-ui-mini{box-shadow:0 12px 38px rgba(0,0,0,.36),0 0 24px color-mix(in srgb,var(--theme-primary) 9%,transparent)!important}
+
+html[data-skynet-theme] .sticker-picker-v1{background:color-mix(in srgb,var(--theme-panel) 98%,#000)!important;border-color:color-mix(in srgb,var(--theme-primary) 24%,var(--theme-border))!important}
+html[data-skynet-theme] .sticker-picker-head-v1,html[data-skynet-theme] .sticker-picker-tabs-v1{border-color:var(--theme-border-soft)!important}
+html[data-skynet-theme] .sticker-picker-head-v1 a,html[data-skynet-theme] .sticker-picker-close-v1,html[data-skynet-theme] .sticker-fav-v1,html[data-skynet-theme] .sticker-pack-block-v1 h4{color:var(--theme-bright)!important}
+html[data-skynet-theme] .sticker-picker-tabs-v1 button,html[data-skynet-theme] .sticker-pack-chip-v1,html[data-skynet-theme] .sticker-page-tabs-v1 button{background:var(--theme-field)!important;border-color:var(--theme-border)!important;color:var(--theme-muted)!important}
+html[data-skynet-theme] .sticker-picker-tabs-v1 button.active,html[data-skynet-theme] .sticker-pack-chip-v1.active,html[data-skynet-theme] .sticker-page-tabs-v1 button.active{background:color-mix(in srgb,var(--theme-primary) 13%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 32%,var(--theme-border))!important;color:var(--theme-text)!important}
+html[data-skynet-theme] .sticker-item-v1,html[data-skynet-theme] .sticker-page-card-v1{background:color-mix(in srgb,var(--theme-field) 72%,transparent)!important;border-color:color-mix(in srgb,var(--theme-primary) 12%,var(--theme-border))!important}
+html[data-skynet-theme] .sticker-item-v1:hover,html[data-skynet-theme] .sticker-page-card-v1:hover{background:color-mix(in srgb,var(--theme-primary) 7%,var(--theme-field))!important;border-color:color-mix(in srgb,var(--theme-primary) 28%,var(--theme-border))!important}
+html[data-skynet-theme] .stickers-hero-v1{background:linear-gradient(135deg,color-mix(in srgb,var(--theme-primary) 8%,var(--theme-panel)),color-mix(in srgb,var(--theme-bright) 4%,var(--theme-panel)))!important;border-color:color-mix(in srgb,var(--theme-primary) 20%,var(--theme-border))!important}
+html[data-skynet-theme] .sticker-create-v1,html[data-skynet-theme] .sticker-library-v1{background:color-mix(in srgb,var(--theme-panel) 88%,transparent)!important;border-color:var(--theme-border-soft)!important}
+html[data-skynet-theme] .sticker-create-preview-v1{background:radial-gradient(circle at 35% 20%,color-mix(in srgb,var(--theme-bright) 7%,transparent),transparent 35%),color-mix(in srgb,var(--theme-field) 70%,transparent)!important;border-color:color-mix(in srgb,var(--theme-primary) 28%,var(--theme-border))!important;color:var(--theme-faint)!important}
+html[data-skynet-theme] .stickers-limit-v1{color:var(--theme-bright)!important}
