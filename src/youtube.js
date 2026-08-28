@@ -11,47 +11,105 @@ const S = require('./store');
 const YTDLP_PATH = process.env.YTDLP_PATH || path.join(C.ROOT, 'bin', 'yt-dlp');
 const MAX_YOUTUBE_MB = Math.max(50, Math.min(500, Number.parseInt(process.env.MAX_YOUTUBE_DOWNLOAD_MB || '300', 10) || 300));
 const MAX_YOUTUBE_BYTES = MAX_YOUTUBE_MB * 1024 * 1024;
-const TOKEN_TTL_MS = 15 * 60 * 1000;
-const REQUESTS_PER_MINUTE = Math.max(1, Math.min(30, Number.parseInt(process.env.YOUTUBE_RATE_LIMIT_PER_MINUTE || '8', 10) || 8));
-const tokens = new Map();
+const PREPARED_TTL_MS = 30 * 60 * 1000;
+const REQUESTS_PER_MINUTE = Math.max(1, Math.min(20, Number.parseInt(process.env.YOUTUBE_RATE_LIMIT_PER_MINUTE || '6', 10) || 6));
+const MAX_PREPARED_PER_ACCOUNT = 3;
+const prepared = new Map();
 const buckets = new Map();
 
+const cleanupTimer = setInterval(() => {
+    purgeExpiredPrepared().catch(() => {});
+}, 60 * 1000);
+cleanupTimer.unref?.();
+
 function registerYouTubeRoutes(app) {
-    app.post('/painel/youtube-info', express.json({ limit: '24kb' }), requireTrustedOrigin, requireSession, requestLimiter, async (req, res, next) => {
+    const prepare = async (req, res, next) => {
         try {
-            const item = await analyzeYouTube(req.body?.url, req.account.id);
+            const item = await prepareYouTube(req.body?.url, req.body?.height, req.account.id);
             res.setHeader('Cache-Control', 'no-store');
             return res.json({ ok: true, item });
         } catch (error) {
             return next(error);
         }
+    };
+
+    app.post('/painel/youtube-prepare', express.json({ limit: '24kb' }), requireTrustedOrigin, requireSession, requestLimiter, prepare);
+    // Compatibilidade com o frontend anterior. Agora esta rota também prepara o arquivo local.
+    app.post('/painel/youtube-info', express.json({ limit: '24kb' }), requireTrustedOrigin, requireSession, requestLimiter, prepare);
+
+    app.get('/painel/youtube-file', requireSession, async (req, res, next) => {
+        try {
+            const record = getPrepared(req.query?.token, req.account.id);
+            return await servePreparedFile(req, res, record, false);
+        } catch (error) {
+            return next(error);
+        }
     });
 
-    app.get('/painel/youtube-download', requireSession, requestLimiter, async (req, res, next) => {
-        let tempDir = '';
+    app.get('/painel/youtube-download', requireSession, async (req, res, next) => {
         try {
-            const token = takeToken(req.query?.token, req.account.id);
-            const result = await downloadYouTubeVideo(token.sourceUrl, token.height);
-            tempDir = result.tempDir;
-            res.setHeader('Cache-Control', 'no-store');
-            res.setHeader('X-Content-Type-Options', 'nosniff');
-            res.type('video/mp4');
-            return res.download(result.filePath, result.fileName, error => {
-                fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-                if (error && !res.headersSent) next(error);
-            });
+            const record = getPrepared(req.query?.token, req.account.id);
+            return await servePreparedFile(req, res, record, true);
         } catch (error) {
-            if (tempDir) fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
             return next(error);
         }
     });
 }
 
-async function analyzeYouTube(rawUrl, accountId) {
+async function prepareYouTube(rawUrl, requestedHeight, accountId) {
     const parsed = parseYouTubeUrl(rawUrl);
     ensureYtDlp();
-    const info = await runYtDlpJson(parsed.canonical);
+    await purgeExpiredPrepared();
 
+    const info = await runYtDlpJson(parsed.canonical);
+    validateYouTubeInfo(info);
+
+    const qualities = qualityOptionsFromInfo(info);
+    if (!qualities.length) throw clientError('Não encontrei um formato de vídeo compatível para download.', 422);
+    const height = chooseRequestedHeight(qualities, requestedHeight);
+
+    const downloaded = await downloadYouTubeVideo(parsed.canonical, height);
+    const token = crypto.randomBytes(28).toString('base64url');
+    const record = {
+        token,
+        accountId,
+        sourceUrl: parsed.canonical,
+        title: cleanText(info.title || info.fulltitle || 'Vídeo do YouTube', 300),
+        uploader: cleanText(info.uploader || info.channel || info.creator || '', 180),
+        duration: Math.max(0, Number(info.duration || 0) || 0),
+        thumbnail: safeHttpUrl(info.thumbnail),
+        selectedHeight: height,
+        tempDir: downloaded.tempDir,
+        filePath: downloaded.filePath,
+        fileName: downloaded.fileName,
+        size: downloaded.size,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + PREPARED_TTL_MS
+    };
+    prepared.set(token, record);
+    await prunePreparedForAccount(accountId, token);
+
+    const streamUrl = `/painel/youtube-file?token=${encodeURIComponent(token)}`;
+    const downloadUrl = `/painel/youtube-download?token=${encodeURIComponent(token)}`;
+    return {
+        id: cleanText(info.id || parsed.id, 24),
+        title: record.title,
+        uploader: record.uploader,
+        duration: record.duration,
+        thumbnail: record.thumbnail,
+        canonicalUrl: parsed.canonical,
+        selectedHeight: height,
+        selectedLabel: `${height}p`,
+        size: record.size,
+        qualities,
+        streamUrl,
+        downloadUrl,
+        // Mantém compatibilidade com o painel antigo, mas aponta para o arquivo já preparado.
+        downloads: [{ height, label: `${height}p`, container: 'MP4', downloadUrl }]
+    };
+}
+
+function validateYouTubeInfo(info) {
     if (!info || typeof info !== 'object') throw clientError('O YouTube não retornou informações desse vídeo.', 422);
     if (Array.isArray(info.entries) || ['playlist', 'multi_video'].includes(String(info._type || ''))) {
         throw clientError('Playlists não são suportadas. Envie um vídeo individual.', 400);
@@ -62,26 +120,6 @@ async function analyzeYouTube(rawUrl, accountId) {
     if (['private', 'premium_only', 'subscriber_only', 'needs_auth'].includes(String(info.availability || ''))) {
         throw clientError('Esse vídeo exige autenticação ou acesso especial.', 403);
     }
-
-    const qualities = qualityOptionsFromInfo(info);
-    if (!qualities.length) throw clientError('Não encontrei um formato de vídeo compatível para download.', 422);
-
-    purgeExpiredTokens();
-    const downloads = qualities.map(option => ({
-        ...option,
-        downloadUrl: `/painel/youtube-download?token=${encodeURIComponent(createToken({ accountId, sourceUrl: parsed.canonical, height: option.height }))}`
-    }));
-
-    return {
-        id: cleanText(info.id || parsed.id, 24),
-        title: cleanText(info.title || info.fulltitle || 'Vídeo do YouTube', 300),
-        uploader: cleanText(info.uploader || info.channel || info.creator || '', 180),
-        duration: Math.max(0, Number(info.duration || 0) || 0),
-        thumbnail: safeHttpUrl(info.thumbnail),
-        canonicalUrl: parsed.canonical,
-        embedUrl: parsed.embed,
-        downloads
-    };
 }
 
 function parseYouTubeUrl(value) {
@@ -138,6 +176,17 @@ function qualityOptionsFromInfo(info) {
     return available.map(height => ({ height, label: `${height}p`, container: 'MP4' }));
 }
 
+function chooseRequestedHeight(qualities, requestedHeight) {
+    const heights = (qualities || []).map(item => Number(item.height)).filter(Number.isFinite).sort((a, b) => a - b);
+    if (!heights.length) throw clientError('Nenhuma qualidade de vídeo está disponível.', 422);
+    const requested = Number(requestedHeight);
+    if (!Number.isFinite(requested) || requested <= 0) {
+        return heights.includes(720) ? 720 : heights[heights.length - 1];
+    }
+    const candidates = heights.filter(height => height <= requested);
+    return candidates.length ? candidates[candidates.length - 1] : heights[0];
+}
+
 function ensureYtDlp() {
     if (!fs.existsSync(YTDLP_PATH)) {
         throw clientError('yt-dlp não está instalado no servidor. Execute o instalador do projeto ou configure YTDLP_PATH.', 503);
@@ -161,10 +210,15 @@ function runYtDlpJson(url) {
 async function downloadYouTubeVideo(sourceUrl, height) {
     ensureYtDlp();
     const parsed = parseYouTubeUrl(sourceUrl);
-    const targetHeight = [360, 720, 1080].includes(Number(height)) ? Number(height) : 720;
+    const targetHeight = Math.max(144, Math.min(1080, Number(height) || 720));
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'skynet-youtube-'));
     const output = path.join(tempDir, '%(title).110B-%(id)s.%(ext)s');
-    const selector = `bestvideo[ext=mp4][height<=${targetHeight}]+bestaudio[ext=m4a]/best[ext=mp4][height<=${targetHeight}][vcodec!=none][acodec!=none]/best[height<=${targetHeight}][vcodec!=none][acodec!=none]`;
+    const selector = [
+        `bestvideo[ext=mp4][vcodec^=avc1][height<=${targetHeight}]+bestaudio[ext=m4a]`,
+        `bestvideo[ext=mp4][height<=${targetHeight}]+bestaudio[ext=m4a]`,
+        `best[ext=mp4][height<=${targetHeight}][vcodec!=none][acodec!=none]`,
+        `best[height<=${targetHeight}][vcodec!=none][acodec!=none]`
+    ].join('/');
     const args = [
         '--no-config', '--no-playlist', '--no-warnings', '--socket-timeout', '20',
         '--retries', '2', '--fragment-retries', '2', '--max-filesize', `${MAX_YOUTUBE_MB}M`,
@@ -173,7 +227,7 @@ async function downloadYouTubeVideo(sourceUrl, height) {
     ];
 
     try {
-        await runYtDlp(args, { timeoutMs: 180000, watchDir: tempDir, maxDirBytes: MAX_YOUTUBE_BYTES });
+        await runYtDlp(args, { timeoutMs: 180000, watchDir: tempDir, maxDirBytes: MAX_YOUTUBE_BYTES * 3 });
         const entries = await fs.promises.readdir(tempDir, { withFileTypes: true });
         const files = entries.filter(entry => entry.isFile()).map(entry => path.join(tempDir, entry.name));
         if (!files.length) throw clientError('O yt-dlp não gerou um arquivo para esse vídeo.', 422);
@@ -185,11 +239,121 @@ async function downloadYouTubeVideo(sourceUrl, height) {
         if (!selected) throw clientError('Não foi possível finalizar esse vídeo em MP4.', 422);
         if (selected.stat.size > MAX_YOUTUBE_BYTES) throw clientError(`O vídeo ultrapassa o limite de ${MAX_YOUTUBE_MB}MB.`, 413);
 
-        return { tempDir, filePath: selected.filePath, fileName: path.basename(selected.filePath) };
+        return {
+            tempDir,
+            filePath: selected.filePath,
+            fileName: path.basename(selected.filePath),
+            size: selected.stat.size
+        };
     } catch (error) {
         await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
         throw error;
     }
+}
+
+async function servePreparedFile(req, res, record, download) {
+    let stat;
+    try { stat = await fs.promises.stat(record.filePath); }
+    catch {
+        await dropPrepared(record.token);
+        throw clientError('O arquivo temporário não está mais disponível. Carregue o vídeo novamente.', 410);
+    }
+    if (!stat.isFile()) throw clientError('Arquivo de vídeo inválido.', 410);
+
+    record.expiresAt = Date.now() + PREPARED_TTL_MS;
+    const size = stat.size;
+    const rangeHeader = String(req.headers.range || '').trim();
+    const range = rangeHeader ? parseRangeHeader(rangeHeader, size) : null;
+    if (rangeHeader && !range) {
+        res.status(416);
+        res.setHeader('Content-Range', `bytes */${size}`);
+        return res.end();
+    }
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', contentDisposition(download ? 'attachment' : 'inline', record.fileName));
+
+    if (range) {
+        const length = range.end - range.start + 1;
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
+        res.setHeader('Content-Length', String(length));
+        return pipeFile(record.filePath, res, { start: range.start, end: range.end });
+    }
+
+    res.setHeader('Content-Length', String(size));
+    return pipeFile(record.filePath, res);
+}
+
+function parseRangeHeader(value, size) {
+    const match = /^bytes=(\d*)-(\d*)$/i.exec(String(value || '').trim());
+    if (!match || !Number.isFinite(size) || size <= 0) return null;
+    let start;
+    let end;
+    if (!match[1] && !match[2]) return null;
+    if (!match[1]) {
+        const suffix = Number(match[2]);
+        if (!Number.isFinite(suffix) || suffix <= 0) return null;
+        start = Math.max(0, size - suffix);
+        end = size - 1;
+    } else {
+        start = Number(match[1]);
+        end = match[2] ? Number(match[2]) : size - 1;
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < start || start >= size) return null;
+        end = Math.min(end, size - 1);
+    }
+    return { start, end };
+}
+
+function pipeFile(filePath, res, range = undefined) {
+    return new Promise((resolve, reject) => {
+        const stream = fs.createReadStream(filePath, range);
+        stream.on('error', reject);
+        res.on('close', resolve);
+        res.on('finish', resolve);
+        stream.pipe(res);
+    });
+}
+
+function contentDisposition(mode, fileName) {
+    const raw = cleanText(fileName || 'youtube-video.mp4', 180).replace(/[\r\n]/g, '');
+    const ascii = raw.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_') || 'youtube-video.mp4';
+    return `${mode}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(raw)}`;
+}
+
+function getPrepared(value, accountId) {
+    const token = String(value || '').trim();
+    const record = prepared.get(token);
+    if (!record || record.accountId !== accountId) throw clientError('Link de vídeo inválido ou expirado.', 410);
+    if (record.expiresAt <= Date.now()) {
+        dropPrepared(token).catch(() => {});
+        throw clientError('O arquivo temporário expirou. Carregue o vídeo novamente.', 410);
+    }
+    return record;
+}
+
+async function purgeExpiredPrepared() {
+    const now = Date.now();
+    const expired = [...prepared.values()].filter(record => record.expiresAt <= now);
+    await Promise.all(expired.map(record => dropPrepared(record.token)));
+}
+
+async function prunePreparedForAccount(accountId, keepToken) {
+    const records = [...prepared.values()]
+        .filter(record => record.accountId === accountId && record.token !== keepToken)
+        .sort((a, b) => b.createdAt - a.createdAt);
+    const excess = records.slice(Math.max(0, MAX_PREPARED_PER_ACCOUNT - 1));
+    await Promise.all(excess.map(record => dropPrepared(record.token)));
+}
+
+async function dropPrepared(token) {
+    const record = prepared.get(token);
+    if (!record) return;
+    prepared.delete(token);
+    await fs.promises.rm(record.tempDir, { recursive: true, force: true }).catch(() => {});
 }
 
 function runYtDlp(args, options = {}) {
@@ -257,27 +421,6 @@ function runYtDlp(args, options = {}) {
             fn();
         }
     });
-}
-
-function createToken(data) {
-    const token = crypto.randomBytes(24).toString('base64url');
-    tokens.set(token, { ...data, createdAt: Date.now(), expiresAt: Date.now() + TOKEN_TTL_MS });
-    return token;
-}
-
-function takeToken(value, accountId) {
-    purgeExpiredTokens();
-    const key = String(value || '');
-    const token = tokens.get(key);
-    if (!token || token.accountId !== accountId || token.expiresAt <= Date.now()) {
-        throw clientError('Esse link de download expirou. Carregue o vídeo novamente.', 410);
-    }
-    return token;
-}
-
-function purgeExpiredTokens() {
-    const now = Date.now();
-    for (const [key, token] of tokens) if (token.expiresAt <= now) tokens.delete(key);
 }
 
 function requestLimiter(req, res, next) {
@@ -362,5 +505,7 @@ function clientError(message, status = 400) {
 module.exports = {
     registerYouTubeRoutes,
     parseYouTubeUrl,
-    qualityOptionsFromInfo
+    qualityOptionsFromInfo,
+    chooseRequestedHeight,
+    parseRangeHeader
 };
