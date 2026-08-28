@@ -65,6 +65,7 @@
     loadScript('/profile-media-v3.js', 'profileMediaV3');
   }
 
+  if (path === '/painel/youtube') loadScript('/youtube-downloader-v1.js', 'youtubeDownloaderV1');
   if (path === '/painel/jogos') loadScript('/tictactoe-v2.js', 'tictactoeV2');
   if (path === '/painel/jogos/damas') {
     loadScript('/checkers-rules-v1.js', 'checkersRulesV1', () => loadScript('/checkers-v1.js', 'checkersV1'));
