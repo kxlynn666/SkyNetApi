@@ -9,6 +9,7 @@ const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
 const { registerMediaRoutes } = require('./src/media');
 const { registerYouTubeRoutes } = require('./src/youtube');
+const { registerYouTubeMediaV4Routes } = require('./src/youtube-media-v4');
 const { registerCardV2Routes } = require('./src/cards-v2-routes');
 const { registerXpAdminRoutes } = require('./src/xp-admin');
 const { registerMusicRoutes } = require('./src/music');
@@ -80,6 +81,7 @@ app.use((req, res, next) => {
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
 registerMediaRoutes(app);
+registerYouTubeMediaV4Routes(app);
 registerYouTubeRoutes(app);
 registerCardV2Routes(app);
 registerXpAdminRoutes(app);
