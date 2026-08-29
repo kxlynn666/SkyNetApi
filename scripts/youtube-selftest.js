@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseYouTubeUrl, qualityOptionsFromInfo, chooseRequestedHeight, parseRangeHeader } = require('../src/youtube');
 const { normalizeKind, parseRangeHeader: parseRangeV4 } = require('../src/youtube-media-v4');
-const { normalizeSearchQuery, mapSearchResult, formatDuration, formatCompactNumber } = require('../src/youtube-search-v1');
+const { normalizeSearchQuery, mapSearchResult, extractVideoId, downloadRestriction, formatDuration, formatCompactNumber } = require('../src/youtube-search-v1');
 
 const watch = parseYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=abc');
 assert.strictEqual(watch.id, 'dQw4w9WgXcQ');
@@ -36,6 +36,14 @@ assert.strictEqual(normalizeSearchQuery('  hollow   knight  '), 'hollow knight')
 assert.throws(() => normalizeSearchQuery('a'), /2 caracteres/i);
 assert.strictEqual(formatDuration(65), '1:05');
 assert.ok(formatCompactNumber(1250000).length > 0);
+assert.strictEqual(extractVideoId({ id:'dQw4w9WgXcQ' }), 'dQw4w9WgXcQ');
+assert.strictEqual(extractVideoId({ webpage_url:'https://youtu.be/dQw4w9WgXcQ?t=1' }), 'dQw4w9WgXcQ');
+assert.strictEqual(extractVideoId({ url:'https://www.youtube.com/shorts/dQw4w9WgXcQ' }), 'dQw4w9WgXcQ');
+assert.strictEqual(extractVideoId({ url:'https://googlevideo.com/videoplayback' }), '');
+assert.ok(downloadRestriction({ ageLimit:18, isLive:false, availability:'public' }));
+assert.ok(downloadRestriction({ ageLimit:0, isLive:true, availability:'public' }));
+assert.strictEqual(downloadRestriction({ ageLimit:0, isLive:false, availability:'public' }), '');
+
 const mappedSearch = mapSearchResult({
   id:'dQw4w9WgXcQ',
   title:'Teste',
@@ -47,14 +55,24 @@ const mappedSearch = mapSearchResult({
   comment_count:45,
   upload_date:'20260828',
   thumbnail:'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
-  webpage_url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  url:'https://rr1---sn.example.googlevideo.com/videoplayback?expire=1',
+  webpage_url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ&pp=search-param',
+  availability:'public',
   description:'Descrição teste'
 });
 assert.strictEqual(mappedSearch.id, 'dQw4w9WgXcQ');
+assert.strictEqual(mappedSearch.videoId, 'dQw4w9WgXcQ');
+assert.strictEqual(mappedSearch.url, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+assert.strictEqual(mappedSearch.canonicalUrl, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+assert.strictEqual(mappedSearch.downloadable, true);
 assert.strictEqual(mappedSearch.durationText, '3:35');
 assert.strictEqual(mappedSearch.viewCount, 123456);
 assert.strictEqual(mappedSearch.uploadDate, '2026-08-28');
 assert.ok(mappedSearch.thumbnail.startsWith('https://'));
+
+const restrictedSearch = mapSearchResult({ id:'dQw4w9WgXcQ', title:'Restrito', age_limit:18, availability:'public' });
+assert.strictEqual(restrictedSearch.downloadable, false);
+assert.ok(restrictedSearch.unavailableReason);
 
 const root = path.join(__dirname, '..');
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
@@ -64,6 +82,7 @@ const youtubeSearch = fs.readFileSync(path.join(root, 'src/youtube-search-v1.js'
 const client = fs.readFileSync(path.join(root, 'public/youtube-downloader-v1.js'), 'utf8');
 const clientV4 = fs.readFileSync(path.join(root, 'public/youtube-downloader-v4.js'), 'utf8');
 const searchClient = fs.readFileSync(path.join(root, 'public/youtube-search-v1.js'), 'utf8');
+const searchTransfer = fs.readFileSync(path.join(root, 'public/youtube-search-transfer-v2.js'), 'utf8');
 const featureLoader = fs.readFileSync(path.join(root, 'public/workspace-feature-loader-v1.js'), 'utf8');
 const legacyBlocker = fs.readFileSync(path.join(root, 'public/youtube-v4-block-legacy.js'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'public/youtube-menu-v1.js'), 'utf8');
@@ -74,6 +93,7 @@ new Function(menu);
 new Function(authHotfix);
 new Function(clientV4);
 new Function(searchClient);
+new Function(searchTransfer);
 new Function(featureLoader);
 new Function(legacyBlocker);
 assert(server.includes("const { registerYouTubeMediaV4Routes } = require('./src/youtube-media-v4')"), 'Server não importa o backend YouTube v4.');
@@ -82,6 +102,7 @@ assert(server.indexOf('registerYouTubeMediaV4Routes(app);') < server.indexOf('re
 assert(server.includes("const { registerYouTubeSearchRoutes } = require('./src/youtube-search-v1')"), 'Server não importa o ytsearch10.');
 assert(server.includes('registerYouTubeSearchRoutes(app);'), 'Server não registra a rota ytsearch10.');
 assert(server.includes("'/painel/youtube',"), 'Rota de workspace do YouTube ausente.');
+assert(server.includes("'/painel/youtube-search',"), 'Página separada do YouTube Search não está no workspace.');
 assert(!server.includes("app.get('/painel/youtube', (req, res) => res.redirect"), 'YouTube ainda está redirecionando para outra página.');
 assert(youtube.includes("app.post('/painel/youtube-prepare'") && youtube.includes("app.get('/painel/youtube-file'") && youtube.includes("app.get('/painel/youtube-download'"), 'Rotas legadas do arquivo local não estão registradas.');
 
@@ -96,7 +117,10 @@ assert(youtubeV4.includes('Accept-Ranges') && youtubeV4.includes('Content-Range'
 assert(youtubeV4.includes("app.post('/painel/youtube-prepare'") && youtubeV4.includes("app.get('/painel/youtube-file'") && youtubeV4.includes("app.get('/painel/youtube-download'"), 'Rotas v4 não estão registradas.');
 
 assert(youtubeSearch.includes('ytsearch${SEARCH_LIMIT}:') && youtubeSearch.includes('const SEARCH_LIMIT = 10'), 'Backend não usa ytsearch10 do yt-dlp.');
-assert(youtubeSearch.includes("app.get('/painel/youtube-search'"), 'Endpoint de busca do YouTube não está registrado.');
+assert(youtubeSearch.includes("app.get('/api/youtube/search'"), 'Endpoint de busca do YouTube não está separado da página.');
+assert(!youtubeSearch.includes("app.get('/painel/youtube-search'"), 'Backend ainda ocupa a rota da página com JSON.');
+assert(youtubeSearch.includes("'--ignore-errors'"), 'Busca não tolera resultados individuais quebrados.');
+assert(youtubeSearch.includes('extractVideoId') && youtubeSearch.includes('canonicalUrl'), 'Busca não normaliza resultados para ID/URL canônicos.');
 assert(youtubeSearch.includes('view_count') && youtubeSearch.includes('duration') && youtubeSearch.includes('thumbnail'), 'Busca não retorna views, duração e thumbnail.');
 assert(youtubeSearch.includes('uploader') && youtubeSearch.includes('channel') && youtubeSearch.includes('upload_date'), 'Busca não retorna metadados completos de canal/data.');
 
@@ -108,13 +132,19 @@ assert(clientV4.includes('downloadUrl') && clientV4.includes('Baixar MP3') && cl
 assert(clientV4.includes('SHA-256') && clientV4.includes('Integridade verificada'), 'Frontend v4 não mostra a validação de integridade.');
 assert(!clientV4.includes('<iframe'), 'Frontend v4 voltou a usar iframe em vez do arquivo preparado.');
 
-assert(searchClient.includes('/painel/youtube-search?q=') && searchClient.includes('Pesquisar 10 resultados'), 'Frontend não chama o endpoint ytsearch10.');
+assert(searchClient.includes("!== '/painel/youtube-search'"), 'Frontend de busca não está isolado na página própria.');
+assert(searchClient.includes('/api/youtube/search?q=') && searchClient.includes('Pesquisar 10 resultados'), 'Frontend não chama o endpoint ytsearch10 novo.');
 assert(searchClient.includes('viewCount') && searchClient.includes('durationText') && searchClient.includes('thumbnail'), 'Frontend não exibe os metadados principais da busca.');
-assert(searchClient.includes('Usar no downloader') && searchClient.includes('youtubeMediaUrlV4'), 'Resultado não pode ser enviado ao downloader existente.');
-assert(featureLoader.includes('/youtube-search-v1.js?v=1'), 'Loader do workspace não carrega o frontend ytsearch10.');
+assert(searchClient.includes('/painel/youtube?video=') && searchClient.includes('videoId'), 'Resultado não transfere somente o ID validado para o downloader.');
+assert(!searchClient.includes('youtubeMediaUrlV4'), 'Página Search ainda tenta manipular diretamente o DOM do downloader.');
+assert(searchTransfer.includes("params.get('video')") && searchTransfer.includes('youtubeMediaUrlV4'), 'Downloader não recebe o ID vindo do Search.');
+assert(searchTransfer.includes('https://www.youtube.com/watch?v='), 'Transferência não reconstrói a URL canônica.');
+assert(featureLoader.includes("path === '/painel/youtube-search'") && featureLoader.includes('/youtube-search-v1.js?v=2'), 'Loader não carrega a página YouTube Search separadamente.');
+assert(featureLoader.includes('/youtube-search-transfer-v2.js?v=2'), 'Loader não carrega a transferência segura no downloader.');
 
 assert(legacyBlocker.includes('__SKYNET_YOUTUBE_DOWNLOADER_V1__ = true'), 'Frontend legado não está bloqueado antes da v4.');
 assert(menu.includes('/painel/youtube') && menu.includes('YouTube Downloader'), 'YouTube Downloader não está garantido no menu lateral.');
+assert(menu.includes('/painel/youtube-search') && menu.includes('YouTube Search'), 'YouTube Search não está separado no menu lateral.');
 assert(authHotfix.includes('Isso não significa que o vídeo seja 18+'), 'Falso positivo de verificação de idade não está sendo corrigido no frontend.');
 assert(authHotfix.includes("path.startsWith('/painel/youtube-')"), 'Correção de erro do YouTube está ampla demais.');
 assert(workspace.includes('/youtube-auth-error-hotfix-v1.js?v=1'), 'Correção do falso positivo do YouTube não está carregada.');
@@ -122,7 +152,8 @@ assert(workspace.includes('/youtube-v4-block-legacy.js?v=1'), 'Bloqueio do front
 assert(workspace.includes('/youtube-downloader-v4.js?v=audio-integrity-1'), 'Frontend v4 não está carregado com cache-busting.');
 assert(!workspace.includes('/youtube-downloader-v1.js?v=local-player-2'), 'Frontend legado ainda está carregando diretamente e pode disputar o DOM.');
 assert(workspace.indexOf('/youtube-v4-block-legacy.js?v=1') < workspace.indexOf('/youtube-downloader-v4.js?v=audio-integrity-1'), 'Bloqueio legado precisa carregar antes do frontend v4.');
-assert(workspace.includes('/youtube-menu-v1.js?v=1'), 'Fix do menu do YouTube não está carregado.');
+assert(workspace.includes('/youtube-menu-v1.js?v=2'), 'Menu atualizado do YouTube não está cache-busted.');
+assert(workspace.includes('/workspace-feature-loader-v1.js?v=youtube-search-2'), 'Loader atualizado não está cache-busted.');
 assert(clientV4.includes('permissão para salvar'), 'Aviso de uso responsável ausente.');
 
-console.log('YouTube downloader v4 self-test OK (MP4 + MP3 + integridade + ytsearch10)');
+console.log('YouTube downloader v4 self-test OK (MP4 + MP3 + integridade + ytsearch10 separado)');
