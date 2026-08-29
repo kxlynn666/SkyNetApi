@@ -36,33 +36,11 @@
     </div>
     <div class="workspace-sidebar-backdrop hidden" id="workspaceSidebarBackdrop"></div>
 
-    <script src="/workspace-boot-guard-v1.js?v=1"></script>
-    <script src="/common.js?v=workspace-boot-1"></script>
-    <script src="/workspace-session-hotfix-v1.js?v=1"></script>
-    <script src="/dashboard.js?v=youtube-local-2&workspace-boot=1"></script>
-
-    <script src="/youtube-auth-error-hotfix-v1.js?v=1"></script>
-    <script src="/youtube-v4-block-legacy.js?v=1"></script>
-    <script src="/youtube-downloader-v4.js?v=audio-integrity-1"></script>
-    <script src="/youtube-menu-v1.js?v=2"></script>
-    <script src="/site-ui-v3.js"></script>
-    <script src="/workspace-ui-v3.js"></script>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/realtime-core-v1.js"></script>
-    <script src="/xp-panel.js"></script>
-    <script src="/card-v2-page.js"></script>
-    <script src="/social-router-v15.js"></script>
-    <script src="/community-groups-v3.js"></script>
-    <script src="/realtime-chat-v2-adapter.js"></script>
-    <script src="/realtime-groups-v2-adapter.js"></script>
-    <script src="/realtime-calls-v3.js"></script>
-    <script src="/profile-customization-v3.js"></script>
-    <script src="/profile-name-decorations-v1.js"></script>
-    <script src="/store-filter-controller-v2.js"></script>
-    <script src="/brat-link.js"></script>
-    <script src="/brat-page.js"></script>
-    <script src="/workspace-feature-loader-v1.js?v=youtube-search-2&roblox-codes=1&boot=2"></script>
-    <script src="/workspace-menu-v2.js?v=youtube-menu-3"></script>
+    <!-- Caminho crítico: somente o necessário para sessão + shell. -->
+    <script src="/workspace-boot-guard-v1.js?v=2"></script>
+    <script src="/workspace-core-v1.js?v=1"></script>
+    <script src="/workspace-session-hotfix-v1.js?v=2"></script>
+    <script src="/dashboard.js?v=panel-runtime-1"></script>
+    <script src="/workspace-postboot-v1.js?v=1"></script>
 </body>
 </html>
