@@ -8,6 +8,7 @@
   let payload = null;
   let currentFilter = 'active';
   let currentSearch = '';
+  let workspaceWaitAttempts = 0;
 
   installStyles();
   waitForWorkspace();
@@ -15,7 +16,12 @@
   function waitForWorkspace() {
     const root = document.getElementById('workspaceContent');
     const shell = document.getElementById('workspaceShell');
-    if (!root || !shell || shell.classList.contains('hidden')) return setTimeout(waitForWorkspace, 80);
+    if (!root || !shell || shell.classList.contains('hidden')) {
+      workspaceWaitAttempts += 1;
+      if (workspaceWaitAttempts >= 125) return;
+      setTimeout(waitForWorkspace, 80);
+      return;
+    }
     document.getElementById('workspaceKicker').textContent = 'Roblox';
     document.getElementById('workspaceTitle').textContent = 'Roblox Codes';
     document.getElementById('workspaceDescription').textContent = 'Códigos atualizados de jogos do Roblox, reunidos de fontes públicas.';
@@ -26,6 +32,7 @@
 
   function renderShell() {
     const root = document.getElementById('workspaceContent');
+    if (!root) return;
     root.innerHTML = `
       <section class="workspace-card roblox-codes-hero-v1">
         <div class="roblox-codes-hero-copy-v1">
@@ -62,12 +69,12 @@
         <p class="hint roblox-codes-note-v1">Os códigos pertencem aos criadores do jogo. A SkyNetApi apenas organiza informações publicadas pela fonte indicada.</p>
       </section>`;
 
-    document.getElementById('robloxCodesRefreshV1').addEventListener('click', () => loadCodes(true));
-    document.getElementById('robloxCodesSearchV1').addEventListener('input', event => {
+    document.getElementById('robloxCodesRefreshV1')?.addEventListener('click', () => loadCodes(true));
+    document.getElementById('robloxCodesSearchV1')?.addEventListener('input', event => {
       currentSearch = String(event.target.value || '').trim().toLowerCase();
       renderCodes();
     });
-    document.getElementById('robloxCodesFiltersV1').querySelectorAll('[data-filter]').forEach(button => {
+    document.getElementById('robloxCodesFiltersV1')?.querySelectorAll('[data-filter]').forEach(button => {
       button.addEventListener('click', () => {
         currentFilter = button.dataset.filter;
         document.querySelectorAll('#robloxCodesFiltersV1 [data-filter]').forEach(item => {
@@ -81,6 +88,7 @@
   async function loadCodes(force) {
     const button = document.getElementById('robloxCodesRefreshV1');
     const message = document.getElementById('robloxCodesMessageV1');
+    if (!message) return;
     if (button) { button.disabled = true; button.textContent = 'Atualizando...'; }
     S.message(message, '', '');
     try {
@@ -90,7 +98,8 @@
       if (payload.warning) S.message(message, payload.warning, 'warning');
       else S.message(message, payload.cached ? 'Códigos carregados do cache recente.' : 'Códigos atualizados pela fonte.', 'success');
     } catch (error) {
-      document.getElementById('robloxCodesListV1').innerHTML = '<div class="empty">Não foi possível carregar os códigos agora.</div>';
+      const list = document.getElementById('robloxCodesListV1');
+      if (list) list.innerHTML = '<div class="empty">Não foi possível carregar os códigos agora.</div>';
       S.message(message, error.message || 'Falha ao consultar a fonte.', 'error');
     } finally {
       if (button) { button.disabled = false; button.textContent = 'Atualizar'; }
@@ -104,6 +113,7 @@
     if (stats[1]) stats[1].textContent = Number(payload.expiredCount || 0);
     if (stats[2]) stats[2].textContent = shortDate(payload.fetchedAt);
     const meta = document.getElementById('robloxCodesSourceMetaV1');
+    if (!meta) return;
     const sourceUpdate = payload.sourceUpdatedAt ? ` · artigo: ${formatDate(payload.sourceUpdatedAt)}` : '';
     const stale = payload.stale ? ' · cache antigo' : '';
     meta.textContent = `Fonte: ${payload.source?.name || 'Eurogamer Portugal'}${sourceUpdate}${stale}`;
