@@ -9,7 +9,7 @@ const REQUESTS_PER_MINUTE = Math.max(2, Math.min(30, Number.parseInt(process.env
 const buckets = new Map();
 
 function registerYouTubeSearchRoutes(app) {
-  app.get('/painel/youtube-search', requireSession, requestLimiter, async (req, res, next) => {
+  app.get('/api/youtube/search', requireSession, requestLimiter, async (req, res, next) => {
     try {
       const query = normalizeSearchQuery(req.query?.q);
       const results = await searchYouTube(query);
@@ -31,7 +31,7 @@ function normalizeSearchQuery(value) {
 async function searchYouTube(query) {
   const args = [
     '--no-config', '--no-playlist', '--skip-download', '--dump-single-json', '--no-warnings',
-    '--socket-timeout', '15', '--extractor-retries', '2', '--fragment-retries', '2',
+    '--ignore-errors', '--socket-timeout', '15', '--extractor-retries', '2', '--fragment-retries', '2',
     `ytsearch${SEARCH_LIMIT}:${query}`
   ];
   const payload = await runYtDlpJson(args);
@@ -41,17 +41,24 @@ async function searchYouTube(query) {
 
 function mapSearchResult(entry) {
   if (!entry || typeof entry !== 'object') return null;
-  const id = cleanText(entry.id, 32);
-  const webpageUrl = safeYoutubeUrl(entry.webpage_url || entry.url, id);
-  if (!webpageUrl) return null;
+  const videoId = extractVideoId(entry);
+  if (!videoId) return null;
+  const canonicalUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
   const thumbnails = Array.isArray(entry.thumbnails) ? entry.thumbnails : [];
   const thumbnail = safeHttpUrl(entry.thumbnail) || safeHttpUrl(thumbnails[thumbnails.length - 1]?.url) || '';
   const duration = Math.max(0, Number(entry.duration || 0) || 0);
   const viewCount = Math.max(0, Number(entry.view_count || 0) || 0);
   const likeCount = Math.max(0, Number(entry.like_count || 0) || 0);
   const commentCount = Math.max(0, Number(entry.comment_count || 0) || 0);
+  const ageLimit = Math.max(0, Number(entry.age_limit || 0) || 0);
+  const liveStatus = cleanText(entry.live_status || '', 40);
+  const isLive = Boolean(entry.is_live || liveStatus === 'is_live');
+  const availability = cleanText(entry.availability || '', 40);
+  const restriction = downloadRestriction({ ageLimit, isLive, availability });
+
   return {
-    id,
+    id: videoId,
+    videoId,
     title: cleanText(entry.title || entry.fulltitle || 'Vídeo do YouTube', 240),
     uploader: cleanText(entry.uploader || entry.channel || entry.creator || '', 160),
     channel: cleanText(entry.channel || entry.uploader || '', 160),
@@ -64,12 +71,55 @@ function mapSearchResult(entry) {
     commentCount,
     uploadDate: normalizeUploadDate(entry.upload_date || entry.release_date),
     thumbnail,
-    url: webpageUrl,
-    liveStatus: cleanText(entry.live_status || '', 40),
-    isLive: Boolean(entry.is_live || entry.live_status === 'is_live'),
-    availability: cleanText(entry.availability || '', 40),
+    url: canonicalUrl,
+    canonicalUrl,
+    liveStatus,
+    isLive,
+    availability,
+    ageLimit,
+    downloadable: !restriction,
+    unavailableReason: restriction,
     description: cleanText(entry.description || '', 360)
   };
+}
+
+function extractVideoId(entry) {
+  const direct = String(entry?.id || '').trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(direct)) return direct;
+
+  const candidates = [entry?.webpage_url, entry?.original_url, entry?.url];
+  for (const candidate of candidates) {
+    const raw = String(candidate || '').trim();
+    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+    if (!raw) continue;
+    try {
+      const url = new URL(raw);
+      const host = url.hostname.toLowerCase().replace(/^www\./, '').replace(/^m\./, '');
+      let id = '';
+      if (host === 'youtu.be') {
+        id = url.pathname.split('/').filter(Boolean)[0] || '';
+      } else if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+        if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+        else {
+          const parts = url.pathname.split('/').filter(Boolean);
+          if (['shorts', 'embed', 'live'].includes(parts[0])) id = parts[1] || '';
+        }
+      }
+      if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+    } catch {}
+  }
+  return '';
+}
+
+function downloadRestriction({ ageLimit, isLive, availability }) {
+  if (Number(ageLimit || 0) >= 18) return 'Vídeo com restrição de idade não é compatível com o downloader.';
+  if (isLive) return 'Lives em andamento não são compatíveis com o downloader.';
+  const value = String(availability || '');
+  if (value === 'private') return 'Vídeo privado.';
+  if (value === 'premium_only') return 'Conteúdo Premium não é compatível com o downloader.';
+  if (value === 'subscriber_only') return 'Conteúdo exclusivo para inscritos não é compatível com o downloader.';
+  if (value === 'needs_auth') return 'Este vídeo exige autenticação no YouTube.';
+  return '';
 }
 
 function runYtDlpJson(args) {
@@ -83,8 +133,12 @@ function runYtDlpJson(args) {
     let stderr = '';
     let stdoutBytes = 0;
     let settled = false;
+    let timedOut = false;
     const timeout = setTimeout(() => {
-      if (!settled) child.kill('SIGKILL');
+      if (!settled) {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }
     }, 50000);
 
     child.stdout.on('data', chunk => {
@@ -97,7 +151,8 @@ function runYtDlpJson(args) {
     });
     child.on('error', error => finish(() => reject(clientError(`Não foi possível iniciar o yt-dlp: ${error.message}`, 502))));
     child.on('close', code => finish(() => {
-      if (code !== 0) return reject(clientError(cleanYtDlpError(stderr), 422));
+      if (timedOut) return reject(clientError('A pesquisa no YouTube demorou demais. Tente novamente.', 504));
+      if (code !== 0 && !stdout.trim()) return reject(clientError(cleanYtDlpError(stderr), 422));
       try { return resolve(JSON.parse(stdout)); }
       catch { return reject(clientError('O yt-dlp retornou uma resposta de busca inválida.', 502)); }
     }));
@@ -116,16 +171,6 @@ function cleanYtDlpError(value) {
   if (/sign in to confirm you.?re not a bot|not a bot/i.test(text)) return 'O YouTube bloqueou temporariamente a pesquisa automática deste servidor.';
   if (/network|timed out|timeout|connection/i.test(text)) return 'A pesquisa no YouTube falhou por conexão. Tente novamente.';
   return 'O yt-dlp não conseguiu pesquisar no YouTube agora.';
-}
-
-function safeYoutubeUrl(value, id) {
-  const fallback = /^[A-Za-z0-9_-]{11}$/.test(String(id || '')) ? `https://www.youtube.com/watch?v=${id}` : '';
-  try {
-    const url = new URL(String(value || fallback));
-    const host = url.hostname.toLowerCase().replace(/^www\./, '').replace(/^m\./, '');
-    if (!['youtube.com', 'youtu.be'].includes(host) && !host.endsWith('.youtube.com')) return fallback;
-    return url.toString();
-  } catch { return fallback; }
 }
 
 function safeHttpUrl(value) {
@@ -213,6 +258,8 @@ module.exports = {
   registerYouTubeSearchRoutes,
   normalizeSearchQuery,
   mapSearchResult,
+  extractVideoId,
+  downloadRestriction,
   formatDuration,
   formatCompactNumber
 };

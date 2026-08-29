@@ -166,6 +166,7 @@ const workspaceRoutes = [
     '/painel/uploads',
     '/painel/tiktok',
     '/painel/youtube',
+    '/painel/youtube-search',
     '/painel/media',
     '/painel/roblox',
     '/painel/historico',

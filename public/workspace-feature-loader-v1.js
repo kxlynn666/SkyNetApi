@@ -67,7 +67,10 @@
 
   if (path === '/painel/youtube') {
     loadScript('/youtube-downloader-v1.js', 'youtubeDownloaderV1');
-    loadScript('/youtube-search-v1.js?v=1', 'youtubeSearchV1');
+    loadScript('/youtube-search-transfer-v2.js?v=2', 'youtubeSearchTransferV2');
+  }
+  if (path === '/painel/youtube-search') {
+    loadScript('/youtube-search-v1.js?v=2', 'youtubeSearchV1');
   }
   if (path === '/painel/jogos') loadScript('/tictactoe-v2.js', 'tictactoeV2');
   if (path === '/painel/jogos/damas') {
