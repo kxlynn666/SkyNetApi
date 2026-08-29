@@ -7,6 +7,7 @@ const C = require('./src/config');
 const S = require('./src/store');
 const { registerTikTokRoutes } = require('./src/tiktok');
 const { registerRobloxRoutes } = require('./src/roblox');
+const { registerRobloxCodesRoutes } = require('./src/roblox-codes');
 const { registerMediaRoutes } = require('./src/media');
 const { registerYouTubeRoutes } = require('./src/youtube');
 const { registerYouTubeMediaV4Routes } = require('./src/youtube-media-v4');
@@ -81,6 +82,7 @@ app.use((req, res, next) => {
 
 registerTikTokRoutes(app);
 registerRobloxRoutes(app);
+registerRobloxCodesRoutes(app);
 registerMediaRoutes(app);
 registerYouTubeMediaV4Routes(app);
 registerYouTubeSearchRoutes(app);
@@ -169,6 +171,7 @@ const workspaceRoutes = [
     '/painel/youtube-search',
     '/painel/media',
     '/painel/roblox',
+    '/painel/roblox-codes',
     '/painel/historico',
     '/painel/api'
 ];
