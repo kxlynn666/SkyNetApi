@@ -34,7 +34,7 @@
     document.body.appendChild(script);
   }
 
-  function gameLink(href, label, iconPath) {
+  function navLink(href, label, iconPath) {
     return `<a class="workspace-nav-link ${path === href ? 'active' : ''}" href="${href}"><span class="workspace-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPath}"/></svg></span><span>${label}</span></a>`;
   }
 
@@ -44,9 +44,34 @@
     const group = document.createElement('div');
     group.className = 'workspace-nav-group';
     group.id = 'tttNavGroup';
-    group.innerHTML = `<div class="workspace-nav-label">Jogos</div>${gameLink('/painel/jogos','Jogo da Velha','M5 5h14v14H5zM9.7 5v14M14.3 5v14M5 9.7h14M5 14.3h14')}${gameLink('/painel/jogos/damas','Damas','M4 4h16v16H4zM4 8h16M4 12h16M4 16h16M8 4v16M12 4v16M16 4v16')}${gameLink('/painel/jogos/dados','Dados','M7 4h10l4 4v8l-4 4H7l-4-4V8zM7 4l-4 4 4 4 10-8M7 12v8M17 12v8M7 12l10-8M17 12l4-4')}`;
+    group.innerHTML = `<div class="workspace-nav-label">Jogos</div>${navLink('/painel/jogos','Jogo da Velha','M5 5h14v14H5zM9.7 5v14M14.3 5v14M5 9.7h14M5 14.3h14')}${navLink('/painel/jogos/damas','Damas','M4 4h16v16H4zM4 8h16M4 12h16M4 16h16M8 4v16M12 4v16M16 4v16')}${navLink('/painel/jogos/dados','Dados','M7 4h10l4 4v8l-4 4H7l-4-4V8zM7 4l-4 4 4 4 10-8M7 12v8M17 12v8M7 12l10-8M17 12l4-4')}`;
     nav.appendChild(group);
     if (gamePaths.has(path)) {
+      document.querySelectorAll('.workspace-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('href') === path));
+    }
+    return true;
+  }
+
+  function addRobloxCodesNav() {
+    const nav = document.querySelector('#workspaceSidebar .workspace-nav');
+    if (!nav) return false;
+    const existing = nav.querySelector('a[href="/painel/roblox-codes"]');
+    if (existing) {
+      existing.classList.toggle('active', path === '/painel/roblox-codes');
+      return true;
+    }
+    let group = [...nav.querySelectorAll('.workspace-nav-group')].find(node => {
+      const label = node.querySelector('.workspace-nav-label')?.textContent.trim().toLowerCase() || '';
+      return label === 'ferramentas';
+    });
+    if (!group) {
+      group = document.createElement('div');
+      group.className = 'workspace-nav-group';
+      group.innerHTML = '<div class="workspace-nav-label">Ferramentas</div>';
+      nav.appendChild(group);
+    }
+    group.insertAdjacentHTML('beforeend', navLink('/painel/roblox-codes','Roblox Codes','M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm1 5H6v2h2V8zm10 0h-2v2h2V8zM8 15h8'));
+    if (path === '/painel/roblox-codes') {
       document.querySelectorAll('.workspace-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('href') === path));
     }
     return true;
@@ -58,6 +83,14 @@
     });
     navObserver.observe(document.documentElement, { childList:true, subtree:true });
     setTimeout(() => navObserver.disconnect(), 12000);
+  }
+
+  if (!addRobloxCodesNav()) {
+    const codesNavObserver = new MutationObserver(() => {
+      if (addRobloxCodesNav()) codesNavObserver.disconnect();
+    });
+    codesNavObserver.observe(document.documentElement, { childList:true, subtree:true });
+    setTimeout(() => codesNavObserver.disconnect(), 12000);
   }
 
   if (path === '/painel/perfil') {
@@ -72,6 +105,7 @@
   if (path === '/painel/youtube-search') {
     loadScript('/youtube-search-v1.js?v=2', 'youtubeSearchV1');
   }
+  if (path === '/painel/roblox-codes') loadScript('/roblox-codes-v1.js?v=1', 'robloxCodesV1');
   if (path === '/painel/jogos') loadScript('/tictactoe-v2.js', 'tictactoeV2');
   if (path === '/painel/jogos/damas') {
     loadScript('/checkers-rules-v1.js', 'checkersRulesV1', () => loadScript('/checkers-v1.js', 'checkersV1'));
