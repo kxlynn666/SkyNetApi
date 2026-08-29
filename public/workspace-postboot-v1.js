@@ -3,6 +3,7 @@
   window.__SKYNET_WORKSPACE_POSTBOOT_V1__ = true;
 
   const path = location.pathname.replace(/\/+$/, '') || '/';
+  const lightweightToolRoute = new Set(['/painel/youtube', '/painel/youtube-search', '/painel/roblox-codes']).has(path);
   let attempts = 0;
 
   const timer = setInterval(() => {
@@ -17,24 +18,31 @@
   }, 100);
 
   async function start() {
-    // Recursos necessários para a rota atual entram primeiro.
+    // Menu do YouTube deve existir em qualquer página do painel.
+    await loadScript('/youtube-menu-v1.js?v=3');
+
+    // Recursos críticos somente na rota que realmente precisa deles.
     if (path === '/painel/youtube') {
       await loadScript('/youtube-auth-error-hotfix-v1.js?v=1');
       await loadScript('/youtube-v4-block-legacy.js?v=1');
-      await loadScript('/youtube-downloader-v4.js?v=audio-integrity-1');
-      await loadScript('/youtube-menu-v1.js?v=2');
-    } else if (path === '/painel/youtube-search') {
-      await loadScript('/youtube-menu-v1.js?v=2');
+      await loadScript('/youtube-downloader-v4.js?v=stability-2');
     }
 
-    await loadScript('/workspace-feature-loader-v1.js?v=panel-runtime-1');
-    await loadScript('/workspace-menu-v2.js?v=panel-runtime-1');
+    await loadScript('/workspace-feature-loader-v1.js?v=panel-tools-2');
+    await loadScript('/workspace-menu-v2.js?v=panel-tools-2');
 
-    // common.js mantém as melhorias existentes, mas só depois que o shell já abriu.
-    await loadScript('/common.js?v=panel-runtime-1');
-    await loadScript('/workspace-ui-v3.js?v=panel-runtime-1');
+    // Páginas pesadas de ferramentas ficam intencionalmente leves.
+    // common.js injeta muitos módulos globais e não é necessário para YouTube/Codes.
+    if (lightweightToolRoute) {
+      scheduleIdle(async () => {
+        await loadScript('/workspace-ui-v3.js?v=panel-tools-2');
+      }, 900);
+      return;
+    }
 
-    scheduleIdle(loadSecondary);
+    await loadScript('/common.js?v=panel-runtime-2');
+    await loadScript('/workspace-ui-v3.js?v=panel-runtime-2');
+    scheduleIdle(loadSecondary, 1200);
   }
 
   async function loadSecondary() {
@@ -49,7 +57,6 @@
     ];
     for (const src of scripts) await loadScript(src);
 
-    // Realtime é útil para chat/grupos/jogos, mas nunca deve bloquear a abertura do painel.
     await loadScript('/socket.io/socket.io.js');
     await loadScript('/realtime-core-v1.js');
     for (const src of [
@@ -61,20 +68,16 @@
     ]) await loadScript(src);
   }
 
-  function scheduleIdle(fn) {
+  function scheduleIdle(fn, timeout = 1200) {
     if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(() => fn().catch(error => console.error('Falha ao carregar recursos secundários:', error)), { timeout: 1200 });
+      requestIdleCallback(() => fn().catch(error => console.error('Falha ao carregar recursos secundários:', error)), { timeout });
       return;
     }
-    setTimeout(() => fn().catch(error => console.error('Falha ao carregar recursos secundários:', error)), 180);
+    setTimeout(() => fn().catch(error => console.error('Falha ao carregar recursos secundários:', error)), 220);
   }
 
   function loadScript(src) {
     return new Promise(resolve => {
-      const exact = [...document.scripts].find(script => script.getAttribute('src') === src);
-      if (exact) return resolve();
-
-      // Evita carregar a mesma base duas vezes quando só muda o cache-busting.
       const base = src.split('?')[0];
       const existing = [...document.scripts].find(script => (script.getAttribute('src') || '').split('?')[0] === base);
       if (existing) return resolve();

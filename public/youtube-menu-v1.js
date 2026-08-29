@@ -2,7 +2,7 @@
   if (window.__SKYNET_YOUTUBE_MENU_V1__) return;
   window.__SKYNET_YOUTUBE_MENU_V1__ = true;
 
-  const current = (location.pathname.replace(/\/+$/, '') || '/');
+  const current = location.pathname.replace(/\/+$/, '') || '/';
   let attempts = 0;
 
   function icon(kind) {
@@ -36,7 +36,6 @@
     }
     link.className = `workspace-nav-link ${current === href ? 'active' : ''}`;
     link.innerHTML = `${icon(iconKind)}<span>${label}</span>`;
-    return link;
   }
 
   function ensure() {
@@ -48,8 +47,7 @@
 
     if (current === '/painel/youtube' || current === '/painel/youtube-search') {
       nav.querySelectorAll('.workspace-nav-link').forEach(link => {
-        const href = link.getAttribute('href') || '';
-        link.classList.toggle('active', href === current);
+        link.classList.toggle('active', (link.getAttribute('href') || '') === current);
       });
     }
     return true;
@@ -57,12 +55,10 @@
 
   function tick() {
     attempts += 1;
-    ensure();
-    if (attempts < 12) setTimeout(tick, attempts < 4 ? 180 : 650);
+    if (ensure()) return;
+    if (attempts < 10) setTimeout(tick, attempts < 4 ? 100 : 300);
   }
 
   tick();
-  const observer = new MutationObserver(() => ensure());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  setTimeout(() => observer.disconnect(), 12000);
+  window.addEventListener('pageshow', ensure, { passive: true });
 })();

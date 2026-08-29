@@ -15,11 +15,12 @@
   }
 
   function loadScript(src, marker, onload) {
-    const existing = document.querySelector(`script[src="${src}"]`);
+    const base = src.split('?')[0];
+    const existing = [...document.scripts].find(script => (script.getAttribute('src') || '').split('?')[0] === base);
     if (existing) {
       if (typeof onload === 'function') {
-        if (existing.dataset.loaded === '1') onload();
-        else existing.addEventListener('load', onload, { once:true });
+        if (existing.dataset.loaded === '1' || existing.readyState === 'complete') onload();
+        else existing.addEventListener('load', onload, { once: true });
       }
       return;
     }
@@ -30,7 +31,7 @@
     script.addEventListener('load', () => {
       script.dataset.loaded = '1';
       if (typeof onload === 'function') onload();
-    }, { once:true });
+    }, { once: true });
     document.body.appendChild(script);
   }
 
@@ -81,16 +82,16 @@
     const navObserver = new MutationObserver(() => {
       if (addGamesNav()) navObserver.disconnect();
     });
-    navObserver.observe(document.documentElement, { childList:true, subtree:true });
-    setTimeout(() => navObserver.disconnect(), 12000);
+    navObserver.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(() => navObserver.disconnect(), 6000);
   }
 
   if (!addRobloxCodesNav()) {
     const codesNavObserver = new MutationObserver(() => {
       if (addRobloxCodesNav()) codesNavObserver.disconnect();
     });
-    codesNavObserver.observe(document.documentElement, { childList:true, subtree:true });
-    setTimeout(() => codesNavObserver.disconnect(), 12000);
+    codesNavObserver.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(() => codesNavObserver.disconnect(), 6000);
   }
 
   if (path === '/painel/perfil') {
@@ -98,14 +99,15 @@
     loadScript('/profile-media-v3.js', 'profileMediaV3');
   }
 
+  // O downloader v4 já é carregado pelo pós-boot. Não carregue o v1 aqui:
+  // duas versões disputando o mesmo DOM causavam travamentos e reconstruções em loop.
   if (path === '/painel/youtube') {
-    loadScript('/youtube-downloader-v1.js', 'youtubeDownloaderV1');
-    loadScript('/youtube-search-transfer-v2.js?v=2', 'youtubeSearchTransferV2');
+    loadScript('/youtube-search-transfer-v2.js?v=3', 'youtubeSearchTransferV2');
   }
   if (path === '/painel/youtube-search') {
-    loadScript('/youtube-search-v1.js?v=2', 'youtubeSearchV1');
+    loadScript('/youtube-search-v1.js?v=3', 'youtubeSearchV1');
   }
-  if (path === '/painel/roblox-codes') loadScript('/roblox-codes-v1.js?v=1', 'robloxCodesV1');
+  if (path === '/painel/roblox-codes') loadScript('/roblox-codes-v1.js?v=2', 'robloxCodesV1');
   if (path === '/painel/jogos') loadScript('/tictactoe-v2.js', 'tictactoeV2');
   if (path === '/painel/jogos/damas') {
     loadScript('/checkers-rules-v1.js', 'checkersRulesV1', () => loadScript('/checkers-v1.js', 'checkersV1'));
