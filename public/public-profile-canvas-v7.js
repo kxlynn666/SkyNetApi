@@ -5,8 +5,9 @@
   const root = document.getElementById('publicProfileRoot');
   if (!root) return;
 
-  const PAD_CSS = 34;
-  const CORNER_CSS = 52;
+  // Estas medidas existem SOMENTE no arquivo baixado.
+  const PAD_CSS = 44;
+  const CORNER_CSS = 64;
   let finalPngUrl = '';
   let finalPngSource = '';
   let currentGifUrl = '';
@@ -14,7 +15,6 @@
 
   installAvatarFix();
   installDownloadGuard();
-  installGifCapture();
   watchUi();
 
   function installAvatarFix() {
@@ -42,12 +42,14 @@
       if (!save) return;
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
+
       try {
-        setStatus('Finalizando PNG com margem transparente...');
-        const url = await ensureFinalPng();
+        setStatus('Finalizando PNG com espaço transparente...');
+        const url = await ensureFinalPng(true);
         if (!url) throw new Error('PNG final não disponível.');
         forceDownload(url, `${safeName()}-perfil.png`);
-        setStatus('PNG salvo com espaço transparente e cantos arredondados.');
+        setStatus('PNG salvo com margem transparente e cantos arredondados.');
       } catch (error) {
         console.error('Falha ao finalizar PNG:', error);
         setStatus(error?.message || 'Não foi possível finalizar o PNG.');
@@ -63,48 +65,53 @@
 
   function queuePrepare() {
     clearTimeout(queuePrepare.timer);
-    queuePrepare.timer = setTimeout(() => ensureFinalPng().catch(() => {}), 120);
+    queuePrepare.timer = setTimeout(() => ensureFinalPng(false).catch(() => {}), 180);
   }
 
-  async function ensureFinalPng() {
+  async function ensureFinalPng(force = false) {
     const ui = root.querySelector('.public-profile-canvas-v6-ui');
     const preview = ui?.querySelector('.public-profile-canvas-v6-preview');
     if (!ui || ui.dataset.ready !== '1' || !preview?.src) return '';
     if (preview.dataset.canvasV7Format === 'gif') return finalPngUrl;
 
-    const sourceUrl = preview.src;
-    if (finalPngUrl && finalPngSource === sourceUrl) return finalPngUrl;
+    await ensureImageReady(preview);
+    if (!preview.naturalWidth || !preview.naturalHeight) throw new Error('A imagem do perfil ainda não terminou de carregar.');
+
+    const sourceKey = `${preview.src}|${preview.naturalWidth}x${preview.naturalHeight}`;
+    if (!force && finalPngUrl && finalPngSource === sourceKey) return finalPngUrl;
     if (preparingPng) return preparingPng;
 
     preparingPng = (async () => {
-      const response = await fetch(sourceUrl);
-      if (!response.ok) throw new Error('Falha ao ler PNG base.');
-      const image = await loadImageBlob(await response.blob());
-
-      const logicalWidth = root.querySelector('.public-profile-studio')?.getBoundingClientRect().width || image.naturalWidth;
-      const scale = Math.max(1, image.naturalWidth / Math.max(1, logicalWidth));
-      const pad = Math.max(24, Math.round(PAD_CSS * scale));
-      const corner = Math.max(40, Math.round(CORNER_CSS * scale));
+      // Nada de fetch(blob:). O próprio <img> já carregado é usado como fonte.
+      // Isso evita o "Failed to fetch" em navegadores móveis.
+      const visibleWidth = preview.getBoundingClientRect().width || root.querySelector('.public-profile-studio')?.getBoundingClientRect().width || preview.naturalWidth;
+      const scale = Math.max(1, preview.naturalWidth / Math.max(1, visibleWidth));
+      const pad = Math.max(32, Math.round(PAD_CSS * scale));
+      const corner = Math.max(48, Math.round(CORNER_CSS * scale));
 
       const canvas = document.createElement('canvas');
-      canvas.width = image.naturalWidth + pad * 2;
-      canvas.height = image.naturalHeight + pad * 2;
+      canvas.width = preview.naturalWidth + pad * 2;
+      canvas.height = preview.naturalHeight + pad * 2;
       const ctx = canvas.getContext('2d', { alpha:true });
+      if (!ctx) throw new Error('Canvas indisponível.');
 
-      // O canvas começa totalmente transparente. Nada é pintado na margem.
+      // Todo o canvas permanece transparente; apenas o card é desenhado no centro.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      roundedPath(ctx, pad, pad, image.naturalWidth, image.naturalHeight, corner);
+      roundedPath(ctx, pad, pad, preview.naturalWidth, preview.naturalHeight, corner);
       ctx.clip();
-      ctx.drawImage(image, pad, pad, image.naturalWidth, image.naturalHeight);
+      ctx.drawImage(preview, pad, pad, preview.naturalWidth, preview.naturalHeight);
       ctx.restore();
+
+      // Garante que a margem e os quatro cantos realmente são transparentes.
+      const probe = ctx.getImageData(0, 0, 1, 1).data;
+      if (probe[3] !== 0) throw new Error('A margem transparente não foi criada corretamente.');
 
       const blob = await canvasBlob(canvas, 'image/png');
       if (finalPngUrl) URL.revokeObjectURL(finalPngUrl);
       finalPngUrl = URL.createObjectURL(blob);
-      finalPngSource = sourceUrl;
+      finalPngSource = sourceKey;
 
-      // O preview visual continua usando o PNG original sem margem.
       const open = ui.querySelector('[data-canvas-open]');
       if (open && preview.dataset.canvasV7Format !== 'gif') open.href = finalPngUrl;
       return finalPngUrl;
@@ -113,53 +120,20 @@
     return preparingPng;
   }
 
-  function installGifCapture() {
-    const nativeClick = HTMLAnchorElement.prototype.click;
-    if (nativeClick.__skynetCanvasV7Wrapped) return;
-    function wrappedClick(...args) {
-      const filename = String(this.download || '');
-      const href = String(this.href || '');
-      if (/\.gif$/i.test(filename) && href.startsWith('blob:')) {
-        captureGeneratedGif(href, filename).catch(error => console.warn('Não foi possível carregar a prévia do GIF:', error));
-      }
-      return nativeClick.apply(this, args);
+  function ensureImageReady(image) {
+    if (image.complete && image.naturalWidth) {
+      return typeof image.decode === 'function' ? image.decode().catch(() => {}) : Promise.resolve();
     }
-    wrappedClick.__skynetCanvasV7Wrapped = true;
-    HTMLAnchorElement.prototype.click = wrappedClick;
-  }
-
-  async function captureGeneratedGif(blobUrl, filename) {
-    const response = await fetch(blobUrl);
-    if (!response.ok) throw new Error('GIF gerado não pôde ser lido.');
-    const blob = await response.blob();
-    await validateGif(blob);
-    if (currentGifUrl) URL.revokeObjectURL(currentGifUrl);
-    currentGifUrl = URL.createObjectURL(blob);
-    const ui = root.querySelector('.public-profile-canvas-v6-ui');
-    const preview = ui?.querySelector('.public-profile-canvas-v6-preview');
-    if (!ui || !preview) return;
-    preview.dataset.canvasV7Format = 'gif';
-    preview.src = currentGifUrl;
-    const open = ui.querySelector('[data-canvas-open]');
-    if (open) open.href = currentGifUrl;
-    let gifSave = ui.querySelector('[data-canvas-v7-save-gif]');
-    if (!gifSave) {
-      gifSave = document.createElement('a');
-      gifSave.dataset.canvasV7SaveGif = '1';
-      gifSave.textContent = 'Baixar GIF pronto';
-      ui.querySelector('[data-canvas-save-gif]')?.insertAdjacentElement('afterend', gifSave);
-    }
-    gifSave.href = currentGifUrl;
-    gifSave.download = filename || `${safeName()}-perfil.gif`;
-    setStatus('GIF animado pronto e carregado.');
-  }
-
-  async function validateGif(blob) {
-    const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
-    const header = String.fromCharCode(...bytes.slice(0, 6));
-    if (header !== 'GIF87a' && header !== 'GIF89a') throw new Error('Cabeçalho GIF inválido.');
-    const image = await loadImageBlob(blob);
-    if (!image.naturalWidth || !image.naturalHeight) throw new Error('GIF inválido.');
+    return new Promise((resolve, reject) => {
+      const done = () => { cleanup(); resolve(); };
+      const fail = () => { cleanup(); reject(new Error('Imagem base não carregou.')); };
+      const cleanup = () => {
+        image.removeEventListener('load', done);
+        image.removeEventListener('error', fail);
+      };
+      image.addEventListener('load', done, { once:true });
+      image.addEventListener('error', fail, { once:true });
+    });
   }
 
   function forceDownload(url, filename) {
@@ -170,16 +144,6 @@
     document.body.appendChild(anchor);
     HTMLAnchorElement.prototype.click.call(anchor);
     anchor.remove();
-  }
-
-  function loadImageBlob(blob) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(blob);
-      const image = new Image();
-      image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
-      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem base inválida.')); };
-      image.src = url;
-    });
   }
 
   function canvasBlob(canvas, type) {
