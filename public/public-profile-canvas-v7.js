@@ -5,19 +5,19 @@
   const root = document.getElementById('publicProfileRoot');
   if (!root) return;
 
-  // PAD e CORNER são aplicados SOMENTE ao arquivo PNG final.
-  // A prévia visual do site continua com o tamanho/aparência original.
-  const PAD = 34;
-  const CORNER = 46;
-  let processedPngSource = '';
-  let processedPngUrl = '';
+  const PAD_CSS = 34;
+  const CORNER_CSS = 52;
+  let finalPngUrl = '';
+  let finalPngSource = '';
   let currentGifUrl = '';
+  let preparingPng = null;
 
-  installFixStyles();
+  installAvatarFix();
+  installDownloadGuard();
   installGifCapture();
   watchUi();
 
-  function installFixStyles() {
+  function installAvatarFix() {
     if (document.getElementById('publicProfileCanvasV7Styles')) return;
     const style = document.createElement('style');
     style.id = 'publicProfileCanvasV7Styles';
@@ -30,67 +30,87 @@
       }
       .public-avatar-studio .cosmetic-avatar-inner>img,
       .public-avatar-studio .cosmetic-avatar-inner>video{
-        width:100%!important;
-        height:100%!important;
-        object-fit:cover!important;
-        display:block!important;
+        width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;
       }
     `;
     document.head.appendChild(style);
   }
 
+  function installDownloadGuard() {
+    root.addEventListener('click', async event => {
+      const save = event.target.closest?.('[data-canvas-save-png]');
+      if (!save) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        setStatus('Finalizando PNG com margem transparente...');
+        const url = await ensureFinalPng();
+        if (!url) throw new Error('PNG final não disponível.');
+        forceDownload(url, `${safeName()}-perfil.png`);
+        setStatus('PNG salvo com espaço transparente e cantos arredondados.');
+      } catch (error) {
+        console.error('Falha ao finalizar PNG:', error);
+        setStatus(error?.message || 'Não foi possível finalizar o PNG.');
+      }
+    }, true);
+  }
+
   function watchUi() {
-    const observer = new MutationObserver(() => queueSync());
-    observer.observe(root, { childList:true, subtree:true, attributes:true, attributeFilter:['src','href','data-ready','aria-disabled'] });
-    queueSync();
+    const observer = new MutationObserver(() => queuePrepare());
+    observer.observe(root, { childList:true, subtree:true, attributes:true, attributeFilter:['src','data-ready'] });
+    queuePrepare();
   }
 
-  function queueSync() {
-    clearTimeout(queueSync.timer);
-    queueSync.timer = setTimeout(syncPng, 80);
+  function queuePrepare() {
+    clearTimeout(queuePrepare.timer);
+    queuePrepare.timer = setTimeout(() => ensureFinalPng().catch(() => {}), 120);
   }
 
-  async function syncPng() {
+  async function ensureFinalPng() {
     const ui = root.querySelector('.public-profile-canvas-v6-ui');
     const preview = ui?.querySelector('.public-profile-canvas-v6-preview');
-    const save = ui?.querySelector('[data-canvas-save-png]');
-    if (!ui || ui.dataset.ready !== '1' || !preview?.src || !save?.href) return;
-    if (preview.dataset.canvasV7Format === 'gif') return;
-    if (preview.src === processedPngSource) return;
+    if (!ui || ui.dataset.ready !== '1' || !preview?.src) return '';
+    if (preview.dataset.canvasV7Format === 'gif') return finalPngUrl;
 
-    const originalSrc = preview.src;
-    processedPngSource = originalSrc;
-    try {
-      const blob = await fetch(originalSrc).then(response => {
-        if (!response.ok) throw new Error('Falha ao ler PNG gerado.');
-        return response.blob();
-      });
-      const image = await loadImageBlob(blob);
-      const padded = document.createElement('canvas');
-      padded.width = image.naturalWidth + PAD * 2;
-      padded.height = image.naturalHeight + PAD * 2;
-      const ctx = padded.getContext('2d', { alpha:true });
-      ctx.clearRect(0, 0, padded.width, padded.height);
+    const sourceUrl = preview.src;
+    if (finalPngUrl && finalPngSource === sourceUrl) return finalPngUrl;
+    if (preparingPng) return preparingPng;
+
+    preparingPng = (async () => {
+      const response = await fetch(sourceUrl);
+      if (!response.ok) throw new Error('Falha ao ler PNG base.');
+      const image = await loadImageBlob(await response.blob());
+
+      const logicalWidth = root.querySelector('.public-profile-studio')?.getBoundingClientRect().width || image.naturalWidth;
+      const scale = Math.max(1, image.naturalWidth / Math.max(1, logicalWidth));
+      const pad = Math.max(24, Math.round(PAD_CSS * scale));
+      const corner = Math.max(40, Math.round(CORNER_CSS * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth + pad * 2;
+      canvas.height = image.naturalHeight + pad * 2;
+      const ctx = canvas.getContext('2d', { alpha:true });
+
+      // O canvas começa totalmente transparente. Nada é pintado na margem.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      roundedPath(ctx, PAD, PAD, image.naturalWidth, image.naturalHeight, CORNER);
+      roundedPath(ctx, pad, pad, image.naturalWidth, image.naturalHeight, corner);
       ctx.clip();
-      ctx.drawImage(image, PAD, PAD);
+      ctx.drawImage(image, pad, pad, image.naturalWidth, image.naturalHeight);
       ctx.restore();
 
-      const finalBlob = await canvasBlob(padded, 'image/png');
-      if (processedPngUrl) URL.revokeObjectURL(processedPngUrl);
-      processedPngUrl = URL.createObjectURL(finalBlob);
+      const blob = await canvasBlob(canvas, 'image/png');
+      if (finalPngUrl) URL.revokeObjectURL(finalPngUrl);
+      finalPngUrl = URL.createObjectURL(blob);
+      finalPngSource = sourceUrl;
 
-      // Importante: NÃO alteramos preview.src. A margem transparente existe
-      // apenas no arquivo apontado pelo botão de download/abrir arquivo.
-      save.href = processedPngUrl;
-      save.download = `${safeName()}-perfil.png`;
+      // O preview visual continua usando o PNG original sem margem.
       const open = ui.querySelector('[data-canvas-open]');
-      if (open) open.href = processedPngUrl;
-      setStatus('PNG pronto. A borda vazia aparece somente no arquivo salvo.');
-    } catch (error) {
-      console.warn('Ajuste final do PNG não pôde ser aplicado:', error);
-    }
+      if (open && preview.dataset.canvasV7Format !== 'gif') open.href = finalPngUrl;
+      return finalPngUrl;
+    })().finally(() => { preparingPng = null; });
+
+    return preparingPng;
   }
 
   function installGifCapture() {
@@ -112,7 +132,6 @@
     const response = await fetch(blobUrl);
     if (!response.ok) throw new Error('GIF gerado não pôde ser lido.');
     const blob = await response.blob();
-    if (!/^image\/gif$/i.test(blob.type || 'image/gif')) throw new Error('Arquivo gerado não é GIF.');
     await validateGif(blob);
     if (currentGifUrl) URL.revokeObjectURL(currentGifUrl);
     currentGifUrl = URL.createObjectURL(blob);
@@ -128,7 +147,6 @@
       gifSave = document.createElement('a');
       gifSave.dataset.canvasV7SaveGif = '1';
       gifSave.textContent = 'Baixar GIF pronto';
-      gifSave.setAttribute('download', '');
       ui.querySelector('[data-canvas-save-gif]')?.insertAdjacentElement('afterend', gifSave);
     }
     gifSave.href = currentGifUrl;
@@ -141,7 +159,17 @@
     const header = String.fromCharCode(...bytes.slice(0, 6));
     if (header !== 'GIF87a' && header !== 'GIF89a') throw new Error('Cabeçalho GIF inválido.');
     const image = await loadImageBlob(blob);
-    if (!image.naturalWidth || !image.naturalHeight) throw new Error('O navegador não conseguiu abrir o GIF gerado.');
+    if (!image.naturalWidth || !image.naturalHeight) throw new Error('GIF inválido.');
+  }
+
+  function forceDownload(url, filename) {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    HTMLAnchorElement.prototype.click.call(anchor);
+    anchor.remove();
   }
 
   function loadImageBlob(blob) {
@@ -149,13 +177,13 @@
       const url = URL.createObjectURL(blob);
       const image = new Image();
       image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
-      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem gerada inválida.')); };
+      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem base inválida.')); };
       image.src = url;
     });
   }
 
   function canvasBlob(canvas, type) {
-    return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao finalizar PNG.')), type));
+    return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao converter PNG.')), type));
   }
 
   function roundedPath(ctx, x, y, width, height, radius) {
@@ -180,7 +208,7 @@
   }
 
   window.addEventListener('pagehide', () => {
-    if (processedPngUrl) URL.revokeObjectURL(processedPngUrl);
+    if (finalPngUrl) URL.revokeObjectURL(finalPngUrl);
     if (currentGifUrl) URL.revokeObjectURL(currentGifUrl);
   }, { once:true });
 })();
