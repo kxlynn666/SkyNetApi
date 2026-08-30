@@ -122,7 +122,7 @@ assert(menu.includes('/painel/youtube') && menu.includes('YouTube Downloader'));
 assert(menu.includes('/painel/youtube-search') && menu.includes('YouTube Search'));
 assert(!menu.includes('observer.observe(document.documentElement'), 'Menu voltou a usar observer global pesado.');
 assert(authHotfix.includes('Isso não significa que o vídeo seja 18+'));
-assert(workspace.includes('/workspace-postboot-v1.js?v=2'));
+assert(workspace.includes('/workspace-postboot-v1.js?v=product-audit-1'));
 assert(!workspace.includes('<script src="/youtube-downloader-v1.js'), 'Downloader legado voltou ao HTML inicial.');
 
 console.log('YouTube self-test OK (v4 único + search separado + menu global + runtime leve)');
