@@ -5,8 +5,8 @@
   const root = document.getElementById('publicProfileRoot');
   if (!root) return;
 
-  // Espaço transparente maior + cantos externos mais suaves para dar
-  // ao perfil salvo uma aparência de card/ícone, sem alterar o layout interno.
+  // PAD e CORNER são aplicados SOMENTE ao arquivo PNG final.
+  // A prévia visual do site continua com o tamanho/aparência original.
   const PAD = 34;
   const CORNER = 46;
   let processedPngSource = '';
@@ -22,12 +22,6 @@
     const style = document.createElement('style');
     style.id = 'publicProfileCanvasV7Styles';
     style.textContent = `
-      .public-profile-canvas-v6-preview{
-        border-radius:${CORNER}px!important;
-        background:transparent!important;
-        padding:0!important;
-        overflow:hidden!important;
-      }
       .public-avatar-studio .cosmetic-avatar-inner,
       .public-avatar-studio .cosmetic-avatar-inner>img,
       .public-avatar-studio .cosmetic-avatar-inner>video{
@@ -47,12 +41,7 @@
 
   function watchUi() {
     const observer = new MutationObserver(() => queueSync());
-    observer.observe(root, {
-      childList:true,
-      subtree:true,
-      attributes:true,
-      attributeFilter:['src','href','data-ready','aria-disabled']
-    });
+    observer.observe(root, { childList:true, subtree:true, attributes:true, attributeFilter:['src','href','data-ready','aria-disabled'] });
     queueSync();
   }
 
@@ -67,7 +56,6 @@
     const save = ui?.querySelector('[data-canvas-save-png]');
     if (!ui || ui.dataset.ready !== '1' || !preview?.src || !save?.href) return;
     if (preview.dataset.canvasV7Format === 'gif') return;
-    if (preview.dataset.canvasV7Processed === '1' && preview.src === processedPngUrl) return;
     if (preview.src === processedPngSource) return;
 
     const originalSrc = preview.src;
@@ -93,16 +81,13 @@
       if (processedPngUrl) URL.revokeObjectURL(processedPngUrl);
       processedPngUrl = URL.createObjectURL(finalBlob);
 
-      preview.dataset.canvasV7Processed = '1';
-      preview.dataset.canvasV7Format = 'png';
-      preview.src = processedPngUrl;
-      preview.style.setProperty('--canvas-profile-width', `${Math.max(1, Math.round((image.naturalWidth + PAD * 2) / deviceScaleGuess(image.naturalWidth)))}px`);
-
+      // Importante: NÃO alteramos preview.src. A margem transparente existe
+      // apenas no arquivo apontado pelo botão de download/abrir arquivo.
       save.href = processedPngUrl;
       save.download = `${safeName()}-perfil.png`;
       const open = ui.querySelector('[data-canvas-open]');
       if (open) open.href = processedPngUrl;
-      setStatus('PNG pronto com borda vazia e acabamento arredondado.');
+      setStatus('PNG pronto. A borda vazia aparece somente no arquivo salvo.');
     } catch (error) {
       console.warn('Ajuste final do PNG não pôde ser aplicado:', error);
     }
@@ -111,14 +96,11 @@
   function installGifCapture() {
     const nativeClick = HTMLAnchorElement.prototype.click;
     if (nativeClick.__skynetCanvasV7Wrapped) return;
-
     function wrappedClick(...args) {
       const filename = String(this.download || '');
       const href = String(this.href || '');
       if (/\.gif$/i.test(filename) && href.startsWith('blob:')) {
-        captureGeneratedGif(href, filename).catch(error => {
-          console.warn('Não foi possível carregar a prévia do GIF:', error);
-        });
+        captureGeneratedGif(href, filename).catch(error => console.warn('Não foi possível carregar a prévia do GIF:', error));
       }
       return nativeClick.apply(this, args);
     }
@@ -132,33 +114,26 @@
     const blob = await response.blob();
     if (!/^image\/gif$/i.test(blob.type || 'image/gif')) throw new Error('Arquivo gerado não é GIF.');
     await validateGif(blob);
-
     if (currentGifUrl) URL.revokeObjectURL(currentGifUrl);
     currentGifUrl = URL.createObjectURL(blob);
-
     const ui = root.querySelector('.public-profile-canvas-v6-ui');
     const preview = ui?.querySelector('.public-profile-canvas-v6-preview');
     if (!ui || !preview) return;
-
     preview.dataset.canvasV7Format = 'gif';
-    preview.dataset.canvasV7Processed = '1';
     preview.src = currentGifUrl;
-
     const open = ui.querySelector('[data-canvas-open]');
     if (open) open.href = currentGifUrl;
-
     let gifSave = ui.querySelector('[data-canvas-v7-save-gif]');
     if (!gifSave) {
       gifSave = document.createElement('a');
       gifSave.dataset.canvasV7SaveGif = '1';
       gifSave.textContent = 'Baixar GIF pronto';
       gifSave.setAttribute('download', '');
-      const gifButton = ui.querySelector('[data-canvas-save-gif]');
-      gifButton?.insertAdjacentElement('afterend', gifSave);
+      ui.querySelector('[data-canvas-save-gif]')?.insertAdjacentElement('afterend', gifSave);
     }
     gifSave.href = currentGifUrl;
     gifSave.download = filename || `${safeName()}-perfil.gif`;
-    setStatus('GIF animado pronto e carregado. Você pode apertar e segurar a imagem para salvar.');
+    setStatus('GIF animado pronto e carregado.');
   }
 
   async function validateGif(blob) {
@@ -173,22 +148,14 @@
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(blob);
       const image = new Image();
-      image.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(image);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Imagem gerada inválida.'));
-      };
+      image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem gerada inválida.')); };
       image.src = url;
     });
   }
 
   function canvasBlob(canvas, type) {
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao finalizar PNG.')), type);
-    });
+    return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao finalizar PNG.')), type));
   }
 
   function roundedPath(ctx, x, y, width, height, radius) {
@@ -210,12 +177,6 @@
   function safeName() {
     const username = decodeURIComponent(location.pathname.split('/').filter(Boolean)[1] || 'skynet');
     return String(username || 'skynet').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'skynet';
-  }
-
-  function deviceScaleGuess(width) {
-    const source = root.querySelector('.public-profile-studio');
-    const logical = source?.getBoundingClientRect().width || 0;
-    return logical > 0 ? Math.max(1, width / logical) : 1;
   }
 
   window.addEventListener('pagehide', () => {
