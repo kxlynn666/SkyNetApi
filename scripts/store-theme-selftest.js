@@ -22,7 +22,8 @@ assert([theme, themeV3, themeV4].every(css => css.includes('var(--theme-primary)
 assert(hotfix.includes('.profile-v3-product[hidden]') && hotfix.includes('display:none!important'), 'Filtro hidden da loja não está protegido.');
 assert(postboot.includes("'/profile-name-decorations-v1.js'"), 'Integração de decoração de nome ausente do pós-boot do workspace.');
 assert(postboot.includes("'/store-filter-controller-v2.js'"), 'Controlador estável de categorias não está no pós-boot do workspace.');
-assert(controller.includes("stopImmediatePropagation") && controller.includes("skynet:store-type-filter"), 'Controlador não bloqueia a reconstrução antiga da loja.');
+assert(controller.includes("type !== 'name-decoration'") && controller.includes('preferredType = type') && controller.includes("skynet:store-type-filter"), 'Controlador não preserva os filtros nativos e a categoria extra de nome.');
+assert(!controller.includes('stopImmediatePropagation'), 'Controlador voltou a bloquear o manipulador nativo das categorias da loja.');
 assert(organizer.includes('selectedType') && organizer.includes("cardType(card) === selectedType"), 'Organizador não combina categoria com busca/coleção/adquiridos.');
 assert(!workspace.includes('<link rel="stylesheet" href="/design-system-v15.css">'), 'design-system-v15 está duplicado após a camada temática.');
 
