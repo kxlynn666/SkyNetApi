@@ -78,6 +78,7 @@ function mapSearchResult(entry) {
     availability,
     ageLimit,
     downloadable: !restriction,
+    availabilityUncertain: availability === 'needs_auth',
     unavailableReason: restriction,
     description: cleanText(entry.description || '', 360)
   };
@@ -102,7 +103,7 @@ function extractVideoId(entry) {
         if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
         else {
           const parts = url.pathname.split('/').filter(Boolean);
-          if (['shorts', 'embed', 'live'].includes(parts[0])) id = parts[1] || '';
+          if (['shorts', 'embed', 'live', 'v', 'e'].includes(parts[0])) id = parts[1] || '';
         }
       }
       if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
@@ -118,7 +119,9 @@ function downloadRestriction({ ageLimit, isLive, availability }) {
   if (value === 'private') return 'Vídeo privado.';
   if (value === 'premium_only') return 'Conteúdo Premium não é compatível com o downloader.';
   if (value === 'subscriber_only') return 'Conteúdo exclusivo para inscritos não é compatível com o downloader.';
-  if (value === 'needs_auth') return 'Este vídeo exige autenticação no YouTube.';
+  // `needs_auth` em resultados de ytsearch pode ser metadado incompleto/temporário.
+  // Não bloqueie cedo: o downloader fará a inspeção completa e continua sendo a
+  // autoridade final para conteúdo que realmente exija autenticação.
   return '';
 }
 
