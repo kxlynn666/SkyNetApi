@@ -1,4 +1,4 @@
-window.SkyNet = (() => {
+window.SkyNet = window.SkyNet || (() => {
     async function api(url, options = {}) {
         const opts = { credentials: 'same-origin', ...options };
         const headers = new Headers(opts.headers || {});
@@ -42,6 +42,7 @@ window.SkyNet = (() => {
     }
 
     function message(element, text, type = 'error') {
+        if (!element) return;
         element.textContent = text || '';
         element.className = `message ${text ? 'show' : ''} ${type}`;
     }
