@@ -5,8 +5,10 @@
   const root = document.getElementById('publicProfileRoot');
   if (!root) return;
 
-  const PAD = 22;
-  const CORNER = 34;
+  // Espaço transparente maior + cantos externos mais suaves para dar
+  // ao perfil salvo uma aparência de card/ícone, sem alterar o layout interno.
+  const PAD = 34;
+  const CORNER = 46;
   let processedPngSource = '';
   let processedPngUrl = '';
   let currentGifUrl = '';
@@ -23,6 +25,8 @@
       .public-profile-canvas-v6-preview{
         border-radius:${CORNER}px!important;
         background:transparent!important;
+        padding:0!important;
+        overflow:hidden!important;
       }
       .public-avatar-studio .cosmetic-avatar-inner,
       .public-avatar-studio .cosmetic-avatar-inner>img,
@@ -98,7 +102,7 @@
       save.download = `${safeName()}-perfil.png`;
       const open = ui.querySelector('[data-canvas-open]');
       if (open) open.href = processedPngUrl;
-      setStatus('PNG pronto com margem externa e cantos arredondados.');
+      setStatus('PNG pronto com borda vazia e acabamento arredondado.');
     } catch (error) {
       console.warn('Ajuste final do PNG não pôde ser aplicado:', error);
     }
