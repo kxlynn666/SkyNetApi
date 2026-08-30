@@ -1,6 +1,6 @@
 (() => {
-  if (window.__SKYNET_PUBLIC_PROFILE_EXPORT_V1__) return;
-  window.__SKYNET_PUBLIC_PROFILE_EXPORT_V1__ = true;
+  if (window.__SKYNET_PUBLIC_PROFILE_EXPORT_V2__) return;
+  window.__SKYNET_PUBLIC_PROFILE_EXPORT_V2__ = true;
 
   const root = document.getElementById('publicProfileRoot');
   if (!root) return;
@@ -9,9 +9,9 @@
   const hasAnimatedMedia = () => !!root.querySelector('video');
 
   function installStyles() {
-    if (document.getElementById('publicProfileExportV1Styles')) return;
+    if (document.getElementById('publicProfileExportV2Styles')) return;
     const style = document.createElement('style');
-    style.id = 'publicProfileExportV1Styles';
+    style.id = 'publicProfileExportV2Styles';
     style.textContent = `
       .public-profile-export-v1{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:14px auto 0}
       .public-profile-export-v1 button{min-height:38px;padding:8px 13px;border:1px solid rgba(124,156,255,.28);border-radius:11px;background:rgba(17,23,34,.86);color:#f4f7fb;font:700 12px system-ui,sans-serif;cursor:pointer;box-shadow:0 9px 28px rgba(0,0,0,.16)}
@@ -52,11 +52,12 @@
       if (format === 'gif') {
         status.textContent = 'Preparando GIF animado...';
         const blob = await exportGif(status);
+        if (!blob || blob.size < 1000) throw new Error('Falha ao montar o GIF animado.');
         downloadBlob(blob, `${safeName()}-perfil.gif`);
-        status.textContent = 'GIF salvo.';
+        status.textContent = 'GIF animado salvo.';
       } else {
         status.textContent = 'Preparando PNG...';
-        const canvas = await captureProfileCanvas({ maxWidth: 1600, scale: 2 });
+        const canvas = await captureProfileCanvas({ maxWidth: 1800, scale: Math.min(2, window.devicePixelRatio || 1.5) });
         const blob = await canvasBlob(canvas, 'image/png');
         downloadBlob(blob, `${safeName()}-perfil.png`);
         status.textContent = 'PNG salvo.';
@@ -66,7 +67,9 @@
       status.textContent = error?.message || 'Não foi possível salvar o perfil.';
     } finally {
       buttons.forEach(item => { item.disabled = false; });
-      setTimeout(() => { if (status.textContent.endsWith('salvo.')) status.textContent = ''; }, 2600);
+      setTimeout(() => {
+        if (/salvo\.$/.test(status.textContent)) status.textContent = '';
+      }, 3200);
     }
   }
 
@@ -76,48 +79,123 @@
   }
 
   async function exportGif(status) {
-    if (!hasAnimatedMedia()) throw new Error('Este perfil não possui mídia animada ativa.');
+    const videos = [...root.querySelectorAll('.public-profile-studio video')];
+    if (!videos.length) throw new Error('Este perfil não possui mídia animada ativa.');
+
+    const states = videos.map(video => ({
+      video,
+      currentTime: Number.isFinite(video.currentTime) ? video.currentTime : 0,
+      paused: video.paused
+    }));
+
     const frames = [];
-    const frameCount = 12;
-    const delay = 120;
-    for (let index = 0; index < frameCount; index += 1) {
-      status.textContent = `Capturando animação ${index + 1}/${frameCount}...`;
-      const canvas = await captureProfileCanvas({ maxWidth: 760, scale: 1 });
-      frames.push(canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height));
-      if (index < frameCount - 1) await sleep(delay);
+    const frameCount = 10;
+    const delay = 110;
+
+    try {
+      videos.forEach(video => video.pause());
+      for (let index = 0; index < frameCount; index += 1) {
+        status.textContent = `Capturando animação ${index + 1}/${frameCount}...`;
+        await seekVideosForFrame(videos, index, frameCount);
+        await nextPaint();
+        const canvas = await captureProfileCanvas({ maxWidth: 560, scale: 1 });
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        frames.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      }
+    } finally {
+      for (const state of states) {
+        try {
+          if (Number.isFinite(state.video.duration) && state.video.duration > 0) {
+            state.video.currentTime = Math.min(state.currentTime, Math.max(0, state.video.duration - 0.02));
+          }
+          if (!state.paused) state.video.play().catch(() => {});
+        } catch {}
+      }
     }
-    status.textContent = 'Montando GIF...';
+
+    if (!framesDiffer(frames)) throw new Error('A mídia não forneceu quadros diferentes para o GIF.');
+    status.textContent = 'Montando GIF animado...';
     return encodeGif(frames, delay);
   }
 
-  async function captureProfileCanvas({ maxWidth = 1600, scale = 2 } = {}) {
+  async function seekVideosForFrame(videos, index, total) {
+    await Promise.all(videos.map(async video => {
+      if (video.readyState < 2) await waitFor(video, 'loadeddata', 1800).catch(() => {});
+      const duration = Number(video.duration);
+      if (!Number.isFinite(duration) || duration <= 0.05) {
+        if (typeof video.requestVideoFrameCallback === 'function') {
+          await new Promise(resolve => video.requestVideoFrameCallback(() => resolve()));
+        }
+        return;
+      }
+      const target = Math.min(Math.max(0, duration * (index / total)), Math.max(0, duration - 0.035));
+      if (Math.abs(video.currentTime - target) < 0.018) return;
+      const promise = waitFor(video, 'seeked', 1800).catch(() => {});
+      video.currentTime = target;
+      await promise;
+    }));
+  }
+
+  function waitFor(target, event, timeout) {
+    return new Promise((resolve, reject) => {
+      let timer = 0;
+      const done = () => { clearTimeout(timer); target.removeEventListener(event, done); resolve(); };
+      target.addEventListener(event, done, { once: true });
+      timer = setTimeout(() => { target.removeEventListener(event, done); reject(new Error(`Timeout em ${event}`)); }, timeout);
+    });
+  }
+
+  function nextPaint() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  function framesDiffer(frames) {
+    if (frames.length < 2) return false;
+    const first = frames[0].data;
+    for (let f = 1; f < frames.length; f += 1) {
+      const data = frames[f].data;
+      const step = Math.max(4, Math.floor(data.length / 1200 / 4) * 4);
+      let diff = 0;
+      for (let i = 0; i < data.length; i += step) {
+        if (Math.abs(data[i] - first[i]) + Math.abs(data[i + 1] - first[i + 1]) + Math.abs(data[i + 2] - first[i + 2]) > 12) {
+          if (++diff > 8) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async function captureProfileCanvas({ maxWidth = 1800, scale = 2 } = {}) {
     const source = root.querySelector('.public-profile-studio');
     if (!source) throw new Error('Perfil ainda não terminou de carregar.');
-    await document.fonts?.ready?.catch?.(() => {});
+    try { await document.fonts?.ready; } catch {}
 
     const rect = source.getBoundingClientRect();
     const logicalWidth = Math.max(1, Math.ceil(rect.width));
     const logicalHeight = Math.max(1, Math.ceil(source.scrollHeight || rect.height));
-    const fitScale = Math.min(scale, maxWidth / logicalWidth);
+    const fitScale = Math.max(0.35, Math.min(scale, maxWidth / logicalWidth));
     const width = Math.max(1, Math.round(logicalWidth * fitScale));
     const height = Math.max(1, Math.round(logicalHeight * fitScale));
 
     const clone = source.cloneNode(true);
+    inlineComputedStyles(source, clone);
     copyFormAndCanvasState(source, clone);
     await replaceVideosWithFrames(source, clone);
-    await inlineLocalImages(clone);
+    await inlineImages(clone);
 
     clone.style.margin = '0';
     clone.style.width = `${logicalWidth}px`;
     clone.style.maxWidth = 'none';
     clone.style.transform = 'none';
+    clone.style.transition = 'none';
     clone.style.boxSizing = 'border-box';
 
-    const css = collectCss();
+    const css = collectRelevantCss();
     const serialized = new XMLSerializer().serializeToString(clone);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${logicalWidth}" height="${logicalHeight}" viewBox="0 0 ${logicalWidth} ${logicalHeight}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${escapeStyle(css)}</style>${serialized}</div></foreignObject></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${logicalWidth}" height="${logicalHeight}" viewBox="0 0 ${logicalWidth} ${logicalHeight}"><foreignObject x="0" y="0" width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="margin:0;padding:0;width:${logicalWidth}px;height:${logicalHeight}px"><style>${escapeStyle(css)}</style>${serialized}</div></foreignObject></svg>`;
     const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
+
     try {
       const image = await loadImage(url);
       const canvas = document.createElement('canvas');
@@ -133,11 +211,31 @@
     }
   }
 
-  function collectCss() {
-    let css = 'html,body{margin:0!important;padding:0!important;background:transparent!important}.public-profile-studio:hover{transform:none!important}';
+  function inlineComputedStyles(source, clone) {
+    const originals = [source, ...source.querySelectorAll('*')];
+    const copies = [clone, ...clone.querySelectorAll('*')];
+    originals.forEach((node, index) => {
+      const copy = copies[index];
+      if (!(copy instanceof Element)) return;
+      const computed = getComputedStyle(node);
+      let css = '';
+      for (const property of computed) {
+        const value = computed.getPropertyValue(property);
+        if (!value) continue;
+        css += `${property}:${value};`;
+      }
+      copy.setAttribute('style', `${css}${copy.getAttribute('style') || ''}`);
+    });
+  }
+
+  function collectRelevantCss() {
+    let css = '.public-profile-studio:hover{transform:none!important}.public-profile-studio *{animation-play-state:paused!important;transition:none!important}';
     for (const sheet of [...document.styleSheets]) {
       try {
-        for (const rule of [...sheet.cssRules]) css += `\n${rule.cssText}`;
+        for (const rule of [...sheet.cssRules]) {
+          const text = rule.cssText || '';
+          if (/public-|profile-|cosmetic-|data-decoration|@keyframes/i.test(text)) css += `\n${text}`;
+        }
       } catch {}
     }
     return css;
@@ -157,9 +255,11 @@
         copy.setAttribute('value', node.value);
         if (node.checked) copy.setAttribute('checked', 'checked');
         else copy.removeAttribute('checked');
-      } else if (node instanceof HTMLTextAreaElement) copy.textContent = node.value;
-      else if (node instanceof HTMLSelectElement) [...copy.options].forEach((option, i) => option.selected = node.options[i]?.selected || false);
-      else if (node instanceof HTMLCanvasElement) {
+      } else if (node instanceof HTMLTextAreaElement) {
+        copy.textContent = node.value;
+      } else if (node instanceof HTMLSelectElement) {
+        [...copy.options].forEach((option, i) => { option.selected = node.options[i]?.selected || false; });
+      } else if (node instanceof HTMLCanvasElement) {
         const img = document.createElement('img');
         try { img.src = node.toDataURL('image/png'); copy.replaceWith(img); } catch {}
       }
@@ -174,8 +274,12 @@
       if (!copy) return;
       const image = document.createElement('img');
       image.alt = '';
-      image.style.cssText = copy.getAttribute('style') || '';
       image.className = copy.className;
+      image.style.cssText = copy.getAttribute('style') || '';
+      image.style.width = `${Math.max(1, video.clientWidth || video.videoWidth || 320)}px`;
+      image.style.height = `${Math.max(1, video.clientHeight || video.videoHeight || 180)}px`;
+      image.style.objectFit = getComputedStyle(video).objectFit || 'cover';
+      image.style.objectPosition = getComputedStyle(video).objectPosition || '50% 50%';
       try {
         const canvas = document.createElement('canvas');
         const width = Math.max(2, video.videoWidth || video.clientWidth || 320);
@@ -191,18 +295,16 @@
     });
   }
 
-  async function inlineLocalImages(clone) {
+  async function inlineImages(clone) {
     const images = [...clone.querySelectorAll('img')];
     await Promise.all(images.map(async image => {
       const src = image.getAttribute('src') || '';
-      if (!src || src.startsWith('data:') || src.startsWith('blob:')) return;
+      if (!src || src.startsWith('data:')) return;
       try {
         const url = new URL(src, location.href);
-        if (url.origin !== location.origin) return;
-        const response = await fetch(url.href, { credentials: 'same-origin' });
+        const response = await fetch(url.href, { credentials: url.origin === location.origin ? 'same-origin' : 'omit', mode: 'cors' });
         if (!response.ok) return;
-        const blob = await response.blob();
-        image.src = await blobToDataUrl(blob);
+        image.src = await blobToDataUrl(await response.blob());
       } catch {}
     }));
   }
@@ -238,13 +340,15 @@
     document.body.appendChild(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   function encodeGif(frames, delayMs) {
     if (!frames.length) throw new Error('Nenhum quadro capturado.');
     const width = frames[0].width;
     const height = frames[0].height;
+    if (frames.some(frame => frame.width !== width || frame.height !== height)) throw new Error('Quadros do GIF com tamanhos diferentes.');
+
     const out = [];
     const push = (...values) => out.push(...values.map(value => value & 255));
     const word = value => push(value & 255, (value >> 8) & 255);
@@ -252,23 +356,23 @@
 
     text('GIF89a');
     word(width); word(height);
-    push(0xF7, 0, 0);
+    push(0xF7, 0x00, 0x00);
     for (let index = 0; index < 256; index += 1) {
-      const r = ((index >> 5) & 7) * 255 / 7;
-      const g = ((index >> 2) & 7) * 255 / 7;
-      const b = (index & 3) * 255 / 3;
-      push(Math.round(r), Math.round(g), Math.round(b));
+      push(
+        Math.round(((index >> 5) & 7) * 255 / 7),
+        Math.round(((index >> 2) & 7) * 255 / 7),
+        Math.round((index & 3) * 255 / 3)
+      );
     }
 
-    // Netscape loop extension: repeat forever.
     push(0x21, 0xFF, 0x0B); text('NETSCAPE2.0'); push(0x03, 0x01, 0x00, 0x00, 0x00);
     const delay = Math.max(2, Math.round(delayMs / 10));
 
     for (const frame of frames) {
-      push(0x21, 0xF9, 0x04, 0x04); word(delay); push(0x00, 0x00);
+      push(0x21, 0xF9, 0x04, 0x00); word(delay); push(0x00, 0x00);
       push(0x2C); word(0); word(0); word(width); word(height); push(0x00);
       const indexed = quantize332(frame.data);
-      const compressed = lzwEncode(indexed, 8);
+      const compressed = lzwLiteralEncode(indexed, 8);
       push(8);
       for (let offset = 0; offset < compressed.length; offset += 255) {
         const block = compressed.subarray(offset, offset + 255);
@@ -277,6 +381,7 @@
       }
       push(0x00);
     }
+
     push(0x3B);
     return new Blob([Uint8Array.from(out)], { type: 'image/gif' });
   }
@@ -284,26 +389,27 @@
   function quantize332(rgba) {
     const indexed = new Uint8Array(rgba.length / 4);
     for (let p = 0, i = 0; p < rgba.length; p += 4, i += 1) {
-      const alpha = rgba[p + 3] / 255;
-      const r = Math.round(rgba[p] * alpha);
-      const g = Math.round(rgba[p + 1] * alpha);
-      const b = Math.round(rgba[p + 2] * alpha);
+      const a = rgba[p + 3] / 255;
+      const r = Math.round(rgba[p] * a);
+      const g = Math.round(rgba[p + 1] * a);
+      const b = Math.round(rgba[p + 2] * a);
       indexed[i] = ((r >> 5) << 5) | ((g >> 5) << 2) | (b >> 6);
     }
     return indexed;
   }
 
-  function lzwEncode(indices, minCodeSize) {
+  // GIF LZW intentionally resets before the code width can grow beyond 9 bits.
+  // This produces larger files than an aggressive dictionary encoder, but it is
+  // simple, deterministic and broadly compatible with browsers/gallery apps.
+  function lzwLiteralEncode(indices, minCodeSize) {
     const clear = 1 << minCodeSize;
     const end = clear + 1;
-    let codeSize = minCodeSize + 1;
-    let nextCode = end + 1;
-    let dict = new Map();
+    const codeSize = minCodeSize + 1;
     const bytes = [];
     let bitBuffer = 0;
     let bitCount = 0;
 
-    const writeCode = code => {
+    const write = code => {
       bitBuffer |= code << bitCount;
       bitCount += codeSize;
       while (bitCount >= 8) {
@@ -312,40 +418,14 @@
         bitCount -= 8;
       }
     };
-    const reset = () => {
-      dict = new Map();
-      codeSize = minCodeSize + 1;
-      nextCode = end + 1;
-    };
 
-    writeCode(clear);
-    if (!indices.length) {
-      writeCode(end);
-      if (bitCount) bytes.push(bitBuffer & 255);
-      return Uint8Array.from(bytes);
+    let offset = 0;
+    while (offset < indices.length) {
+      write(clear);
+      const endOffset = Math.min(indices.length, offset + 200);
+      for (; offset < endOffset; offset += 1) write(indices[offset]);
     }
-
-    let prefix = indices[0];
-    for (let i = 1; i < indices.length; i += 1) {
-      const value = indices[i];
-      const key = `${prefix},${value}`;
-      const found = dict.get(key);
-      if (found !== undefined) {
-        prefix = found;
-        continue;
-      }
-      writeCode(prefix);
-      if (nextCode < 4096) {
-        dict.set(key, nextCode++);
-        if (nextCode === (1 << codeSize) && codeSize < 12) codeSize += 1;
-      } else {
-        writeCode(clear);
-        reset();
-      }
-      prefix = value;
-    }
-    writeCode(prefix);
-    writeCode(end);
+    write(end);
     if (bitCount) bytes.push(bitBuffer & 255);
     return Uint8Array.from(bytes);
   }
