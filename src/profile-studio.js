@@ -6,6 +6,9 @@ const C = require('./config');
 const S = require('./store');
 
 const STUDIO_FILE = path.join(C.DATA_DIR, 'profile-studio.json');
+const LEGACY_CUSTOM_FILE = path.join(C.DATA_DIR, 'profile-custom.json');
+const LEGACY_THEME_FILE = path.join(C.DATA_DIR, 'profile-themes.json');
+const LEGACY_DESIGN_FILE = path.join(C.DATA_DIR, 'profile-design.json');
 const SECTION_IDS = ['identity', 'status', 'bio', 'links', 'stats', 'join'];
 
 const DEFAULTS = Object.freeze({
@@ -68,12 +71,7 @@ const DEFAULTS = Object.freeze({
   sectionOrder: SECTION_IDS
 });
 
-const DEFAULT_IDENTITY = Object.freeze({
-  pronouns: '',
-  location: '',
-  website: '',
-  links: []
-});
+const DEFAULT_IDENTITY = Object.freeze({ pronouns: '', location: '', website: '', links: [] });
 
 const FIELD_DEFS = Object.freeze([
   group('layout', 'Layout', [
@@ -95,56 +93,34 @@ const FIELD_DEFS = Object.freeze([
     numberField('hoverLift', 'Elevação no hover', 0, 12, 1, 'px')
   ]),
   group('colors', 'Cores', [
-    colorField('pageBackground', 'Fundo da página'),
-    colorField('surfaceColor', 'Superfície principal'),
-    colorField('surfaceAltColor', 'Superfície secundária'),
-    colorField('textColor', 'Texto principal'),
-    colorField('mutedColor', 'Texto secundário'),
-    colorField('accentColor', 'Destaque principal'),
-    colorField('accentSecondary', 'Destaque secundário'),
-    colorField('borderColor', 'Bordas'),
-    colorField('avatarBorderColor', 'Borda do avatar'),
-    colorField('bannerTintColor', 'Tint do banner')
+    colorField('pageBackground', 'Fundo da página'), colorField('surfaceColor', 'Superfície principal'),
+    colorField('surfaceAltColor', 'Superfície secundária'), colorField('textColor', 'Texto principal'),
+    colorField('mutedColor', 'Texto secundário'), colorField('accentColor', 'Destaque principal'),
+    colorField('accentSecondary', 'Destaque secundário'), colorField('borderColor', 'Bordas'),
+    colorField('avatarBorderColor', 'Borda do avatar'), colorField('bannerTintColor', 'Tint do banner')
   ]),
   group('background', 'Fundo e banner', [
-    selectField('backgroundMode', 'Fundo', ['solid', 'gradient']),
-    colorField('gradientFrom', 'Gradiente inicial'),
-    colorField('gradientTo', 'Gradiente final'),
-    numberField('gradientAngle', 'Ângulo do gradiente', 0, 360, 1, '°'),
-    numberField('bannerOverlay', 'Escurecimento do banner', 0, 90, 1, '%'),
-    numberField('bannerSaturation', 'Saturação do banner', 0, 160, 5, '%'),
-    numberField('bannerContrast', 'Contraste do banner', 60, 140, 5, '%'),
-    selectField('bannerFocus', 'Foco do banner', ['center', 'top', 'bottom', 'left', 'right'])
+    selectField('backgroundMode', 'Fundo', ['solid', 'gradient']), colorField('gradientFrom', 'Gradiente inicial'),
+    colorField('gradientTo', 'Gradiente final'), numberField('gradientAngle', 'Ângulo do gradiente', 0, 360, 1, '°'),
+    numberField('bannerOverlay', 'Escurecimento do banner', 0, 90, 1, '%'), numberField('bannerSaturation', 'Saturação do banner', 0, 160, 5, '%'),
+    numberField('bannerContrast', 'Contraste do banner', 60, 140, 5, '%'), selectField('bannerFocus', 'Foco do banner', ['center', 'top', 'bottom', 'left', 'right'])
   ]),
   group('typography', 'Tipografia', [
-    selectField('fontFamily', 'Família', ['system', 'rounded', 'mono', 'serif', 'display']),
-    numberField('nameSize', 'Tamanho do nome', 20, 48, 1, 'px'),
-    numberField('bodySize', 'Tamanho do texto', 12, 18, 1, 'px'),
-    numberField('letterSpacing', 'Espaçamento das letras', -1, 3, 0.1, 'px'),
-    selectField('nameWeight', 'Peso do nome', ['500', '600', '700', '750', '800', '900']),
-    selectField('textAlign', 'Alinhamento', ['left', 'center'])
+    selectField('fontFamily', 'Família', ['system', 'rounded', 'mono', 'serif', 'display']), numberField('nameSize', 'Tamanho do nome', 20, 48, 1, 'px'),
+    numberField('bodySize', 'Tamanho do texto', 12, 18, 1, 'px'), numberField('letterSpacing', 'Espaçamento das letras', -1, 3, 0.1, 'px'),
+    selectField('nameWeight', 'Peso do nome', ['500', '600', '700', '750', '800', '900']), selectField('textAlign', 'Alinhamento', ['left', 'center'])
   ]),
   group('components', 'Componentes', [
-    selectField('avatarShape', 'Formato do avatar', ['circle', 'rounded', 'squircle', 'square']),
-    numberField('avatarBorderWidth', 'Borda do avatar', 0, 8, 1, 'px'),
-    selectField('buttonStyle', 'Botões', ['solid', 'soft', 'outline', 'minimal']),
-    selectField('badgeStyle', 'Tags', ['minimal', 'pill', 'outline', 'solid']),
-    selectField('statsStyle', 'Métricas', ['cards', 'minimal', 'divider']),
-    selectField('linkStyle', 'Links', ['buttons', 'list', 'chips']),
+    selectField('avatarShape', 'Formato do avatar', ['circle', 'rounded', 'squircle', 'square']), numberField('avatarBorderWidth', 'Borda do avatar', 0, 8, 1, 'px'),
+    selectField('buttonStyle', 'Botões', ['solid', 'soft', 'outline', 'minimal']), selectField('badgeStyle', 'Tags', ['minimal', 'pill', 'outline', 'solid']),
+    selectField('statsStyle', 'Métricas', ['cards', 'minimal', 'divider']), selectField('linkStyle', 'Links', ['buttons', 'list', 'chips']),
     selectField('motionLevel', 'Movimento', ['system', 'full', 'reduced', 'none'])
   ]),
   group('visibility', 'Visibilidade', [
-    toggleField('showHandle', 'Mostrar @usuário'),
-    toggleField('showStatus', 'Mostrar status'),
-    toggleField('showBio', 'Mostrar bio'),
-    toggleField('showLinks', 'Mostrar links'),
-    toggleField('showStats', 'Mostrar métricas'),
-    toggleField('showJoinDate', 'Mostrar data de entrada'),
-    toggleField('showLocation', 'Mostrar localização'),
-    toggleField('showPronouns', 'Mostrar pronomes'),
-    toggleField('showHeadline', 'Mostrar headline'),
-    toggleField('showCosmetics', 'Mostrar cosméticos'),
-    toggleField('showActions', 'Mostrar ações')
+    toggleField('showHandle', 'Mostrar @usuário'), toggleField('showStatus', 'Mostrar status'), toggleField('showBio', 'Mostrar bio'),
+    toggleField('showLinks', 'Mostrar links'), toggleField('showStats', 'Mostrar métricas'), toggleField('showJoinDate', 'Mostrar data de entrada'),
+    toggleField('showLocation', 'Mostrar localização'), toggleField('showPronouns', 'Mostrar pronomes'), toggleField('showHeadline', 'Mostrar headline'),
+    toggleField('showCosmetics', 'Mostrar cosméticos'), toggleField('showActions', 'Mostrar ações')
   ]),
   group('sections', 'Ordem das seções', [
     { key: 'sectionOrder', label: 'Ordem', type: 'order', options: SECTION_IDS.map(value => ({ value, label: sectionLabel(value) })) }
@@ -155,7 +131,6 @@ function registerProfileStudioRoutes(app) {
   ensureStorage();
   app.use('/api/profile-studio', express.json({ limit: '64kb' }));
 
-  // Decorate established profile responses without breaking older clients.
   app.use((req, res, next) => {
     const isProfile = req.method === 'GET' && req.path.startsWith('/api/profile-v3/profile/');
     const isLeaderboard = req.method === 'GET' && req.path === '/api/profile-v3/leaderboard';
@@ -166,10 +141,7 @@ function registerProfileStudioRoutes(app) {
         const studio = getStudio(payload.profile.id);
         payload = { ...payload, profile: { ...payload.profile, ...studio.identity, studio: studio.design } };
       } else if (payload?.ok && isLeaderboard && Array.isArray(payload.leaderboard)) {
-        payload = {
-          ...payload,
-          leaderboard: payload.leaderboard.map(item => item?.id ? { ...item, studio: getStudio(item.id).design } : item)
-        };
+        payload = { ...payload, leaderboard: payload.leaderboard.map(item => item?.id ? { ...item, studio: getStudio(item.id).design } : item) };
       }
       return originalJson(payload);
     };
@@ -217,11 +189,35 @@ function registerProfileStudioRoutes(app) {
 }
 
 function getStudio(accountId) {
-  const found = loadStudios().find(item => item.accountId === accountId) || {};
+  const found = loadStudios().find(item => item.accountId === accountId);
+  if (found) return { identity: sanitizeIdentity(found.identity, DEFAULT_IDENTITY), design: sanitizeDesign(found.design, DEFAULTS), updatedAt: found.updatedAt || null };
+  return { identity: { ...DEFAULT_IDENTITY, links: [] }, design: sanitizeDesign(legacyDesignSeed(accountId), DEFAULTS), updatedAt: null };
+}
+
+function legacyDesignSeed(accountId) {
+  const custom = readArrayQuiet(LEGACY_CUSTOM_FILE).find(item => item?.accountId === accountId) || {};
+  const theme = readArrayQuiet(LEGACY_THEME_FILE).find(item => item?.accountId === accountId) || {};
+  const design = readArrayQuiet(LEGACY_DESIGN_FILE).find(item => item?.accountId === accountId) || {};
+  const accent = cleanColor(theme.accent, cleanColor(custom.accent, DEFAULTS.accentColor));
+  const motion = ({ full: 'full', subtle: 'reduced', still: 'none' })[String(design.motionLevel || '')] || DEFAULTS.motionLevel;
+  const radius = ({ soft: 22, medium: 14, sharp: 4 })[String(design.cornerStyle || '')] ?? DEFAULTS.surfaceRadius;
+  const width = ({ balanced: 980, compact: 820, showcase: 1120 })[String(design.profileLayout || '')] ?? DEFAULTS.profileWidth;
+  const padding = ({ airy: 34, comfortable: 28, dense: 18 })[String(design.contentDensity || '')] ?? DEFAULTS.contentPadding;
+  const style = String(custom.style || '');
   return {
-    identity: sanitizeIdentity(found.identity, DEFAULT_IDENTITY),
-    design: sanitizeDesign(found.design, DEFAULTS),
-    updatedAt: found.updatedAt || null
+    accentColor: accent,
+    fontFamily: design.fontFamily || DEFAULTS.fontFamily,
+    avatarShape: design.avatarShape || DEFAULTS.avatarShape,
+    bannerFocus: design.bannerFocus || DEFAULTS.bannerFocus,
+    textAlign: design.textAlign || DEFAULTS.textAlign,
+    motionLevel: motion,
+    surfaceRadius: radius,
+    profileWidth: width,
+    contentPadding: padding,
+    surfaceOpacity: style === 'glass' ? 88 : DEFAULTS.surfaceOpacity,
+    surfaceBlur: style === 'glass' ? 20 : DEFAULTS.surfaceBlur,
+    borderWidth: style === 'contrast' ? 2 : DEFAULTS.borderWidth,
+    shadowStrength: style === 'contrast' ? 34 : DEFAULTS.shadowStrength
   };
 }
 
@@ -256,10 +252,10 @@ function sanitizeField(field, raw, fallback) {
   if (field.type === 'color') return cleanColor(raw, fallback);
   if (field.type === 'toggle') return typeof raw === 'boolean' ? raw : Boolean(fallback);
   if (field.type === 'number') {
-    const number = Number(raw);
-    if (!Number.isFinite(number)) return Number(fallback);
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) return Number(fallback);
     const step = Number(field.step || 1);
-    const clamped = Math.max(field.min, Math.min(field.max, number));
+    const clamped = Math.max(field.min, Math.min(field.max, numeric));
     return Number((Math.round(clamped / step) * step).toFixed(step < 1 ? 2 : 0));
   }
   if (field.type === 'select') {
@@ -300,112 +296,29 @@ function cleanUrl(value) {
     return parsed.toString().slice(0, 320);
   } catch { return ''; }
 }
-
-function hostnameLabel(value) {
-  try { return new URL(value).hostname.replace(/^www\./, '').slice(0, 40); }
-  catch { return 'Link'; }
-}
-
-function cleanColor(value, fallback) {
-  const raw = String(value || '').trim().toLowerCase();
-  return /^#[0-9a-f]{6}$/.test(raw) ? raw : fallback;
-}
-
-function cleanText(value, max) {
-  return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-}
-
-function schemaView() {
-  return FIELD_DEFS.map(groupDef => ({
-    id: groupDef.id,
-    label: groupDef.label,
-    fields: groupDef.fields.map(field => ({ ...field }))
-  }));
-}
-
-function defaultsView() {
-  return { identity: { ...DEFAULT_IDENTITY, links: [] }, design: { ...DEFAULTS, sectionOrder: [...SECTION_IDS] } };
-}
-
+function hostnameLabel(value) { try { return new URL(value).hostname.replace(/^www\./, '').slice(0, 40); } catch { return 'Link'; } }
+function cleanColor(value, fallback) { const raw = String(value || '').trim().toLowerCase(); return /^#[0-9a-f]{6}$/.test(raw) ? raw : fallback; }
+function cleanText(value, max) { return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
+function schemaView() { return FIELD_DEFS.map(groupDef => ({ id: groupDef.id, label: groupDef.label, fields: groupDef.fields.map(field => ({ ...field })) })); }
+function defaultsView() { return { identity: { ...DEFAULT_IDENTITY, links: [] }, design: { ...DEFAULTS, sectionOrder: [...SECTION_IDS] } }; }
 function group(id, label, fields) { return Object.freeze({ id, label, fields: Object.freeze(fields) }); }
 function numberField(key, label, min, max, step, unit) { return Object.freeze({ key, label, type: 'number', min, max, step, unit }); }
 function colorField(key, label) { return Object.freeze({ key, label, type: 'color' }); }
 function toggleField(key, label) { return Object.freeze({ key, label, type: 'toggle' }); }
 function selectField(key, label, options) { return Object.freeze({ key, label, type: 'select', options: Object.freeze(options) }); }
-function sectionLabel(value) {
-  return ({ identity: 'Identidade', status: 'Status', bio: 'Bio', links: 'Links', stats: 'Métricas', join: 'Entrada' })[value] || value;
-}
+function sectionLabel(value) { return ({ identity: 'Identidade', status: 'Status', bio: 'Bio', links: 'Links', stats: 'Métricas', join: 'Entrada' })[value] || value; }
 
 function cleanupProfileStudioAccount(accountId) {
   if (!accountId) return;
   writeJsonAtomic(STUDIO_FILE, loadStudios().filter(item => item.accountId !== accountId));
 }
+function ensureStorage() { fs.mkdirSync(C.DATA_DIR, { recursive: true }); if (!fs.existsSync(STUDIO_FILE)) writeJsonAtomic(STUDIO_FILE, []); }
+function loadStudios() { ensureStorage(); return readArrayQuiet(STUDIO_FILE); }
+function readArrayQuiet(file) { try { const value = JSON.parse(fs.readFileSync(file, 'utf8')); return Array.isArray(value) ? value : []; } catch { return []; } }
+function saveStudio(record) { const all = loadStudios(); const index = all.findIndex(item => item.accountId === record.accountId); if (index < 0) all.push(record); else all[index] = record; writeJsonAtomic(STUDIO_FILE, all); }
+function writeJsonAtomic(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`; fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); fs.renameSync(temp, file); }
+function requireSession(req, res, next) { try { const token = parseCookies(req.headers.cookie || '').skynet_session || ''; const session = token ? S.getSession(token) : null; const account = session ? S.loadAccounts().find(item => item.id === session.accountId && item.active) : null; if (!account) return res.status(401).json({ ok: false, error: 'Não autorizado.' }); req.account = account; return next(); } catch (error) { return next(error); } }
+function requireTrustedOrigin(req, res, next) { const origin = String(req.get('origin') || '').trim(); if (!origin) return next(); const ownOrigin = `${req.protocol}://${req.get('host')}`; if (origin === ownOrigin || C.CORS_ORIGINS.has(origin)) return next(); return res.status(403).json({ ok: false, error: 'Origem não permitida.' }); }
+function parseCookies(header) { const out = {}; for (const part of String(header || '').split(';')) { const index = part.indexOf('='); if (index < 0) continue; const key = part.slice(0, index).trim(); const value = part.slice(index + 1).trim(); try { out[key] = decodeURIComponent(value); } catch { out[key] = value; } } return out; }
 
-function ensureStorage() {
-  fs.mkdirSync(C.DATA_DIR, { recursive: true });
-  if (!fs.existsSync(STUDIO_FILE)) writeJsonAtomic(STUDIO_FILE, []);
-}
-
-function loadStudios() {
-  ensureStorage();
-  try {
-    const value = JSON.parse(fs.readFileSync(STUDIO_FILE, 'utf8'));
-    return Array.isArray(value) ? value : [];
-  } catch { return []; }
-}
-
-function saveStudio(record) {
-  const all = loadStudios();
-  const index = all.findIndex(item => item.accountId === record.accountId);
-  if (index < 0) all.push(record); else all[index] = record;
-  writeJsonAtomic(STUDIO_FILE, all);
-}
-
-function writeJsonAtomic(file, value) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-  fs.writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 });
-  fs.renameSync(temp, file);
-}
-
-function requireSession(req, res, next) {
-  try {
-    const token = parseCookies(req.headers.cookie || '').skynet_session || '';
-    const session = token ? S.getSession(token) : null;
-    const account = session ? S.loadAccounts().find(item => item.id === session.accountId && item.active) : null;
-    if (!account) return res.status(401).json({ ok: false, error: 'Não autorizado.' });
-    req.account = account;
-    return next();
-  } catch (error) { return next(error); }
-}
-
-function requireTrustedOrigin(req, res, next) {
-  const origin = String(req.get('origin') || '').trim();
-  if (!origin) return next();
-  const ownOrigin = `${req.protocol}://${req.get('host')}`;
-  if (origin === ownOrigin || C.CORS_ORIGINS.has(origin)) return next();
-  return res.status(403).json({ ok: false, error: 'Origem não permitida.' });
-}
-
-function parseCookies(header) {
-  const out = {};
-  for (const part of String(header || '').split(';')) {
-    const index = part.indexOf('=');
-    if (index < 0) continue;
-    const key = part.slice(0, index).trim();
-    const value = part.slice(index + 1).trim();
-    try { out[key] = decodeURIComponent(value); } catch { out[key] = value; }
-  }
-  return out;
-}
-
-module.exports = {
-  registerProfileStudioRoutes,
-  cleanupProfileStudioAccount,
-  getStudio,
-  sanitizeDesign,
-  sanitizeIdentity,
-  DEFAULTS,
-  DEFAULT_IDENTITY,
-  FIELD_DEFS
-};
+module.exports = { registerProfileStudioRoutes, cleanupProfileStudioAccount, getStudio, sanitizeDesign, sanitizeIdentity, DEFAULTS, DEFAULT_IDENTITY, FIELD_DEFS };
