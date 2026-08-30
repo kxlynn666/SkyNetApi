@@ -38,9 +38,12 @@ assert.ok(formatCompactNumber(1250000).length > 0);
 assert.strictEqual(extractVideoId({ id:'dQw4w9WgXcQ' }), 'dQw4w9WgXcQ');
 assert.strictEqual(extractVideoId({ webpage_url:'https://youtu.be/dQw4w9WgXcQ?t=1' }), 'dQw4w9WgXcQ');
 assert.strictEqual(extractVideoId({ url:'https://www.youtube.com/shorts/dQw4w9WgXcQ' }), 'dQw4w9WgXcQ');
+assert.strictEqual(extractVideoId({ url:'https://www.youtube.com/v/dQw4w9WgXcQ' }), 'dQw4w9WgXcQ');
 assert.strictEqual(extractVideoId({ url:'https://googlevideo.com/videoplayback' }), '');
 assert.ok(downloadRestriction({ ageLimit:18, isLive:false, availability:'public' }));
 assert.ok(downloadRestriction({ ageLimit:0, isLive:true, availability:'public' }));
+assert.ok(downloadRestriction({ ageLimit:0, isLive:false, availability:'private' }));
+assert.strictEqual(downloadRestriction({ ageLimit:0, isLive:false, availability:'needs_auth' }), '', 'ytsearch não deve bloquear needs_auth inconclusivo antes da análise final.');
 assert.strictEqual(downloadRestriction({ ageLimit:0, isLive:false, availability:'public' }), '');
 
 const mappedSearch = mapSearchResult({
@@ -58,6 +61,10 @@ assert.strictEqual(mappedSearch.downloadable, true);
 assert.strictEqual(mappedSearch.durationText, '3:35');
 assert.strictEqual(mappedSearch.uploadDate, '2026-08-28');
 
+const uncertainSearch = mapSearchResult({ id:'dQw4w9WgXcQ', title:'Teste', availability:'needs_auth' });
+assert.strictEqual(uncertainSearch.downloadable, true);
+assert.strictEqual(uncertainSearch.availabilityUncertain, true);
+
 const restrictedSearch = mapSearchResult({ id:'dQw4w9WgXcQ', title:'Restrito', age_limit:18, availability:'public' });
 assert.strictEqual(restrictedSearch.downloadable, false);
 assert.ok(restrictedSearch.unavailableReason);
@@ -67,6 +74,7 @@ const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const youtubeV4 = fs.readFileSync(path.join(root, 'src/youtube-media-v4.js'), 'utf8');
 const youtubeSearch = fs.readFileSync(path.join(root, 'src/youtube-search-v1.js'), 'utf8');
 const clientV4 = fs.readFileSync(path.join(root, 'public/youtube-downloader-v4.js'), 'utf8');
+const inputNormalizer = fs.readFileSync(path.join(root, 'public/youtube-input-normalizer-v1.js'), 'utf8');
 const searchClient = fs.readFileSync(path.join(root, 'public/youtube-search-v1.js'), 'utf8');
 const searchTransfer = fs.readFileSync(path.join(root, 'public/youtube-search-transfer-v2.js'), 'utf8');
 const featureLoader = fs.readFileSync(path.join(root, 'public/workspace-feature-loader-v1.js'), 'utf8');
@@ -76,7 +84,7 @@ const menu = fs.readFileSync(path.join(root, 'public/youtube-menu-v1.js'), 'utf8
 const authHotfix = fs.readFileSync(path.join(root, 'public/youtube-auth-error-hotfix-v1.js'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'public/workspace.html'), 'utf8');
 
-for (const source of [clientV4, searchClient, searchTransfer, featureLoader, postboot, legacyBlocker, menu, authHotfix]) new Function(source);
+for (const source of [clientV4, inputNormalizer, searchClient, searchTransfer, featureLoader, postboot, legacyBlocker, menu, authHotfix]) new Function(source);
 
 assert(server.includes("const { registerYouTubeMediaV4Routes } = require('./src/youtube-media-v4')"));
 assert(server.includes('registerYouTubeMediaV4Routes(app);'));
@@ -89,18 +97,23 @@ assert(!youtubeV4.includes("'--no-part'"));
 assert(youtubeV4.includes('validateMediaFile') && youtubeV4.includes("'-xerror'"));
 assert(youtubeV4.includes("crypto.createHash('sha256')") && youtubeV4.includes('verifyPreparedIntegrity'));
 assert(youtubeV4.includes('Accept-Ranges') && youtubeV4.includes('Content-Range'));
+assert(youtubeV4.includes("['private', 'premium_only', 'subscriber_only', 'needs_auth']"), 'Downloader final perdeu bloqueios de acesso especial.');
 
 assert(youtubeSearch.includes('ytsearch${SEARCH_LIMIT}:') && youtubeSearch.includes('const SEARCH_LIMIT = 10'));
 assert(youtubeSearch.includes("app.get('/api/youtube/search'"));
 assert(!youtubeSearch.includes("app.get('/painel/youtube-search'"));
 assert(youtubeSearch.includes("'--ignore-errors'"));
-assert(youtubeSearch.includes('extractVideoId') && youtubeSearch.includes('canonicalUrl'));
+assert(youtubeSearch.includes('availabilityUncertain') && youtubeSearch.includes('extractVideoId') && youtubeSearch.includes('canonicalUrl'));
 
 assert(clientV4.includes('value="audio"') && clientV4.includes('Áudio · MP3'));
 assert(clientV4.includes('<audio controls') && clientV4.includes('<video controls'));
 assert(clientV4.includes('SHA-256') && clientV4.includes('Integridade verificada'));
 assert(!clientV4.includes('<iframe'));
 assert(clientV4.includes('permissão para salvar'));
+
+assert(inputNormalizer.includes('attribution_link'), 'Normalizador não cobre links antigos de compartilhamento.');
+assert(inputNormalizer.includes("['shorts', 'embed', 'live', 'v', 'e']"), 'Normalizador perdeu variantes comuns de URL do YouTube.');
+assert(inputNormalizer.includes('^[A-Za-z0-9_-]{11}$'), 'Normalizador não aceita ID de vídeo isolado.');
 
 assert(searchClient.includes("!== '/painel/youtube-search'"));
 assert(searchClient.includes('/api/youtube/search?q=') && searchClient.includes('Pesquisar 10 resultados'));
@@ -109,20 +122,22 @@ assert(!searchClient.includes('youtubeMediaUrlV4'));
 assert(searchTransfer.includes("params.get('video')") && searchTransfer.includes('youtubeMediaUrlV4'));
 assert(searchTransfer.includes('https://www.youtube.com/watch?v='));
 
-assert(featureLoader.includes("path === '/painel/youtube-search'") && featureLoader.includes('/youtube-search-v1.js?v=3'));
-assert(featureLoader.includes('/youtube-search-transfer-v2.js?v=3'));
+assert(featureLoader.includes("path === '/painel/youtube-search'") && featureLoader.includes('/youtube-search-v1.js?v=4'));
+assert(featureLoader.includes('/youtube-search-transfer-v2.js?v=4'));
 assert(!featureLoader.includes("loadScript('/youtube-downloader-v1.js'"), 'Feature loader voltou a carregar o downloader legado.');
+assert(postboot.includes("'/youtube-input-normalizer-v1.js?v=1'"));
 assert(postboot.includes("'/youtube-v4-block-legacy.js?v=1'"));
 assert(postboot.includes("'/youtube-downloader-v4.js?v=stability-2'"));
-assert(postboot.includes("'/youtube-menu-v1.js?v=3'"), 'Menu do YouTube não é garantido em todas as páginas.');
-assert(postboot.includes("lightweightToolRoute"), 'Rotas do YouTube não estão protegidas do runtime global pesado.');
+assert(postboot.includes("'/youtube-menu-v1.js?v=4'"), 'Menu do YouTube não é garantido em todas as páginas.');
+assert(postboot.includes('startRouteLayer'), 'Camada do YouTube não começa cedo no carregamento.');
+assert(postboot.includes('lightweightToolRoute'), 'Rotas do YouTube não estão protegidas do runtime global pesado.');
 
 assert(legacyBlocker.includes('__SKYNET_YOUTUBE_DOWNLOADER_V1__ = true'));
 assert(menu.includes('/painel/youtube') && menu.includes('YouTube Downloader'));
 assert(menu.includes('/painel/youtube-search') && menu.includes('YouTube Search'));
 assert(!menu.includes('observer.observe(document.documentElement'), 'Menu voltou a usar observer global pesado.');
 assert(authHotfix.includes('Isso não significa que o vídeo seja 18+'));
-assert(workspace.includes('/workspace-postboot-v1.js?v=product-audit-1'));
+assert(workspace.includes('/workspace-postboot-v1.js?v=route-ready-2'));
 assert(!workspace.includes('<script src="/youtube-downloader-v1.js'), 'Downloader legado voltou ao HTML inicial.');
 
-console.log('YouTube self-test OK (v4 único + search separado + menu global + runtime leve)');
+console.log('YouTube self-test OK (handoff permissivo na busca + validação final preservada)');

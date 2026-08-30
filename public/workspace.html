@@ -36,13 +36,14 @@
     </div>
     <div class="workspace-sidebar-backdrop hidden" id="workspaceSidebarBackdrop"></div>
 
-    <!-- Caminho crítico: somente o necessário para sessão + shell. -->
+    <!-- Caminho crítico: sessão, prevenção de flash de rota e shell. -->
     <script src="/workspace-boot-guard-v1.js?v=2"></script>
     <script src="/workspace-core-v1.js?v=1"></script>
     <script src="/workspace-session-hotfix-v1.js?v=2"></script>
+    <script src="/workspace-route-ready-v1.js?v=1"></script>
     <script src="/dashboard.js?v=panel-runtime-1"></script>
-    <script src="/workspace-postboot-v1.js?v=product-audit-1"></script>
+    <script src="/workspace-postboot-v1.js?v=route-ready-2"></script>
 
-    <!-- Runtime adiado por workspace-postboot-v1.js. -->
+    <!-- Runtime pesado continua adiado por workspace-postboot-v1.js. -->
 </body>
 </html>
