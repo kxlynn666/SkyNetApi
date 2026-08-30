@@ -160,9 +160,21 @@
     if (!button) return;
     const type = typeFromButton(button);
     if (!type) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
     const panel = button.closest('[data-profile-panel="store"]');
+
+    // The original profile controller owns the built-in store categories and
+    // rebuilds their card list. Do not cancel those clicks. V2 only keeps its
+    // state in sync and exclusively handles the extra name-decoration filter.
+    preferredType = type;
+    if (type !== 'name-decoration') {
+      panel.dataset.storeTypeFilter = type;
+      syncLegacyNameFlag(panel, type);
+      setActiveButton(panel, type);
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
     apply(panel, type);
   }, true);
 
