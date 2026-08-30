@@ -20,6 +20,8 @@ const { registerBotLogRoutes } = require('./src/bot-logs');
 const { registerProfileEconomyRoutes, cleanupProfileEconomyAccount } = require('./src/profile-economy');
 const { registerProfileNameDecorations, cleanupProfileNameDecorationsAccount } = require('./src/profile-name-decorations');
 const { registerProfileDesignRoutes, cleanupProfileDesignAccount } = require('./src/profile-design');
+const { registerProfileStudioRoutes, cleanupProfileStudioAccount } = require('./src/profile-studio');
+const { registerProductMetaRoutes } = require('./src/product-meta');
 const { registerStickerRoutes, cleanupStickersAccount } = require('./src/stickers');
 const { registerWorkspaceBootstrapRoutes } = require('./src/workspace-bootstrap');
 const { registerUpscaleRoutes } = require('./src/upscale-ai');
@@ -37,6 +39,7 @@ const { registerExtraProfileCosmetics, cleanupExtraProfileCosmeticsAccount } = r
 
 const app = express();
 installGlobalSecurity(app);
+registerProductMetaRoutes(app);
 
 try {
     const migration = migrateExclusiveProfileItems();
@@ -67,6 +70,7 @@ app.use((req, res, next) => {
                     cleanupProfileEconomyAccount(accountId);
                     cleanupProfileNameDecorationsAccount(accountId);
                     cleanupProfileDesignAccount(accountId);
+                    cleanupProfileStudioAccount(accountId);
                     cleanupStickersAccount(accountId);
                     cleanupTicTacToeAccount(accountId);
                     cleanupCheckersAccount(accountId);
@@ -96,6 +100,8 @@ registerTicTacToeRoutes(app);
 registerProfileMediaRoutes(app);
 registerExtraProfileCosmetics(app);
 registerProfileNameDecorations(app);
+// Studio must be registered before profile-v3 so it can decorate the established GET response.
+registerProfileStudioRoutes(app);
 registerProfileEconomyRoutes(app);
 registerProfileDesignRoutes(app);
 registerStickerRoutes(app);
@@ -151,6 +157,7 @@ const workspaceRoutes = [
     '/painel',
     '/painel/conta',
     '/painel/perfil',
+    '/painel/perfil/studio',
     '/painel/amigos',
     '/painel/chat',
     '/painel/figurinhas',
@@ -173,7 +180,8 @@ const workspaceRoutes = [
     '/painel/roblox',
     '/painel/roblox-codes',
     '/painel/historico',
-    '/painel/api'
+    '/painel/api',
+    '/painel/status'
 ];
 
 for (const route of workspaceRoutes) {
