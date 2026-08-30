@@ -59,7 +59,7 @@ assert.strictEqual(identity.links[0].url, 'https://example.com/path', 'Credencia
 assert(server.includes("registerProductMetaRoutes(app);"), 'Manifesto do produto não está registrado.');
 assert(server.includes("registerProfileStudioRoutes(app);"), 'Profile Studio não está registrado.');
 assert(server.indexOf('registerProfileStudioRoutes(app);') < server.indexOf('registerProfileEconomyRoutes(app);'), 'Studio deve decorar profile-v3 antes da rota responder.');
-assert(server.includes("'/painel/perfil/studio',") && server.includes("'/painel/status',"), 'Novas páginas não estão publicadas no workspace.');
+assert(server.includes("'/painel/perfil/studio'") && server.includes("'/painel/status'"), 'Novas páginas não estão publicadas no workspace.');
 assert(server.includes('cleanupProfileStudioAccount(accountId)'), 'Exclusão de conta não remove dados do Studio.');
 
 assert(PAGES.some(page => page.path === '/painel/perfil/studio'), 'Manifesto não lista Profile Studio.');
