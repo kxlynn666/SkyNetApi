@@ -3,7 +3,13 @@
   window.__SKYNET_WORKSPACE_POSTBOOT_V1__ = true;
 
   const path = location.pathname.replace(/\/+$/, '') || '/';
-  const lightweightToolRoute = new Set(['/painel/youtube', '/painel/youtube-search', '/painel/roblox-codes']).has(path);
+  const lightweightToolRoute = new Set([
+    '/painel/youtube',
+    '/painel/youtube-search',
+    '/painel/roblox-codes',
+    '/painel/perfil/studio',
+    '/painel/status'
+  ]).has(path);
   let attempts = 0;
 
   const timer = setInterval(() => {
@@ -28,20 +34,20 @@
       await loadScript('/youtube-downloader-v4.js?v=stability-2');
     }
 
-    await loadScript('/workspace-feature-loader-v1.js?v=panel-tools-2');
-    await loadScript('/workspace-menu-v2.js?v=panel-tools-2');
+    await loadScript('/workspace-feature-loader-v1.js?v=product-audit-1');
+    await loadScript('/workspace-menu-v2.js?v=product-audit-1');
 
-    // Páginas pesadas de ferramentas ficam intencionalmente leves.
-    // common.js injeta muitos módulos globais e não é necessário para YouTube/Codes.
+    // Ferramentas isoladas, Studio e diagnóstico usam somente o núcleo mínimo.
+    // Isso evita que dezenas de scripts globais disputem o DOM dessas páginas.
     if (lightweightToolRoute) {
       scheduleIdle(async () => {
-        await loadScript('/workspace-ui-v3.js?v=panel-tools-2');
+        await loadScript('/workspace-ui-v3.js?v=product-audit-1');
       }, 900);
       return;
     }
 
-    await loadScript('/common.js?v=panel-runtime-2');
-    await loadScript('/workspace-ui-v3.js?v=panel-runtime-2');
+    await loadScript('/common.js?v=product-audit-1');
+    await loadScript('/workspace-ui-v3.js?v=product-audit-1');
     scheduleIdle(loadSecondary, 1200);
   }
 

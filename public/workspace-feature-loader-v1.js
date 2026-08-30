@@ -98,6 +98,8 @@
     loadStyle('/profile-social-pack-v9.css', 'profileSocialPackV9');
     loadScript('/profile-media-v3.js', 'profileMediaV3');
   }
+  if (path === '/painel/perfil/studio') loadScript('/profile-studio-v1.js?v=1', 'profileStudioV1');
+  if (path === '/painel/status') loadScript('/system-status-v1.js?v=1', 'systemStatusV1');
 
   // O downloader v4 já é carregado pelo pós-boot. Não carregue o v1 aqui:
   // duas versões disputando o mesmo DOM causavam travamentos e reconstruções em loop.

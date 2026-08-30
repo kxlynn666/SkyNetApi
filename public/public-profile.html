@@ -2,8 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#090b10">
     <title>Perfil - SkyNetApi</title>
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/profile-cosmetics.css">
@@ -15,14 +16,14 @@
         <a class="brand" href="/">SkyNetApi</a>
         <a class="nav-link" href="/painel">Painel</a>
     </nav>
-    <section id="publicProfileRoot" class="card" style="margin-top:28px">
+    <section id="publicProfileRoot" class="card" style="margin-top:28px" aria-live="polite">
         <div class="muted">Carregando perfil...</div>
     </section>
     <footer>SkyNetApi</footer>
 </main>
-<script src="/common.js"></script>
-<script src="/public-profile.js"></script>
-<script src="/profile-name-decorations-v1.js"></script>
-<script src="/profile-media-public-v1.js"></script>
+<script src="/workspace-core-v1.js?v=profile-public-1"></script>
+<script src="/public-profile.js?v=studio-1"></script>
+<script src="/profile-name-decorations-v1.js?v=studio-1"></script>
+<script src="/profile-media-public-v1.js?v=studio-1"></script>
 </body>
 </html>
