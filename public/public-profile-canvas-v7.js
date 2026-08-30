@@ -6,8 +6,9 @@
   if (!root) return;
 
   // Estas medidas existem SOMENTE no arquivo baixado.
-  const PAD_CSS = 44;
-  const CORNER_CSS = 64;
+  // Margem pequena e cantos quase quadrados de propósito.
+  const PAD_CSS = 10;
+  const CORNER_CSS = 8;
   let finalPngUrl = '';
   let finalPngSource = '';
   let currentGifUrl = '';
@@ -49,7 +50,7 @@
         const url = await ensureFinalPng(true);
         if (!url) throw new Error('PNG final não disponível.');
         forceDownload(url, `${safeName()}-perfil.png`);
-        setStatus('PNG salvo com margem transparente e cantos arredondados.');
+        setStatus('PNG salvo com margem transparente discreta e cantos quase quadrados.');
       } catch (error) {
         console.error('Falha ao finalizar PNG:', error);
         setStatus(error?.message || 'Não foi possível finalizar o PNG.');
@@ -82,12 +83,10 @@
     if (preparingPng) return preparingPng;
 
     preparingPng = (async () => {
-      // Nada de fetch(blob:). O próprio <img> já carregado é usado como fonte.
-      // Isso evita o "Failed to fetch" em navegadores móveis.
       const visibleWidth = preview.getBoundingClientRect().width || root.querySelector('.public-profile-studio')?.getBoundingClientRect().width || preview.naturalWidth;
       const scale = Math.max(1, preview.naturalWidth / Math.max(1, visibleWidth));
-      const pad = Math.max(32, Math.round(PAD_CSS * scale));
-      const corner = Math.max(48, Math.round(CORNER_CSS * scale));
+      const pad = Math.max(6, Math.round(PAD_CSS * scale));
+      const corner = Math.max(4, Math.round(CORNER_CSS * scale));
 
       const canvas = document.createElement('canvas');
       canvas.width = preview.naturalWidth + pad * 2;
@@ -95,7 +94,6 @@
       const ctx = canvas.getContext('2d', { alpha:true });
       if (!ctx) throw new Error('Canvas indisponível.');
 
-      // Todo o canvas permanece transparente; apenas o card é desenhado no centro.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       roundedPath(ctx, pad, pad, preview.naturalWidth, preview.naturalHeight, corner);
@@ -103,7 +101,6 @@
       ctx.drawImage(preview, pad, pad, preview.naturalWidth, preview.naturalHeight);
       ctx.restore();
 
-      // Garante que a margem e os quatro cantos realmente são transparentes.
       const probe = ctx.getImageData(0, 0, 1, 1).data;
       if (probe[3] !== 0) throw new Error('A margem transparente não foi criada corretamente.');
 
