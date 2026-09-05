@@ -126,11 +126,20 @@ function ensureAdminAccount() {
     }
 }
 
-function createSession(accountId) {
+function createSession(accountId, options = {}) {
     const now = Date.now();
     const sessions = loadSessions().filter(s => Number(s.expiresAt) > now);
     const token = crypto.randomBytes(48).toString('base64url');
-    sessions.push({ id: randomId(12), tokenHash: hashKey(token), accountId, createdAt: now, lastSeenAt: now, expiresAt: now + C.SESSION_DAYS * 86400000 });
+    const session = {
+        id: randomId(12), tokenHash: hashKey(token), accountId,
+        createdAt: now, lastSeenAt: now, expiresAt: now + C.SESSION_DAYS * 86400000
+    };
+    if (options && typeof options === 'object' && options.mobileKeyId && options.mobileKeyHash) {
+        session.client = 'skybooth';
+        session.mobileKeyId = String(options.mobileKeyId);
+        session.mobileKeyHash = String(options.mobileKeyHash);
+    }
+    sessions.push(session);
     saveSessions(sessions);
     return token;
 }
@@ -144,6 +153,13 @@ function getSession(token) {
     if (Number(session.expiresAt) <= now) {
         saveSessions(sessions.filter(s => s.id !== session.id));
         return null;
+    }
+    if (session.mobileKeyId) {
+        const key = loadApiKeys().find(k => k.id === session.mobileKeyId && k.accountId === session.accountId && k.active);
+        if (!key || !safeEqualHex(session.mobileKeyHash, key.keyHash)) {
+            saveSessions(sessions.filter(s => s.id !== session.id));
+            return null;
+        }
     }
     if (now - Number(session.lastSeenAt || 0) > 3600000) {
         session.lastSeenAt = now;

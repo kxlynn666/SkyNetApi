@@ -1,5 +1,6 @@
 const pkg = require('../package.json');
 const S = require('./store');
+const { registerMobileAuthRoutes } = require('./mobile-auth');
 
 const PAGES = Object.freeze([
   page('/painel', 'Visão geral', 'workspace'),
@@ -30,6 +31,9 @@ const ENDPOINTS = Object.freeze([
   endpoint('GET', '/api/meta', 'Manifesto de recursos e versão', false),
   endpoint('GET', '/api/meta/routes', 'Páginas e endpoints documentados', false),
   endpoint('GET', '/api/mobile/session', 'Validar API key para o aplicativo Android', true),
+  endpoint('POST', '/api/mobile/auth/exchange', 'Trocar API key por sessão social móvel', true),
+  endpoint('GET', '/api/mobile/auth/me', 'Validar sessão móvel do SkyBooth', true),
+  endpoint('POST', '/api/mobile/auth/logout', 'Encerrar sessão móvel do SkyBooth', true),
   endpoint('GET', '/api/auth/me', 'Sessão atual', true),
   endpoint('GET', '/api/profile-v3/profile/:username', 'Perfil público completo', false),
   endpoint('GET', '/api/profile-studio/:username', 'Configuração pública do Profile Studio', false),
@@ -40,6 +44,10 @@ const ENDPOINTS = Object.freeze([
   endpoint('GET', '/api/profile-store/me', 'Inventário e carteira', true),
   endpoint('GET', '/api/social/me', 'Conta e perfil social', true),
   endpoint('PATCH', '/api/social/account/profile', 'Editar identidade social', true),
+  endpoint('GET', '/api/social/conversations', 'Listar conversas e não lidas', true),
+  endpoint('GET', '/api/social/messages/:userId', 'Histórico de mensagens privadas', true),
+  endpoint('POST', '/api/social/messages/:userId', 'Enviar mensagem privada', true),
+  endpoint('GET', '/api/social/rtc-config', 'Configuração STUN/TURN para WebRTC', true),
   endpoint('GET', '/api/youtube/search?q=', 'Buscar vídeos do YouTube', true),
   endpoint('GET', '/api/roblox-codes/volleyball-legends', 'Códigos Roblox agregados', true),
   endpoint('GET', '/api/keys', 'Listar API keys da conta', true),
@@ -48,6 +56,8 @@ const ENDPOINTS = Object.freeze([
 ]);
 
 function registerProductMetaRoutes(app) {
+  registerMobileAuthRoutes(app);
+
   app.get('/api/meta', (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.json({
@@ -61,6 +71,7 @@ function registerProductMetaRoutes(app) {
         profileStudio: true,
         social: true,
         realtime: true,
+        mobileCommunication: true,
         apiKeys: true,
         uploads: true,
         mediaTools: true,
