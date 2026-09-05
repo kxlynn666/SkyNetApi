@@ -1,4 +1,5 @@
 const pkg = require('../package.json');
+const S = require('./store');
 
 const PAGES = Object.freeze([
   page('/painel', 'Visão geral', 'workspace'),
@@ -28,6 +29,7 @@ const ENDPOINTS = Object.freeze([
   endpoint('GET', '/health', 'Estado público do serviço', false),
   endpoint('GET', '/api/meta', 'Manifesto de recursos e versão', false),
   endpoint('GET', '/api/meta/routes', 'Páginas e endpoints documentados', false),
+  endpoint('GET', '/api/mobile/session', 'Validar API key para o aplicativo Android', true),
   endpoint('GET', '/api/auth/me', 'Sessão atual', true),
   endpoint('GET', '/api/profile-v3/profile/:username', 'Perfil público completo', false),
   endpoint('GET', '/api/profile-studio/:username', 'Configuração pública do Profile Studio', false),
@@ -73,6 +75,32 @@ function registerProductMetaRoutes(app) {
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.json({ ok: true, pages: PAGES, endpoints: ENDPOINTS });
   });
+
+  app.get('/api/mobile/session', requireApiKey, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({
+      ok: true,
+      account: S.publicAccountView(req.account),
+      apiKey: S.publicKeyView(req.apiKeyRecord)
+    });
+  });
+}
+
+function requireApiKey(req, res, next) {
+  try {
+    const authorization = String(req.headers.authorization || '');
+    const bearer = authorization.toLowerCase().startsWith('bearer ')
+      ? authorization.slice(7).trim()
+      : '';
+    const apiKey = String(req.headers['x-api-key'] || bearer || '').trim();
+    const auth = S.authenticateApiKey(apiKey);
+    if (!auth) return res.status(401).json({ ok: false, error: 'API key inválida ou ausente.' });
+    req.account = auth.account;
+    req.apiKeyRecord = auth.record;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
 }
 
 function page(path, label, group) { return Object.freeze({ path, label, group }); }
