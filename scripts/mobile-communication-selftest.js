@@ -20,7 +20,7 @@ expect(mobile, /mobileKeyId:\s*auth\.record\.id/, 'sessão móvel não está vin
 expect(mobile, /cookieName:\s*'skynet_session'/, 'contrato do cookie social móvel ausente');
 expect(store, /session\.mobileKeyId/, 'store não valida vínculo móvel');
 expect(store, /safeEqualHex\(session\.mobileKeyHash,\s*key\.keyHash\)/, 'rotação da API key não invalida a sessão móvel');
-expect(social, /parseCookies\(socket\.handshake\.headers\.cookie/, 'Socket.IO social deixou de usar a sessão compartilhada');
+expect(social, /getSessionAccountFromCookie\(socket\.handshake\.headers\.cookie/, 'Socket.IO social deixou de usar a sessão compartilhada');
 expect(social, /app\.get\('\/api\/social\/conversations'/, 'rota de conversas ausente');
 expect(social, /app\.post\('\/api\/social\/messages\/:userId'/, 'rota de envio de mensagem ausente');
 expect(social, /app\.patch\('\/api\/social\/account\/profile'/, 'rota de edição de perfil ausente');
